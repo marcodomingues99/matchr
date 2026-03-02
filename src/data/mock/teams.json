@@ -1,0 +1,50 @@
+[
+  {
+    "id": "team1", "vertenteId": "v1", "name": "Os Invencíveis",
+    "player1": { "id": "p1", "name": "João Silva", "phone": "912 345 678", "email": "joao@mail.com" },
+    "player2": { "id": "p2", "name": "Marco Ramos", "phone": "963 456 789", "email": "marco@mail.com" },
+    "avatarColor": "#1E6FE8", "groupId": "g1", "groupPosition": 1, "status": "active"
+  },
+  {
+    "id": "team2", "vertenteId": "v1", "name": "Thunderstruck",
+    "player1": { "id": "p3", "name": "Tiago Pereira", "phone": "935 111 222", "email": "tiago@mail.com" },
+    "player2": { "id": "p4", "name": "André Costa", "phone": "912 333 444", "email": "andre@mail.com" },
+    "avatarColor": "#8B00CC", "groupId": "g1", "groupPosition": 2, "status": "active"
+  },
+  {
+    "id": "team3", "vertenteId": "v1", "name": "Slam Kings",
+    "player1": { "id": "p5", "name": "Rui Santos", "phone": "962 555 666", "email": "rui@mail.com" },
+    "player2": { "id": "p6", "name": "Pedro Lopes", "phone": "913 777 888", "email": "pedro@mail.com" },
+    "avatarColor": "#22C55E", "groupId": "g2", "groupPosition": 1, "status": "active"
+  },
+  {
+    "id": "team4", "vertenteId": "v1", "name": "Net Hunters",
+    "player1": { "id": "p7", "name": "Nuno Martins", "phone": "934 999 000", "email": "nuno@mail.com" },
+    "player2": { "id": "p8", "name": "Filipe Alves", "phone": "912 111 222", "email": "filipe@mail.com" },
+    "avatarColor": "#F97316", "groupId": "g2", "groupPosition": 2, "status": "active"
+  },
+  {
+    "id": "team5", "vertenteId": "v1", "name": "Power Smash",
+    "player1": { "id": "p9", "name": "Carlos Mota", "phone": "963 333 444", "email": "carlos@mail.com" },
+    "player2": { "id": "p10", "name": "Rui Ferreira", "phone": "912 555 666", "email": "ruif@mail.com" },
+    "avatarColor": "#E03050", "groupId": "g3", "groupPosition": 1, "status": "withdrawn"
+  },
+  {
+    "id": "team6", "vertenteId": "v1", "name": "Ace Force",
+    "player1": { "id": "p11", "name": "Luís Costa", "phone": "934 777 888", "email": "luis@mail.com" },
+    "player2": { "id": "p12", "name": "Miguel Pinto", "phone": "912 999 000", "email": "miguel@mail.com" },
+    "avatarColor": "#0ABFA3", "groupId": "g3", "groupPosition": 2, "status": "active"
+  },
+  {
+    "id": "team7", "vertenteId": "v1", "name": "Purple Rain",
+    "player1": { "id": "p13", "name": "Diogo Santos", "phone": "963 111 222", "email": "diogo@mail.com" },
+    "player2": { "id": "p14", "name": "Bruno Alves", "phone": "912 333 444", "email": "bruno@mail.com" },
+    "avatarColor": "#9B30FF", "groupId": "g4", "groupPosition": 1, "status": "active"
+  },
+  {
+    "id": "team8", "vertenteId": "v1", "name": "Iron Wall",
+    "player1": { "id": "p15", "name": "Ricardo Nunes", "phone": "934 555 666", "email": "ricardo@mail.com" },
+    "player2": { "id": "p16", "name": "Sérgio Lima", "phone": "912 777 888", "email": "sergio@mail.com" },
+    "avatarColor": "#3A4060", "groupId": "g4", "groupPosition": 2, "status": "active"
+  }
+]

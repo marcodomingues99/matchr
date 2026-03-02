@@ -1,0 +1,94 @@
+[
+  {
+    "id": "t1",
+    "name": "Open de Padel Lisboa 2026",
+    "location": "Clube de Padel Restelo",
+    "startDate": "2026-03-14",
+    "endDate": "2026-03-16",
+    "status": "active",
+    "bannerUri": null,
+    "regulationUri": "regulamento_open_lisboa_2026.pdf",
+    "createdAt": "2026-02-01T10:00:00Z",
+    "vertentes": [
+      {
+        "id": "v1",
+        "tournamentId": "t1",
+        "category": "M",
+        "tier": "M5",
+        "maxTeams": 16,
+        "courts": 2,
+        "status": "active",
+        "teamCount": 16,
+        "groupsImported": true
+      },
+      {
+        "id": "v2",
+        "tournamentId": "t1",
+        "category": "M",
+        "tier": "M4",
+        "maxTeams": 16,
+        "courts": 2,
+        "status": "active",
+        "teamCount": 14,
+        "groupsImported": true
+      },
+      {
+        "id": "v3",
+        "tournamentId": "t1",
+        "category": "F",
+        "tier": "F4",
+        "maxTeams": 12,
+        "courts": 2,
+        "status": "upcoming",
+        "teamCount": 10,
+        "groupsImported": false
+      }
+    ]
+  },
+  {
+    "id": "t2",
+    "name": "Torneio Primavera",
+    "location": "Quinta da Marinha",
+    "startDate": "2026-04-05",
+    "endDate": "2026-04-06",
+    "status": "upcoming",
+    "bannerUri": null,
+    "regulationUri": null,
+    "createdAt": "2026-02-15T09:00:00Z",
+    "vertentes": [
+      {
+        "id": "v4",
+        "tournamentId": "t2",
+        "category": "M",
+        "tier": null,
+        "maxTeams": 16,
+        "courts": 2,
+        "status": "upcoming",
+        "teamCount": 12,
+        "groupsImported": false
+      },
+      {
+        "id": "v5",
+        "tournamentId": "t2",
+        "category": "F",
+        "tier": null,
+        "maxTeams": 16,
+        "courts": 2,
+        "status": "upcoming",
+        "teamCount": 8,
+        "groupsImported": false
+      },
+      {
+        "id": "v6",
+        "tournamentId": "t2",
+        "category": "MX",
+        "tier": null,
+        "maxTeams": 16,
+        "courts": 2,
+        "status": "upcoming",
+        "teamCount": 4,
+        "groupsImported": false
+      }
+    ]
+  }
+]
