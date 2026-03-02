@@ -1,26 +1,37 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Game } from '../types';
+import { Game, SetScore } from '../types';
 import { Colors, Spacing, Radii, Shadows } from '../theme';
 
 interface Props {
   game: Game;
   onPress?: () => void;
   onEdit?: () => void;
+  advanceText?: string;
 }
 
-function ScoreBox({ value, win }: { value: number | string; win?: boolean }) {
+function ScoreBox({ value, variant }: { value: number | string; variant: 'win' | 'lose' | 'pending' }) {
+  const boxStyle = variant === 'win' ? ss.scoreWin : variant === 'lose' ? ss.scoreLose : ss.scorePending;
+  const txtStyle = variant === 'win' ? ss.scoreTextWin : variant === 'lose' ? ss.scoreTextLose : ss.scoreTextPending;
   return (
-    <View style={[ss.scoreBox, win && ss.scoreWin]}>
-      <Text style={[ss.scoreText, win && ss.scoreTextWin]}>{value}</Text>
+    <View style={[ss.scoreBox, boxStyle]}>
+      <Text style={[ss.scoreText, txtStyle]}>{value}</Text>
     </View>
   );
 }
 
-export default function MatchCard({ game, onPress, onEdit }: Props) {
+export default function MatchCard({ game, onPress, onEdit, advanceText }: Props) {
   const isLive = game.status === 'live';
   const isDone = game.status === 'finished';
   const isPaused = game.status === 'paused';
+
+  const winner = isDone && game.winnerId
+    ? (game.winnerId === game.team1.id ? game.team1 : game.team2)
+    : null;
+  const loser = isDone && game.winnerId
+    ? (game.winnerId === game.team1.id ? game.team2 : game.team1)
+    : null;
+  const winnerIs1 = winner ? game.winnerId === game.team1.id : false;
 
   return (
     <TouchableOpacity style={[ss.card, isLive && ss.cardLive, isPaused && ss.cardPaused]} onPress={onPress} activeOpacity={0.85}>
@@ -41,25 +52,58 @@ export default function MatchCard({ game, onPress, onEdit }: Props) {
         </View>
       </View>
 
-      {[game.team1, game.team2].map((team, i) => (
-        <View key={i} style={[ss.teamRow, i === 0 && ss.teamRowBorder]}>
-          <Text style={[ss.teamName, isDone && game.winnerId === team.id && ss.teamWin]} numberOfLines={1}>
-            {team.name}
-          </Text>
-          <View style={ss.scores}>
-            {(isDone || isLive) && game.sets ? game.sets.map((s, si) => (
-              <ScoreBox key={si} value={i === 0 ? s.team1 : s.team2} win={isDone && game.winnerId === team.id} />
-            )) : <Text style={ss.dash}>–</Text>}
+      {/* ── FINISHED: condensed single row ── */}
+      {isDone && winner && loser ? (
+        <>
+          <View style={ss.finishedRow}>
+            <View style={ss.finishedNames}>
+              <Text style={ss.winnerNameText}>{winner.name}</Text>
+              <Text style={ss.vsLoser}>vs {loser.name}</Text>
+            </View>
+            {game.sets && (
+              <View style={ss.scores}>
+                {game.sets.map((set: SetScore, i: number) => {
+                  const winScore = winnerIs1 ? set.team1 : set.team2;
+                  const loseScore = winnerIs1 ? set.team2 : set.team1;
+                  return (
+                    <React.Fragment key={i}>
+                      <ScoreBox value={winScore} variant="win" />
+                      <ScoreBox value={loseScore} variant="lose" />
+                    </React.Fragment>
+                  );
+                })}
+              </View>
+            )}
           </View>
-        </View>
-      ))}
-
-      {isDone && game.winnerId && (
-        <View style={ss.advance}>
-          <Text style={ss.advanceText}>
-            {game.winnerId === game.team1.id ? game.team1.name : game.team2.name} → próxima ronda ›
-          </Text>
-        </View>
+          {(onEdit || advanceText) && (
+            <View style={ss.finishedFooter}>
+              {onEdit && (
+                <TouchableOpacity style={ss.editResultBtn} onPress={onEdit}>
+                  <Text style={ss.editResultTxt}>✏️ Editar resultado</Text>
+                </TouchableOpacity>
+              )}
+              {advanceText && <Text style={ss.advanceText}>{advanceText} ›</Text>}
+            </View>
+          )}
+        </>
+      ) : (
+        <>
+          {/* ── LIVE / SCHEDULED: two team rows ── */}
+          {[game.team1, game.team2].map((team, i) => (
+            <View key={i} style={[ss.teamRow, i === 0 && ss.teamRowBorder]}>
+              <Text style={ss.teamName} numberOfLines={1}>
+                {team.name}
+              </Text>
+              <View style={ss.scores}>
+                {(isLive) && game.sets ? game.sets.map((s, si) => {
+                  const myScore = i === 0 ? s.team1 : s.team2;
+                  const oppScore = i === 0 ? s.team2 : s.team1;
+                  return <ScoreBox key={si} value={myScore} variant={myScore > oppScore ? 'win' : 'lose'} />;
+                }) : <Text style={ss.dash}>–</Text>}
+              </View>
+            </View>
+          ))}
+        </>
       )}
     </TouchableOpacity>
   );
@@ -75,18 +119,33 @@ const ss = StyleSheet.create({
   liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: Colors.red },
   editBtn: { padding: 4 },
   editText: { fontSize: 14 },
-  doneBadge: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.green, backgroundColor: '#DFFAEE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
-  pausedBadge: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.orange, backgroundColor: '#FFF0E3', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  doneBadge: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.green, backgroundColor: '#DFFAEE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, overflow: 'hidden' },
+  pausedBadge: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.orange, backgroundColor: '#FFF0E3', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20, overflow: 'hidden' },
+
+  /* ── Finished condensed row ── */
+  finishedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8 },
+  finishedNames: { flex: 1, minWidth: 0 },
+  winnerNameText: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+  vsLoser: { fontSize: 9, color: Colors.muted, marginTop: 2 },
+  finishedFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  editResultBtn: { borderWidth: 1.5, borderColor: Colors.gl, borderRadius: 10, paddingVertical: 6, paddingHorizontal: 13, alignItems: 'center' },
+  editResultTxt: { color: Colors.navy, fontSize: 11, fontFamily: 'Nunito_700Bold' },
+  advanceText: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.green },
+
+  /* ── Live / Scheduled team rows ── */
   teamRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, paddingVertical: Spacing.xs + 2 },
   teamRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.gl },
   teamName: { flex: 1, fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  teamWin: { color: Colors.blue },
   scores: { flexDirection: 'row', gap: 4 },
   dash: { fontSize: 14, color: Colors.gray, fontFamily: 'Nunito_700Bold' },
-  advance: { marginTop: Spacing.xs, paddingTop: Spacing.xs, borderTopWidth: 1, borderTopColor: Colors.gl },
-  advanceText: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.green, textAlign: 'right' },
-  scoreBox: { width: 26, height: 26, borderRadius: 6, backgroundColor: Colors.gbg, alignItems: 'center', justifyContent: 'center' },
-  scoreWin: { backgroundColor: Colors.blue },
-  scoreText: { fontSize: 12, fontFamily: 'Nunito_900Black', color: Colors.navy },
-  scoreTextWin: { color: Colors.white },
+
+  /* Score boxes — matching HTML: light blue bg + blue text for winner */
+  scoreBox: { width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  scoreWin: { backgroundColor: '#E3ECFF' },
+  scoreLose: { backgroundColor: Colors.gbg },
+  scorePending: { backgroundColor: Colors.gbg },
+  scoreText: { fontSize: 11, fontFamily: 'Nunito_900Black' },
+  scoreTextWin: { color: Colors.blue },
+  scoreTextLose: { color: Colors.muted },
+  scoreTextPending: { color: Colors.gray },
 });

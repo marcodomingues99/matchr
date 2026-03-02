@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -37,9 +38,10 @@ export const PodiumScreen = () => {
     <View style={s.container}>
       <LinearGradient colors={['#0D2C6B', '#1A5AC8', '#00A5C8']} style={s.header}>
         <SafeAreaView edges={['top']}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={s.back}>← Voltar</Text>
-          </TouchableOpacity>
+          <HeaderNav
+            backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>🏆 Pódio Final</Text>
           <Text style={s.subtitle}>{tournament.name}</Text>
@@ -97,6 +99,7 @@ export const PodiumScreen = () => {
         </TouchableOpacity>
         <View style={{ height: 32 }} />
       </ScrollView>
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };

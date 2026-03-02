@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -25,9 +26,10 @@ export const ConfirmCloseScreen = () => {
     <View style={s.container}>
       <LinearGradient colors={['#00AA66', '#22C97A']} style={s.header}>
         <SafeAreaView edges={['top']}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={s.back}>← Resultado</Text>
-          </TouchableOpacity>
+          <HeaderNav
+            backLabel="Resultado"
+            onBack={() => navigation.goBack()}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Confirmar Resultado</Text>
           <Text style={s.subtitle}>Verifica antes de guardar</Text>
@@ -89,6 +91,7 @@ export const ConfirmCloseScreen = () => {
           <Text style={s.editTxt}>✏️ Corrigir resultado</Text>
         </TouchableOpacity>
       </View>
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };

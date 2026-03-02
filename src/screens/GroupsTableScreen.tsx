@@ -4,13 +4,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../types';
+import { RootStackParamList, Team } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
+import { GameCard } from '../components/GameCard';
+import { TeamGamesSheet } from '../components/TeamGamesSheet';
 import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsTable'>;
+
+type TabKey = 'table' | 'results' | 'games';
 
 export const GroupsTableScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -18,7 +23,14 @@ export const GroupsTableScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
-  const [activeTab, setActiveTab] = useState<'table' | 'games'>('table');
+  const [activeTab, setActiveTab] = useState<TabKey>('table');
+  const [sheetTeam, setSheetTeam] = useState<Team | null>(null);
+
+  // Extract sorted group names
+  const groups = [...new Set(
+    vertente.teams.map(t => t.group).filter(Boolean) as string[]
+  )].sort();
+  const [activeGroup, setActiveGroup] = useState<string>(groups[0] ?? 'A');
 
   // Group teams by group
   const grouped: Record<string, typeof vertente.teams> = {};
@@ -35,34 +47,71 @@ export const GroupsTableScreen = () => {
     return { wins, losses, played: wins + losses, pts };
   };
 
+  // Filter games by active group (for results & games tabs)
+  const filteredGames = mockGames.filter(g =>
+    g.team1.group === activeGroup || g.team2.group === activeGroup
+  );
+
+  const showGroupSelector = activeTab !== 'table' && groups.length > 0;
+
+  /* ── Group selector pills (shared by "Resultados" and "Jogos" tabs) ── */
+  const GroupSelector = () => (
+    <View style={s.groupTabs}>
+      {groups.map(g => (
+        <TouchableOpacity
+          key={g}
+          style={[s.groupTab, activeGroup === g && s.groupTabActive]}
+          onPress={() => setActiveGroup(g)}
+        >
+          <Text style={[s.groupTabTxt, activeGroup === g && s.groupTabTxtActive]}>Grupo {g}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
     <View style={s.container}>
       <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
-          <Text style={s.back} onPress={() => navigation.goBack()}>← {tournament.name}</Text>
+          <HeaderNav
+            backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>Classificação de Grupos</Text>
+          <Text style={s.title}>Fase de Grupos</Text>
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Tab bar */}
+      {/* ═══ Main tab bar ═══ */}
       <View style={s.tabBar}>
-        <TouchableOpacity style={[s.tab, activeTab === 'table' && s.tabActive]} onPress={() => setActiveTab('table')}>
-          <Text style={[s.tabTxt, activeTab === 'table' && s.tabTxtActive]}>📊 Tabela</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.tab, activeTab === 'games' && s.tabActive]} onPress={() => setActiveTab('games')}>
-          <Text style={[s.tabTxt, activeTab === 'games' && s.tabTxtActive]}>🎾 Resultados</Text>
-        </TouchableOpacity>
+        {([
+          { key: 'table' as TabKey, label: '📊 Tabela' },
+          { key: 'results' as TabKey, label: '🏅 Resultados' },
+          { key: 'games' as TabKey, label: '🎾 Jogos' },
+        ]).map(t => (
+          <TouchableOpacity
+            key={t.key}
+            style={[s.tab, activeTab === t.key && s.tabActive]}
+            onPress={() => setActiveTab(t.key)}
+          >
+            <Text style={[s.tabTxt, activeTab === t.key && s.tabTxtActive]}>{t.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
+      {/* ═══ Group sub-tabs (Resultados & Jogos only) ═══ */}
+      {showGroupSelector && <GroupSelector />}
+
+      {/* ═══ Content ═══ */}
       <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
-        {activeTab === 'table' ? (
+
+        {/* ── TAB: Tabela ── */}
+        {activeTab === 'table' && (
           Object.keys(grouped).sort().map(group => {
             const teams = [...grouped[group]].sort((a, b) => mockStats(b.id).pts - mockStats(a.id).pts);
             return (
               <View key={group} style={s.groupSection}>
                 <Text style={s.groupLabel}>Grupo {group}</Text>
-                {/* Header */}
                 <View style={[s.tableRow, s.tableHeader]}>
                   <Text style={[s.tableCell, { flex: 3 }]}></Text>
                   <Text style={[s.tableHead, { flex: 1, textAlign: 'center' }]}>J</Text>
@@ -94,58 +143,85 @@ export const GroupsTableScreen = () => {
               </View>
             );
           })
-        ) : (
-          mockGames.map(g => (
-            <View key={g.id} style={s.resultCard}>
-              <View style={s.resultHeader}>
-                <Text style={s.resultTime}>{g.time} · {g.court}</Text>
-                <View style={[s.resultStatus,
+        )}
+
+        {/* ── TAB: Resultados (filtered by group) ── */}
+        {activeTab === 'results' && (
+          filteredGames.length === 0 ? (
+            <View style={s.empty}>
+              <Text style={s.emptyTxt}>Sem resultados para o Grupo {activeGroup}</Text>
+            </View>
+          ) : (
+            filteredGames.map(g => (
+              <View key={g.id} style={s.resultCard}>
+                <View style={s.resultHeader}>
+                  <Text style={s.resultTime}>{g.time} · {g.court}</Text>
+                  <View style={[s.resultStatus,
                   g.status === 'finished' ? s.statusDone :
-                  g.status === 'live' ? s.statusLive : s.statusSched
-                ]}>
-                  <Text style={s.resultStatusTxt}>
-                    {g.status === 'finished' ? '✓ Concluído' : g.status === 'live' ? '● Ao vivo' : '⏰ Agendado'}
-                  </Text>
+                    g.status === 'live' ? s.statusLive : s.statusSched
+                  ]}>
+                    <Text style={s.resultStatusTxt}>
+                      {g.status === 'finished' ? '✓ Concluído' : g.status === 'live' ? '● Ao vivo' : '⏰ Agendado'}
+                    </Text>
+                  </View>
+                </View>
+                <View style={s.resultRow}>
+                  <Text style={s.resultTeam} numberOfLines={1}>{g.team1.name}</Text>
+                  {g.sets && g.sets.length > 0 ? (
+                    <View style={s.resultSets}>
+                      {g.sets.map((set, i) => (
+                        <View key={i} style={s.setScore}>
+                          <Text style={[s.setNum, set.team1 > set.team2 && s.setNumWin]}>{set.team1}</Text>
+                          <Text style={s.setDash}>–</Text>
+                          <Text style={[s.setNum, set.team2 > set.team1 && s.setNumWin]}>{set.team2}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={s.resultVs}>vs</Text>
+                  )}
+                  <Text style={[s.resultTeam, { textAlign: 'right' }]} numberOfLines={1}>{g.team2.name}</Text>
                 </View>
               </View>
-              <View style={s.resultRow}>
-                <Text style={s.resultTeam} numberOfLines={1}>{g.team1.name}</Text>
-                {g.sets && g.sets.length > 0 ? (
-                  <View style={s.resultSets}>
-                    {g.sets.map((set, i) => (
-                      <View key={i} style={s.setScore}>
-                        <Text style={[s.setNum, set.team1 > set.team2 && s.setNumWin]}>{set.team1}</Text>
-                        <Text style={s.setDash}>–</Text>
-                        <Text style={[s.setNum, set.team2 > set.team1 && s.setNumWin]}>{set.team2}</Text>
-                      </View>
-                    ))}
-                  </View>
-                ) : (
-                  <Text style={s.resultVs}>vs</Text>
-                )}
-                <Text style={[s.resultTeam, { textAlign: 'right' }]} numberOfLines={1}>{g.team2.name}</Text>
-              </View>
-            </View>
-          ))
+            ))
+          )
         )}
+
+        {/* ── TAB: Jogos (GameCards filtered by group) ── */}
+        {activeTab === 'games' && (
+          filteredGames.length === 0 ? (
+            <View style={s.empty}>
+              <Text style={s.emptyTxt}>Sem jogos para o Grupo {activeGroup}</Text>
+            </View>
+          ) : (
+            filteredGames.map(g => (
+              <GameCard
+                key={g.id}
+                game={g}
+                onPress={() => { }}
+                onTeamPress={setSheetTeam}
+                onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
+                onEnterResult={() => g.status === 'paused'
+                  ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                }
+              />
+            ))
+          )
+        )}
+
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View style={s.nav}>
-        {[['👥','Duplas'], ['📊','Grupos'], ['🎾','Jogos'], ['🏆','Bracket']].map(([icon, label], i) => (
-          <TouchableOpacity key={label} style={[s.navItem, i === 1 && s.navItemActive]}
-            onPress={() => {
-              if (i === 0) navigation.navigate('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
-              if (i === 2) navigation.navigate('GroupsGames', { tournamentId: tournament.id, vertenteId: vertente.id });
-              if (i === 3) navigation.navigate('Bracket', { tournamentId: tournament.id, vertenteId: vertente.id });
-            }}
-          >
-            <Text style={s.navIcon}>{icon}</Text>
-            <Text style={[s.navLabel, i === 1 && s.navLabelActive]}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Team games bottom sheet */}
+      <TeamGamesSheet
+        visible={sheetTeam !== null}
+        team={sheetTeam}
+        vertente={vertente}
+        games={mockGames}
+        onClose={() => setSheetTeam(null)}
+      />
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };
@@ -153,14 +229,37 @@ export const GroupsTableScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
+
   title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
+
+  /* Main tab bar */
   tabBar: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.gl },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center' },
   tabActive: { borderBottomWidth: 2, borderBottomColor: Colors.blue },
   tabTxt: { fontSize: 13, fontFamily: 'Nunito_700Bold', color: Colors.muted },
   tabTxtActive: { color: Colors.blue },
+
+  /* Group sub-tabs */
+  groupTabs: {
+    flexDirection: 'row', gap: 5, paddingHorizontal: 12, paddingVertical: 9,
+    backgroundColor: '#fff', borderBottomWidth: 1.5, borderBottomColor: Colors.gl,
+  },
+  groupTab: {
+    flex: 1, paddingVertical: 7, paddingHorizontal: 3,
+    borderRadius: 9, alignItems: 'center',
+    backgroundColor: Colors.gbg, borderWidth: 2, borderColor: 'transparent',
+  },
+  groupTabActive: { backgroundColor: Colors.navy },
+  groupTabTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
+  groupTabTxtActive: { color: '#fff' },
+
   scroll: { flex: 1 },
+
+  /* Empty state */
+  empty: { alignItems: 'center', marginTop: 40 },
+  emptyTxt: { fontSize: 13, fontFamily: 'Nunito_700Bold', color: Colors.muted },
+
+  /* Table tab */
   groupSection: { marginBottom: Spacing.lg },
   groupLabel: { fontSize: 12, fontFamily: 'Nunito_900Black', color: Colors.navy, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, paddingHorizontal: 4 },
   tableHeader: { borderBottomWidth: 1, borderBottomColor: Colors.gl, backgroundColor: Colors.gbg, borderTopLeftRadius: Radii.md, borderTopRightRadius: Radii.md },
@@ -177,6 +276,8 @@ const s = StyleSheet.create({
   rankTxtQ: { color: '#fff' },
   teamName: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
   qualLabel: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.green },
+
+  /* Results tab */
   resultCard: { backgroundColor: '#fff', borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.sm, ...Shadows.card },
   resultHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   resultTime: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.muted },
@@ -193,10 +294,4 @@ const s = StyleSheet.create({
   setNum: { fontSize: 13, fontFamily: 'Nunito_900Black', color: Colors.muted },
   setNumWin: { color: Colors.navy },
   setDash: { fontSize: 11, color: Colors.gray },
-  nav: { flexDirection: 'row', backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: Colors.gl, paddingBottom: 16 },
-  navItem: { flex: 1, alignItems: 'center', paddingTop: 10 },
-  navItemActive: {},
-  navIcon: { fontSize: 18, marginBottom: 2 },
-  navLabel: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.muted },
-  navLabelActive: { color: Colors.blue },
 });

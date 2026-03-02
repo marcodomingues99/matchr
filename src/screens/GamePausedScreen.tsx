@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -23,9 +24,10 @@ export const GamePausedScreen = () => {
     <View style={s.container}>
       <LinearGradient colors={['#4A2C00', '#C87800']} style={s.header}>
         <SafeAreaView edges={['top']}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={s.back}>← Voltar</Text>
-          </TouchableOpacity>
+          <HeaderNav
+            backLabel="Jogos"
+            onBack={() => navigation.navigate('GroupsTable', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>⏸ Jogo Pausado</Text>
           <Text style={s.subtitle}>{game.time} · {game.court}</Text>
@@ -79,6 +81,7 @@ export const GamePausedScreen = () => {
           <Text style={s.backBtnTxt}>← Voltar aos jogos</Text>
         </TouchableOpacity>
       </View>
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };

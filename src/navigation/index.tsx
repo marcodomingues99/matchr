@@ -7,8 +7,10 @@ import {
   EditTournamentScreen, VertenteHubScreen, TeamListScreen,
   GroupsTableScreen, GroupsGamesScreen, BracketScreen,
   EnterResultScreen, GamePausedScreen, ConfirmCloseScreen,
+  ConfirmCloseTournamentScreen,
   PodiumScreen, ExportScreen, ConfigureVertenteScreen,
-  EditGameScreen, AddTeamScreen,
+  EditGameScreen, AddTeamScreen, WithdrawConfirmScreen,
+  FinishedTournamentScreen, GroupsEmptyScreen,
 } from '../screens';
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -26,8 +28,8 @@ export const Navigation = () => (
       <Stack.Screen name="AddTeam" component={AddTeamScreen} />
       <Stack.Screen name="EditTeam" component={AddTeamScreen} />
       <Stack.Screen name="TeamList" component={TeamListScreen} />
-      <Stack.Screen name="WithdrawConfirm" component={TeamListScreen} />
-      <Stack.Screen name="GroupsEmpty" component={GroupsTableScreen} />
+      <Stack.Screen name="WithdrawConfirm" component={WithdrawConfirmScreen} />
+      <Stack.Screen name="GroupsEmpty" component={GroupsEmptyScreen} />
       <Stack.Screen name="GroupsTable" component={GroupsTableScreen} />
       <Stack.Screen name="GroupsGames" component={GroupsGamesScreen} />
       <Stack.Screen name="Bracket" component={BracketScreen} />
@@ -35,8 +37,10 @@ export const Navigation = () => (
       <Stack.Screen name="EnterResult" component={EnterResultScreen} />
       <Stack.Screen name="GamePaused" component={GamePausedScreen} />
       <Stack.Screen name="ConfirmClose" component={ConfirmCloseScreen} />
+      <Stack.Screen name="ConfirmCloseTournament" component={ConfirmCloseTournamentScreen} />
       <Stack.Screen name="Podium" component={PodiumScreen} />
       <Stack.Screen name="Export" component={ExportScreen} />
+      <Stack.Screen name="FinishedTournament" component={FinishedTournamentScreen} />
     </Stack.Navigator>
   </NavigationContainer>
 );

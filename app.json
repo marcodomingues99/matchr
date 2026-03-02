@@ -20,6 +20,9 @@
         "backgroundColor": "#0D2C6B"
       },
       "package": "com.matchr.app"
-    }
+    },
+    "plugins": [
+      "@react-native-community/datetimepicker"
+    ]
   }
 }

@@ -1,5 +1,5 @@
 export type VertenteType = 'M' | 'F' | 'MX';
-export type VertenteLevel = 'M6'|'M5'|'M4'|'M3'|'M2'|'M1'|'F6'|'F5'|'F4'|'F3'|'F2'|'F1'|'MX6'|'MX5'|'MX4'|'MX3'|'MX2'|'MX1'|'Sem';
+export type VertenteLevel = 'M6' | 'M5' | 'M4' | 'M3' | 'M2' | 'M1' | 'F6' | 'F5' | 'F4' | 'F3' | 'F2' | 'F1' | 'MX6' | 'MX5' | 'MX4' | 'MX3' | 'MX2' | 'MX1' | 'Sem';
 
 export interface Player {
   id: string;
@@ -11,6 +11,7 @@ export interface Player {
 export interface Team {
   id: string;
   name: string;
+  photo?: string;
   players: [Player, Player];
   group?: string;
   withdrawn?: boolean;
@@ -63,7 +64,7 @@ export type RootStackParamList = {
   EditTournament: { tournamentId: string };
   TournamentDetail: { tournamentId: string };
   UpcomingTournament: { tournamentId: string };
-  ConfigureVertente: { tournamentId: string; vertenteIndex: number; isLast: boolean };
+  ConfigureVertente: { tournamentId: string; vertenteIndex: number; isLast: boolean; pendingVertentes?: string };
   VertenteHub: { tournamentId: string; vertenteId: string };
   AddTeam: { tournamentId: string; vertenteId: string };
   EditTeam: { tournamentId: string; vertenteId: string; teamId: string };
@@ -77,6 +78,8 @@ export type RootStackParamList = {
   EnterResult: { tournamentId: string; vertenteId: string; gameId: string };
   GamePaused: { tournamentId: string; vertenteId: string; gameId: string };
   ConfirmClose: { tournamentId: string; vertenteId: string };
+  ConfirmCloseTournament: { tournamentId: string; vertenteId: string };
   Podium: { tournamentId: string; vertenteId: string };
   Export: { tournamentId: string; vertenteId: string };
+  FinishedTournament: { tournamentId: string };
 };

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Button } from '../components/Button';
 import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
 
@@ -18,18 +19,51 @@ interface SetState { team1: string; team2: string; saved: boolean; }
 export const EnterResultScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments[0];
-  const vertente = tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
+  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
   const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[1];
 
-  const [sets, setSets] = useState<SetState[]>([{ team1: '', team2: '', saved: false }]);
+  const isEditing = game.status === 'finished' && !!game.sets?.length;
+
+  const buildInitialSets = (): SetState[] => {
+    // Finished games: pre-fill all sets as saved (for editing)
+    if (game.status === 'finished' && game.sets && game.sets.length > 0) {
+      return game.sets.map(s => ({
+        team1: String(s.team1),
+        team2: String(s.team2),
+        saved: true,
+      }));
+    }
+    // Live/paused games: pre-fill existing sets as saved, then add empty unsaved set to continue
+    if ((game.status === 'live' || game.status === 'paused') && game.sets && game.sets.length > 0) {
+      return [
+        ...game.sets.map(s => ({ team1: String(s.team1), team2: String(s.team2), saved: true })),
+        { team1: '', team2: '', saved: false },
+      ];
+    }
+    // New game: single empty unsaved set
+    return [{ team1: '', team2: '', saved: false }];
+  };
+
+  const [sets, setSets] = useState<SetState[]>(buildInitialSets);
   const currentSetIdx = sets.findIndex(s => !s.saved);
 
   const saveSet = () => {
     const newSets = [...sets];
     newSets[currentSetIdx].saved = true;
-    if (newSets.filter(s => s.saved).length < 3) {
-      newSets.push({ team1: '', team2: '', saved: false });
+    const allSaved = newSets.every(s => s.saved);
+    if (allSaved && newSets.length < 3) {
+      // Count sets won by each team
+      let t1Wins = 0, t2Wins = 0;
+      newSets.forEach(s => {
+        const s1 = parseInt(s.team1) || 0;
+        const s2 = parseInt(s.team2) || 0;
+        if (s1 > s2) t1Wins++; else if (s2 > s1) t2Wins++;
+      });
+      // Only add next set if no team has won 2 sets yet (i.e. 1-1 for super tie-break)
+      if (t1Wins < 2 && t2Wins < 2) {
+        newSets.push({ team1: '', team2: '', saved: false });
+      }
     }
     setSets(newSets);
   };
@@ -44,9 +78,12 @@ export const EnterResultScreen = () => {
     <View style={styles.container}>
       <LinearGradient colors={Gradients.header} style={styles.header}>
         <SafeAreaView edges={['top']}>
-          <Text style={styles.back} onPress={() => navigation.goBack()}>← Jogos</Text>
+          <HeaderNav
+            backLabel="Jogos"
+            onBack={() => navigation.navigate('GroupsTable', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={styles.title}>Introduzir Resultado</Text>
+          <Text style={styles.title}>{isEditing ? 'Editar Resultado' : 'Introduzir Resultado'}</Text>
           <Text style={styles.subtitle}>{game.time} · {game.court}</Text>
         </SafeAreaView>
       </LinearGradient>
@@ -103,17 +140,29 @@ export const EnterResultScreen = () => {
           );
         })}
 
-        <TouchableOpacity style={styles.pauseBtn} onPress={() => navigation.navigate('GamePaused', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: game.id })}>
-          <Text style={styles.pauseText}>⏸ Pausar jogo</Text>
-          <Text style={styles.pauseSub}>{sets.filter(s => s.saved).length} sets guardados · podes retomar mais tarde</Text>
-        </TouchableOpacity>
+        {!isEditing && (
+          <TouchableOpacity style={styles.pauseBtn} onPress={() => navigation.navigate('GamePaused', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: game.id })}>
+            <Text style={styles.pauseText}>⏸ Pausar jogo</Text>
+            <Text style={styles.pauseSub}>{sets.filter(s => s.saved).length} sets guardados · podes retomar mais tarde</Text>
+          </TouchableOpacity>
+        )}
+
+        {isEditing && (
+          <TouchableOpacity style={styles.editAgainBtn} onPress={() => {
+            const newSets = sets.map(s => ({ ...s, saved: false }));
+            setSets(newSets);
+          }}>
+            <Text style={styles.editAgainText}>✏️ Editar resultados</Text>
+          </TouchableOpacity>
+        )}
 
         {sets.every(s => s.saved) && sets.length >= 2 && (
-          <Button label="✓ Confirmar resultado final" onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId })} variant="green" />
+          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId })} variant="green" />
         )}
 
         <View style={{ height: 32 }} />
       </ScrollView>
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };
@@ -146,4 +195,6 @@ const styles = StyleSheet.create({
   pauseBtn: { backgroundColor: '#FFF8E3', borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
   pauseText: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
   pauseSub: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 3 },
+  editAgainBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
+  editAgainText: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
 });

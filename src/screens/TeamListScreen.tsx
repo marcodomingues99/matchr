@@ -1,73 +1,82 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, TextInput } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { RootStackParamList, Team } from '../types';
+import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
+import { TeamGamesSheet } from '../components/TeamGamesSheet';
+import { Colors, Gradients, Spacing, Radii } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'TeamList'>;
+
+const AVATAR_GRADIENTS = [
+  ['#1A5AC8', '#00A5C8'],
+  ['#8B00CC', '#BB44FF'],
+  ['#22C97A', '#00AA66'],
+  ['#FF7A1A', '#FFD600'],
+  ['#FF3B5C', '#FF9A8B'],
+  ['#9B30FF', '#FF44AA'],
+];
+
+const getInitials = (name: string) =>
+  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
 export const TeamListScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
-  const [search, setSearch] = useState('');
-  const [showGroups, setShowGroups] = useState(true);
 
-  const teams = vertente.teams.filter(t =>
-    !search || t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.players.some(p => p.name.toLowerCase().includes(search.toLowerCase()))
-  );
+  const typeLabel = vertente.type === 'M' ? 'Masculino' : vertente.type === 'F' ? 'Feminino' : 'Misto';
+  const statusLabel =
+    vertente.status === 'groups' ? 'Grupos gerados' :
+      vertente.status === 'bracket' ? 'Bracket ativo' :
+        vertente.status === 'finished' ? 'Concluído' :
+          'Em preparação';
 
-  // Group teams by group
-  const grouped: Record<string, typeof teams> = {};
-  teams.forEach(t => {
-    const g = t.group ?? 'Sem grupo';
-    if (!grouped[g]) grouped[g] = [];
-    grouped[g].push(t);
-  });
+  const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
   return (
     <View style={s.container}>
+      {/* ── Header ── */}
       <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={s.back}>← Voltar</Text>
-          </TouchableOpacity>
+          <HeaderNav
+            backLabel={`${typeLabel} ${vertente.level}`}
+            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <View style={s.titleRow}>
-            <Text style={s.title}>Duplas</Text>
-            <View style={s.countBadge}>
-              <Text style={s.countTxt}>{vertente.teams.length}/{vertente.maxTeams}</Text>
-            </View>
+          <Text style={s.title}>Duplas Inscritas 👥</Text>
+          <View style={s.chipsRow}>
+            <View style={s.chip}><Text style={s.chipTxt}>{vertente.teams.length}/{vertente.maxTeams}</Text></View>
+            <View style={s.chip}><Text style={s.chipTxt}>{statusLabel}</Text></View>
           </View>
         </SafeAreaView>
       </LinearGradient>
 
-      {/* Search */}
-      <View style={s.searchBar}>
-        <Text style={s.searchIcon}>🔍</Text>
-        <TextInput
-          style={s.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Pesquisar equipa ou jogador..."
-          placeholderTextColor={Colors.gray}
-        />
-        {search.length > 0 && (
-          <TouchableOpacity onPress={() => setSearch('')}>
-            <Text style={s.searchClear}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md, paddingBottom: 100 }}>
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
+        {/* ── Section title ── */}
+        <View style={s.sectionRow}>
+          <Text style={s.sectionTitle}>Duplas — {vertente.level}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}>
+            <Text style={s.sectionAction}>+ Nova dupla</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Legend ── */}
+        <View style={s.legend}>
+          <Text style={s.legendTxt}>✏️ editar</Text>
+          <Text style={s.legendSep}>|</Text>
+          <Text style={s.legendTxt}>🚫 desistência</Text>
+        </View>
+
+        {/* ── Teams ── */}
         {vertente.teams.length === 0 ? (
           <View style={s.emptyCard}>
             <Text style={s.emptyIcon}>👥</Text>
@@ -80,81 +89,183 @@ export const TeamListScreen = () => {
               <Text style={s.addFirstTxt}>+ Adicionar dupla</Text>
             </TouchableOpacity>
           </View>
-        ) : showGroups && Object.keys(grouped).length > 1 ? (
-          Object.entries(grouped).sort().map(([group, gTeams]) => (
-            <View key={group}>
-              <Text style={s.groupLabel}>Grupo {group}</Text>
-              {gTeams.map((team) => (
-                <TeamRow key={team.id} team={team} onPress={() => navigation.navigate('EditTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })} />
-              ))}
-            </View>
-          ))
         ) : (
-          teams.map((team) => (
-            <TeamRow key={team.id} team={team} onPress={() => navigation.navigate('EditTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })} />
-          ))
+          <View style={s.teamsCard}>
+            {vertente.teams.map((team, idx) => {
+              const avatarColors = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
+              const isWithdrawn = !!team.withdrawn;
+              return (
+                <TouchableOpacity
+                  key={team.id}
+                  style={[
+                    s.teamRow,
+                    isWithdrawn && s.teamRowWithdrawn,
+                    idx < vertente.teams.length - 1 && s.teamRowBorder,
+                  ]}
+                  onPress={() => setSheetTeam(team)}
+                  activeOpacity={0.75}
+                >
+                  {/* Number */}
+                  <Text style={s.teamNum}>{idx + 1}</Text>
+
+                  {/* Avatar */}
+                  {team.photo ? (
+                    <Image source={{ uri: team.photo }} style={s.avatar} />
+                  ) : (
+                    <LinearGradient colors={avatarColors as any} style={s.avatar}>
+                      <Text style={s.avatarTxt}>{getInitials(team.name)}</Text>
+                    </LinearGradient>
+                  )}
+
+                  {/* Info */}
+                  <View style={s.teamInfo}>
+                    <View style={s.teamNameRow}>
+                      <Text style={[s.teamName, isWithdrawn && s.teamNameMuted]} numberOfLines={1}>
+                        {team.name}
+                      </Text>
+                      {isWithdrawn && <Text style={s.withdrawnLabel}> 🚫 Desistência</Text>}
+                    </View>
+                    <Text style={s.teamPlayers} numberOfLines={1}>
+                      {team.players.map((p: any) => p.name).join(' · ')}
+                    </Text>
+                  </View>
+
+                  {/* Group chip */}
+                  {team.group && (
+                    <View style={s.groupChip}>
+                      <Text style={s.groupChipTxt}>{team.group}</Text>
+                    </View>
+                  )}
+
+                  {/* Actions */}
+                  {isWithdrawn ? (
+                    <Text style={s.woTxt}>W.O.</Text>
+                  ) : (
+                    <View style={s.actions}>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('EditTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                      >
+                        <Text style={s.actionIcon}>✏️</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                      >
+                        <Text style={[s.actionIcon, s.actionIconMuted]}>🚫</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
-        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* FAB */}
-      <TouchableOpacity
-        style={s.fab}
-        onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
-      >
-        <LinearGradient colors={Gradients.primary} style={s.fabGrad}>
-          <Text style={s.fabTxt}>+</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+      <TeamGamesSheet
+        visible={sheetTeam !== null}
+        team={sheetTeam}
+        vertente={vertente}
+        games={mockGames}
+        onClose={() => setSheetTeam(null)}
+      />
+      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
     </View>
   );
 };
 
-const TeamRow = ({ team, onPress }: { team: any; onPress: () => void }) => (
-  <TouchableOpacity style={s.teamCard} onPress={onPress} activeOpacity={0.8}>
-    <View style={s.teamAvatar}>
-      <Text style={s.teamAvatarTxt}>{team.name.charAt(0)}</Text>
-    </View>
-    <View style={{ flex: 1 }}>
-      <Text style={s.teamName}>{team.name}</Text>
-      <Text style={s.teamPlayers}>{team.players.map((p: any) => p.name).join(' · ')}</Text>
-    </View>
-    {team.withdrawn && (
-      <View style={s.withdrawnBadge}><Text style={s.withdrawnTxt}>Desistiu</Text></View>
-    )}
-    <Text style={s.teamArrow}>›</Text>
-  </TouchableOpacity>
-);
-
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
+
+  // Header
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black' },
-  countBadge: { backgroundColor: 'rgba(255,255,255,0.25)', borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
-  countTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_800ExtraBold' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', margin: Spacing.md, borderRadius: Radii.md, paddingHorizontal: Spacing.md, gap: 8, ...Shadows.card },
-  searchIcon: { fontSize: 14 },
-  searchInput: { flex: 1, paddingVertical: Spacing.sm, fontSize: 14, fontFamily: 'Nunito_700Bold', color: Colors.navy },
-  searchClear: { color: Colors.muted, fontSize: 14, padding: 4 },
+  title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 6 },
+  chipsRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
+  chip: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
+  chipTxt: { color: '#fff', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+
+  // Scroll
   scroll: { flex: 1 },
-  groupLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 12, paddingHorizontal: 4 },
-  teamCard: { backgroundColor: '#fff', borderRadius: Radii.md, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: Spacing.sm, ...Shadows.card },
-  teamAvatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.blue, alignItems: 'center', justifyContent: 'center' },
-  teamAvatarTxt: { color: '#fff', fontSize: 16, fontFamily: 'Nunito_900Black' },
-  teamName: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  teamPlayers: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
-  teamArrow: { fontSize: 22, color: Colors.gray, fontFamily: 'Nunito_700Bold' },
-  withdrawnBadge: { backgroundColor: '#FFE3E8', borderRadius: Radii.full, paddingHorizontal: 8, paddingVertical: 3 },
-  withdrawnTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.red },
-  emptyCard: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: 32, alignItems: 'center', ...Shadows.card, marginTop: 40 },
+
+  // Section
+  sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, marginTop: 4 },
+  sectionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  sectionAction: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+
+  // Legend
+  legend: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  legendTxt: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.muted },
+  legendSep: { fontSize: 10, color: Colors.gl, fontFamily: 'Nunito_700Bold' },
+
+  // Teams card — single white card holds all rows
+  teamsCard: {
+    backgroundColor: '#fff',
+    borderRadius: Radii.md,
+    paddingHorizontal: 13,
+    shadowColor: '#0D2C6B',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  teamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    paddingVertical: 8,
+  },
+  teamRowBorder: {
+    borderBottomWidth: 1.5,
+    borderBottomColor: Colors.gl,
+  },
+  teamRowWithdrawn: {
+    opacity: 0.5,
+    backgroundColor: '#FFF5F5',
+    marginHorizontal: -13,
+    paddingHorizontal: 13,
+    borderRadius: 0,
+  },
+
+  // Number
+  teamNum: { width: 16, textAlign: 'center', fontSize: 11, fontFamily: 'Nunito_900Black', color: Colors.muted },
+
+  // Avatar
+  avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  avatarTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_900Black' },
+
+  // Info
+  teamInfo: { flex: 1, minWidth: 0 },
+  teamNameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+  teamName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  teamNameMuted: { color: Colors.muted },
+  withdrawnLabel: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: '#FF3B5C' },
+  teamPlayers: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
+
+  // Group chip
+  groupChip: {
+    backgroundColor: '#E3ECFF',
+    borderRadius: Radii.full,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    marginRight: 6,
+  },
+  groupChipTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+
+  // Actions
+  woTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: '#FF3B5C' },
+  actions: { flexDirection: 'row', gap: 6 },
+  actionIcon: { fontSize: 15 },
+  actionIconMuted: { opacity: 0.55 },
+
+  // Empty
+  emptyCard: {
+    backgroundColor: '#fff', borderRadius: Radii.lg, padding: 32, alignItems: 'center',
+    shadowColor: '#0D2C6B', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    elevation: 3, marginTop: 20,
+  },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
   emptyTitle: { fontSize: 16, fontFamily: 'Nunito_900Black', color: Colors.navy, marginBottom: 6 },
   emptySub: { fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginBottom: 20 },
   addFirstBtn: { backgroundColor: Colors.blue, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
   addFirstTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' },
-  fab: { position: 'absolute', right: Spacing.lg, bottom: 28, borderRadius: 30, overflow: 'hidden', ...Shadows.header },
-  fabGrad: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center' },
-  fabTxt: { color: '#fff', fontSize: 28, fontFamily: 'Nunito_800ExtraBold', lineHeight: 34 },
+
 });
