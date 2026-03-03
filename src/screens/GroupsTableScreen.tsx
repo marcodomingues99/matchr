@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList, Team } from '../types';
+import { RootStackParamList, Team, Game } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -31,6 +31,11 @@ export const GroupsTableScreen = () => {
   const [activeTab, setActiveTab] = useState<TabKey>('table');
   const [sheetTeam, setSheetTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   // Extract sorted group names
   const groups = useMemo(
@@ -85,7 +90,7 @@ export const GroupsTableScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Fase de Grupos</Text>
@@ -93,7 +98,7 @@ export const GroupsTableScreen = () => {
       </LinearGradient>
 
       {/* ═══ Main tab bar ═══ */}
-      <View style={s.tabBar}>
+      <View style={s.tabBar} accessibilityRole="tablist">
         {([
           { key: 'table' as TabKey, label: '📊 Tabela' },
           { key: 'games' as TabKey, label: '🎾 Jogos' },
@@ -103,6 +108,9 @@ export const GroupsTableScreen = () => {
             key={t.key}
             style={[s.tab, activeTab === t.key && s.tabActive]}
             onPress={() => setActiveTab(t.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: activeTab === t.key }}
+            accessibilityLabel={t.label}
           >
             <Text style={[s.tabTxt, activeTab === t.key && s.tabTxtActive]}>{t.label}</Text>
           </TouchableOpacity>
@@ -140,7 +148,13 @@ export const GroupsTableScreen = () => {
           ))}
         </View>
       ) : (
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={{ padding: Spacing.md }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
+        }
+      >
 
         {/* ── TAB: Tabela ── */}
         {activeTab === 'table' && (
@@ -281,7 +295,7 @@ export const GroupsTableScreen = () => {
         games={mockGames}
         onClose={() => setSheetTeam(null)}
       />
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />
     </View>
   );
 };

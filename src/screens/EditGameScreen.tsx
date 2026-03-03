@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
+import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
@@ -89,7 +90,7 @@ export const EditGameScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Jogos"
-            onBack={() => navigation.navigate('GroupsTable', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Editar Jogo</Text>
@@ -192,7 +193,7 @@ export const EditGameScreen = () => {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
     </View>
   );
 };

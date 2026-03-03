@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -55,6 +55,12 @@ export const TournamentDetailScreen = () => {
   if (!t) return null;
   const isUpcoming = t.status === 'upcoming';
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
+
   const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
   const days = getDays(t.startDate, t.endDate);
 
@@ -88,7 +94,7 @@ export const TournamentDetailScreen = () => {
         <View style={s.headerCircle} />
         <SafeAreaView edges={['top']}>
           <View style={s.headerRow}>
-            <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
               <Text style={s.back}>← Início</Text>
             </TouchableOpacity>
             {!isUpcoming && (
@@ -119,7 +125,13 @@ export const TournamentDetailScreen = () => {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
+        }
+      >
 
         {/* ═══ COUNTDOWN (upcoming only) ═══ */}
         {isUpcoming && (
@@ -194,6 +206,9 @@ export const TournamentDetailScreen = () => {
                   style={s.tile}
                   activeOpacity={0.85}
                   onPress={() => navigation.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${cfg.label} ${v.level}, ${info.label}`}
+                  accessibilityHint="Abrir sub-torneio"
                 >
                   <LinearGradient
                     colors={cfg.gradient}

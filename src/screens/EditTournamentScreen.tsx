@@ -13,6 +13,7 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { PT_MONTHS } from '../utils/constants';
+import { popTo } from '../utils/navigation';
 
 const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
@@ -91,7 +92,7 @@ export const EditTournamentScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Torneio"
-            onBack={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })}
+            onBack={() => navigation.goBack()}
           />
           <Text style={s.title}>Editar Torneio</Text>
         </SafeAreaView>
@@ -220,7 +221,7 @@ export const EditTournamentScreen = () => {
         </View>
         <View style={{ height: 32 }} />
       </ScrollView>
-      <HomeFAB onPress={() => navigation.navigate('Home')} />
+      <HomeFAB onPress={() => navigation.dispatch(popTo('Home'))} />
     </View>
   );
 };

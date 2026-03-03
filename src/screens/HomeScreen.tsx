@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Image,
   ImageBackground,
+  RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -34,6 +35,12 @@ const chipLabel = (v: Vertente) =>
 export const HomeScreen = () => {
   const navigation = useNavigation<Nav>();
   const tournaments = mockTournaments;
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   const active   = React.useMemo(() => tournaments.filter(t => t.status === 'active'),   [tournaments]);
   const upcoming = React.useMemo(() => tournaments.filter(t => t.status === 'upcoming'), [tournaments]);
@@ -109,18 +116,21 @@ export const HomeScreen = () => {
         style={styles.flex1}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
+        }
       >
         {/* Em Curso */}
         {active.length > 0 && (
           <>
-            <View style={styles.sectionRow}>
+            <View style={styles.sectionRow} accessibilityRole="header">
               <Text style={styles.sectionLabel}>Em Curso</Text>
-              <View style={styles.liveBadge}>
+              <View style={styles.liveBadge} accessibilityLabel="Torneios ao vivo">
                 <LiveDot size={8} color={Colors.red} />
                 <Text style={styles.liveText}>Ao vivo</Text>
               </View>
             </View>
-            {active.map((t) => (
+            {active.map((t, i) => (
               <ActiveCard key={t.id} t={t} nav={navigation} />
             ))}
           </>
@@ -129,8 +139,8 @@ export const HomeScreen = () => {
         {/* Próximos */}
         {upcoming.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]}>Próximos</Text>
-            {upcoming.map((t) => (
+            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]} accessibilityRole="header">Próximos</Text>
+            {upcoming.map((t, i) => (
               <CompactCard key={t.id} t={t} nav={navigation} />
             ))}
           </>
@@ -139,8 +149,8 @@ export const HomeScreen = () => {
         {/* Concluídos */}
         {finished.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]}>Concluídos</Text>
-            {finished.map((t) => (
+            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]} accessibilityRole="header">Concluídos</Text>
+            {finished.map((t, i) => (
               <CompactCard key={t.id} t={t} nav={navigation} />
             ))}
           </>
@@ -180,6 +190,9 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
       activeOpacity={0.9}
       style={{ marginBottom: Spacing.lg }}
       onPress={() => nav.navigate('TournamentDetail', { tournamentId: t.id })}
+      accessibilityRole="button"
+      accessibilityLabel={`Torneio ${t.name}, ${t.location}, ${roundLabel}, ${Math.round(progress * 100)}% concluído`}
+      accessibilityHint="Toca para ver detalhes do torneio"
     >
       <View style={styles.activeCardOuter}>
         {/* Banner: photo or gradient */}
@@ -255,6 +268,9 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
       style={[styles.compactCard, isFinished && styles.compactCardFinished]}
       activeOpacity={0.85}
       onPress={() => nav.navigate(target, { tournamentId: t.id })}
+      accessibilityRole="button"
+      accessibilityLabel={`Torneio ${t.name}, ${t.location}${isFinished ? ', concluído' : ''}`}
+      accessibilityHint="Toca para ver detalhes do torneio"
     >
       {/* Round icon */}
       {t.photo ? (

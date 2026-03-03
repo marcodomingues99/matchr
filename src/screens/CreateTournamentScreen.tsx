@@ -89,7 +89,7 @@ export const CreateTournamentScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Início"
-            onBack={() => navigation.navigate('Home')}
+            onBack={() => navigation.goBack()}
           />
           <Text style={s.title}>Criar Torneio</Text>
           <Text style={s.subtitle}>Preenche os dados do teu evento</Text>

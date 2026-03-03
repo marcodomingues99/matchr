@@ -9,6 +9,7 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { NEW_TOURNAMENT_ID } from '../utils/constants';
+import { popTo } from '../utils/navigation';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfigureVertente'>;
@@ -62,9 +63,9 @@ export const ConfigureVertenteScreen = () => {
   const handleNext = () => {
     if (isLast || isAddingToExisting) {
       if (isAddingToExisting) {
-        navigation.navigate('TournamentDetail', { tournamentId });
+        navigation.dispatch(popTo('TournamentDetail'));
       } else {
-        navigation.navigate('Home');
+        navigation.dispatch(popTo('Home'));
       }
     } else {
       navigation.navigate('ConfigureVertente', {
@@ -134,7 +135,7 @@ export const ConfigureVertenteScreen = () => {
 
           <View style={{ height: 32 }} />
         </ScrollView>
-        <HomeFAB onPress={() => navigation.navigate('Home')} />
+        <HomeFAB onPress={() => navigation.dispatch(popTo('Home'))} />
       </View>
     );
   }

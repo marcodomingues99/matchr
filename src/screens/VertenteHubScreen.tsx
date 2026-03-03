@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -39,13 +39,18 @@ export const VertenteHubScreen = () => {
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   if (!tournament || !vertente) return null;
 
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
     const teamIds = new Set(vertente.teams.map(t => t.id));
     const all = mockGames.filter(g => teamIds.has(g.team1.id) || teamIds.has(g.team2.id));
     const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     const live = all.filter(g => g.status === GAME_STATUS.LIVE);
-    const bracket = all.filter(g => g.phase === 'bracket');
+    const bracket = all.filter(g => g.phase !== 'groups');
     const bracketDone = bracket.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     return {
       vertenteGames: all,
@@ -131,7 +136,7 @@ export const VertenteHubScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={tournament.name}
-            onBack={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>
@@ -152,7 +157,13 @@ export const VertenteHubScreen = () => {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
+      <ScrollView
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} colors={[Colors.blue]} />
+        }
+      >
         {/* ═══ CONFIGURAÇÃO ═══ */}
         <View style={s.sectionHeader}>
           <Text style={s.sectionTitle}>Configuração</Text>
@@ -194,13 +205,17 @@ export const VertenteHubScreen = () => {
         )}
 
         {/* Navigation cards */}
-        {menuItems.map((item) => (
+        {menuItems.map((item, idx) => (
           <TouchableOpacity
             key={item.title}
             style={[s.navCard, !item.enabled && s.navCardDisabled]}
             onPress={item.onPress}
             disabled={!item.enabled}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.title}, ${item.sub}${item.live ? `, ${item.live} ao vivo` : ''}`}
+            accessibilityState={{ disabled: !item.enabled }}
+            accessibilityHint={item.enabled ? `Abrir ${item.title}` : 'Bloqueado'}
           >
             {/* Icon box */}
             <View style={[s.iconBox, { backgroundColor: item.enabled ? ICON_BG[item.icon] : Colors.gl }]}>
@@ -263,7 +278,7 @@ export const VertenteHubScreen = () => {
 
         <View style={{ height: 36 }} />
       </ScrollView>
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.goBack()} />
     </View>
   );
 };

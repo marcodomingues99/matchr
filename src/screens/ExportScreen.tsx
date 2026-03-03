@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { popTo } from '../utils/navigation';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
@@ -84,7 +85,7 @@ export const ExportScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Exportar 📥</Text>
@@ -140,7 +141,7 @@ export const ExportScreen = () => {
 
         <View style={{ height: 40 }} />
       </ScrollView>
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
     </View>
   );
 };

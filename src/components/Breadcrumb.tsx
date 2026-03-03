@@ -16,7 +16,7 @@ interface HeaderNavProps {
  */
 export const HeaderNav: React.FC<HeaderNavProps> = React.memo(({ backLabel, onBack }) => (
     <View style={s.row}>
-        <TouchableOpacity onPress={onBack} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} style={s.backBtn}>
+        <TouchableOpacity onPress={onBack} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }} style={s.backBtn} accessibilityRole="button" accessibilityLabel={`Voltar para ${backLabel}`}>
             <Text style={s.backTxt}>← {backLabel}</Text>
         </TouchableOpacity>
     </View>
@@ -27,7 +27,7 @@ export const HeaderNav: React.FC<HeaderNavProps> = React.memo(({ backLabel, onBa
  * Navigates straight to the Home screen from anywhere in the app.
  */
 export const HomeFAB: React.FC<{ onPress: () => void }> = React.memo(({ onPress }) => (
-    <TouchableOpacity onPress={onPress} style={fab.btn} activeOpacity={0.8}>
+    <TouchableOpacity onPress={onPress} style={fab.btn} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Ir para página inicial">
         <Text style={fab.icon}>🏠</Text>
     </TouchableOpacity>
 ));

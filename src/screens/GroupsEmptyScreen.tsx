@@ -14,6 +14,7 @@ import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { MIN_TEAMS_TO_START } from '../utils/constants';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
+import { popTo } from '../utils/navigation';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsEmpty'>;
@@ -73,7 +74,7 @@ export const GroupsEmptyScreen = () => {
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
                         backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-                        onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                        onBack={() => navigation.goBack()}
                     />
                     <View style={{ marginBottom: 10 }}>
                         <SubBadge type={vertente.type} level={vertente.level} />
@@ -258,7 +259,7 @@ export const GroupsEmptyScreen = () => {
                     </TouchableOpacity>
                 )}
             </ScrollView>
-            <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+            <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
         </View>
     );
 };

@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Alert } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, Image, Alert, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, Team } from '../types';
@@ -31,6 +31,11 @@ export const TeamListScreen = () => {
   const statusLabel = STATUS_LABEL[vertente.status] ?? 'Em preparação';
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
 
   // Build group rank map: teamId → position within its group (1-based)
   const { sortedGroups, groupRankMap } = useMemo(() => {
@@ -55,7 +60,7 @@ export const TeamListScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${typeLabel} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Duplas Inscritas 👥</Text>
@@ -66,44 +71,52 @@ export const TeamListScreen = () => {
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md, paddingBottom: 100 }}>
-
-        {/* ── Section title ── */}
-        <View style={s.sectionRow}>
-          <Text style={s.sectionTitle}>Duplas — {vertente.level}</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}>
-            <Text style={s.sectionAction}>+ Nova dupla</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* ── Legend ── */}
-        <View style={s.legend}>
-          <Text style={s.legendTxt}>✏️ editar</Text>
-          <Text style={s.legendSep}>|</Text>
-          <Text style={s.legendTxt}>{isConfig ? '🗑️ remover' : '🚫 desistência'}</Text>
-        </View>
-
-        {/* ── Teams ── */}
-        {vertente.teams.length === 0 ? (
-          <View style={s.emptyCard}>
+      <FlatList
+        data={vertente.teams}
+        keyExtractor={t => t.id}
+        contentContainerStyle={{ padding: Spacing.md, paddingBottom: 100 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
+        }
+        ListHeaderComponent={
+          <>
+            <View style={s.sectionRow} accessibilityRole="header">
+              <Text style={s.sectionTitle}>Duplas — {vertente.level}</Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                accessibilityRole="button"
+                accessibilityLabel="Adicionar nova dupla"
+              >
+                <Text style={s.sectionAction}>+ Nova dupla</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={s.legend}>
+              <Text style={s.legendTxt}>✏️ editar</Text>
+              <Text style={s.legendSep}>|</Text>
+              <Text style={s.legendTxt}>{isConfig ? '🗑️ remover' : '🚫 desistência'}</Text>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          <View style={s.emptyCard} accessibilityLabel="Sem duplas inscritas">
             <Text style={s.emptyIcon}>👥</Text>
             <Text style={s.emptyTitle}>Sem duplas inscritas</Text>
             <Text style={s.emptySub}>Adiciona a primeira equipa</Text>
             <TouchableOpacity
               style={s.addFirstBtn}
               onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar primeira dupla"
             >
               <Text style={s.addFirstTxt}>+ Adicionar dupla</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <View style={s.teamsCard}>
-            {vertente.teams.map((team, idx) => {
+        }
+        renderItem={({ item: team, index: idx }) => {
               const avatarColors = AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length];
               const isWithdrawn = !!team.withdrawn;
               return (
                 <TouchableOpacity
-                  key={team.id}
                   style={[
                     s.teamRow,
                     isWithdrawn && s.teamRowWithdrawn,
@@ -111,51 +124,41 @@ export const TeamListScreen = () => {
                   ]}
                   onPress={() => setSheetTeam(team)}
                   activeOpacity={0.75}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${team.name}, ${team.players.map(p => p.name).join(' e ')}${team.group ? `, grupo ${team.group}` : ''}${isWithdrawn ? ', desistência' : ''}`}
+                  accessibilityHint="Toca para ver jogos da dupla"
                 >
-                  {/* Number */}
                   <Text style={s.teamNum}>{idx + 1}</Text>
-
-                  {/* Avatar */}
                   {team.photo ? (
-                    <Image source={{ uri: team.photo }} style={s.avatar} />
+                    <Image source={{ uri: team.photo }} style={s.avatar} accessibilityIgnoresInvertColors />
                   ) : (
                     <LinearGradient colors={avatarColors} style={s.avatar}>
                       <Text style={s.avatarTxt}>{getInitials(team.name)}</Text>
                     </LinearGradient>
                   )}
-
-                  {/* Info */}
                   <View style={s.teamInfo}>
                     <View style={s.teamNameRow}>
-                      <Text style={[s.teamName, isWithdrawn && s.teamNameMuted]} numberOfLines={1}>
-                        {team.name}
-                      </Text>
+                      <Text style={[s.teamName, isWithdrawn && s.teamNameMuted]} numberOfLines={1}>{team.name}</Text>
                       {isWithdrawn && <Text style={s.withdrawnLabel}> 🚫 Desistência</Text>}
                     </View>
-                    <Text style={s.teamPlayers} numberOfLines={1}>
-                      {team.players.map(p => p.name).join(' · ')}
-                    </Text>
+                    <Text style={s.teamPlayers} numberOfLines={1}>{team.players.map(p => p.name).join(' · ')}</Text>
                   </View>
-
-                  {/* Group chip */}
                   {team.group && (() => {
                     const chip = getChipStyle(team.group);
                     return (
                       <View style={[s.groupChip, { backgroundColor: chip.bg }]}>
-                        <Text style={[s.groupChipTxt, { color: chip.text }]}>
-                          {team.group}{groupRankMap[team.id] ?? ''}
-                        </Text>
+                        <Text style={[s.groupChipTxt, { color: chip.text }]}>{team.group}{groupRankMap[team.id] ?? ''}</Text>
                       </View>
                     );
                   })()}
-
-                  {/* Actions */}
                   {isWithdrawn ? (
                     <Text style={s.woTxt}>W.O.</Text>
                   ) : (
                     <View style={s.actions}>
                       <TouchableOpacity
                         onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Editar ${team.name}`}
                       >
                         <Text style={s.actionIcon}>✏️</Text>
                       </TouchableOpacity>
@@ -174,12 +177,16 @@ export const TeamListScreen = () => {
                               },
                             ],
                           )}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Remover ${team.name}`}
                         >
                           <Text style={[s.actionIcon, s.actionIconMuted]}>🗑️</Text>
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
                           onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Registar desistência de ${team.name}`}
                         >
                           <Text style={[s.actionIcon, s.actionIconMuted]}>🚫</Text>
                         </TouchableOpacity>
@@ -188,10 +195,8 @@ export const TeamListScreen = () => {
                   )}
                 </TouchableOpacity>
               );
-            })}
-          </View>
-        )}
-      </ScrollView>
+            }}
+      />
 
       <TeamGamesSheet
         visible={sheetTeam !== null}
@@ -200,7 +205,7 @@ export const TeamListScreen = () => {
         games={mockGames}
         onClose={() => setSheetTeam(null)}
       />
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />
     </View>
   );
 };

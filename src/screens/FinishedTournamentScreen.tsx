@@ -37,7 +37,7 @@ export const FinishedTournamentScreen = () => {
                 <View style={s.deco2} />
                 <SafeAreaView edges={['top']}>
                     <View style={s.topBar}>
-                        <TouchableOpacity onPress={() => navigation.navigate('Home')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                             <Text style={s.backTxt}>← Início</Text>
                         </TouchableOpacity>
                         <View style={s.donePill}>

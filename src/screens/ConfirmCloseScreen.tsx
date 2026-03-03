@@ -4,8 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
+import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
@@ -103,7 +105,12 @@ export const ConfirmCloseScreen = () => {
 
         <TouchableOpacity
           style={s.confirmBtn}
-          onPress={() => navigation.navigate('GroupsGames', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId })}
+          onPress={() => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            navigation.dispatch(popTo('GroupsTable'));
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Confirmar e guardar resultado"
         >
           <LinearGradient colors={Gradients.green} style={s.confirmGrad}>
             <Text style={s.confirmTxt}>✓ Confirmar e Guardar</Text>
@@ -114,7 +121,7 @@ export const ConfirmCloseScreen = () => {
           <Text style={s.editTxt}>✏️ Corrigir resultado</Text>
         </TouchableOpacity>
       </View>
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
     </View>
   );
 };

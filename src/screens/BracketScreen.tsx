@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, Game, Team } from '../types';
@@ -13,6 +13,7 @@ import { TeamGamesSheet } from '../components/TeamGamesSheet';
 import { Colors, Gradients, Typography, Spacing } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { BRACKET_ROUND_LABEL, BRACKET_ROUND_ORDER, GAME_STATUS } from '../utils/constants';
+import { propagateBracket, isPlaceholderTeam } from '../utils/bracketPropagation';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Bracket'>;
@@ -32,15 +33,24 @@ export const BracketScreen = () => {
 
   const [activeRound, setActiveRound] = React.useState(0);
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
+  const [refreshing, setRefreshing] = React.useState(false);
 
-  // Derive bracket rounds from actual game data
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 600);
+  }, []);
+
+  // Derive bracket rounds from actual game data, with propagation
   const { rounds, allBracketGames } = React.useMemo(() => {
     if (!vertente) return { rounds: [] as BracketRound[], allBracketGames: [] as Game[] };
 
     const teamIds = new Set(vertente.teams.map(t => t.id));
-    const bracketGames = mockGames.filter(
+    const rawBracketGames = mockGames.filter(
       g => (teamIds.has(g.team1.id) || teamIds.has(g.team2.id)) && g.phase !== 'groups',
     );
+
+    // Propagate winners/losers to subsequent rounds
+    const bracketGames = propagateBracket(rawBracketGames);
 
     const byPhase: Record<string, Game[]> = {};
     bracketGames.forEach(g => {
@@ -90,7 +100,7 @@ export const BracketScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>Bracket / Eliminação 🏆</Text>
@@ -108,12 +118,19 @@ export const BracketScreen = () => {
       ) : (
         <>
           {/* Round selector tabs */}
-          <View style={s.tabs}>
+          <View style={s.tabs} accessibilityRole="tablist">
             {rounds.map((round, i) => {
               const hasLive = round.games.some(g => g.status === GAME_STATUS.LIVE);
               const isActive = i === activeRound;
               return (
-                <TouchableOpacity key={round.key} style={[s.tab, isActive && s.tabActive]} onPress={() => setActiveRound(i)}>
+                <TouchableOpacity
+                  key={round.key}
+                  style={[s.tab, isActive && s.tabActive]}
+                  onPress={() => setActiveRound(i)}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: isActive }}
+                  accessibilityLabel={`${round.label}, ${round.games.length} jogos${hasLive ? ', ao vivo' : ''}`}
+                >
                   {hasLive && <View style={s.tabDot} />}
                   <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>{round.label}</Text>
                   <Text style={[s.tabCount, isActive && s.tabCountActive]}>
@@ -124,36 +141,51 @@ export const BracketScreen = () => {
             })}
           </View>
 
-          <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
-            {currentRound?.games.map(game => (
-              <React.Fragment key={game.id}>
-                {game.phase === '3rd' && (
-                  <View style={s.separator}>
-                    <View style={s.sepLine} />
-                    <Text style={s.sepTxt}>🥉 3º vs 4º Lugar</Text>
-                    <View style={s.sepLine} />
-                  </View>
-                )}
-                <GameCard
-                  game={game}
-                  showDoneBadge
-                  onTeamPress={setSheetTeam}
-                  advanceText={
-                    game.status === GAME_STATUS.FINISHED && game.winnerId
-                      ? `${game.winnerId === game.team1.id ? game.team1.name : game.team2.name} → ${activeRound + 1 < rounds.length ? rounds[activeRound + 1].label : 'Próxima ronda'}`
-                      : undefined
-                  }
-                  onEdit={() => navigation.navigate('EditGame', {
-                    tournamentId: tournament.id, vertenteId: vertente.id, gameId: game.id,
-                  })}
-                  onEnterResult={() => navigation.navigate('EnterResult', {
-                    tournamentId: tournament.id, vertenteId: vertente.id, gameId: game.id,
-                  })}
-                />
-              </React.Fragment>
-            ))}
-            <View style={{ height: 32 }} />
-          </ScrollView>
+          <FlatList
+            data={currentRound?.games ?? []}
+            keyExtractor={g => g.id}
+            contentContainerStyle={{ padding: Spacing.md, paddingBottom: 32 }}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
+            }
+            renderItem={({ item: game, index }) => {
+              const advanceLabel = (() => {
+                if (game.status !== GAME_STATUS.FINISHED || !game.winnerId) return undefined;
+                const winnerName = game.winnerId === game.team1.id ? game.team1.name : game.team2.name;
+                return activeRound + 1 < rounds.length
+                  ? `${winnerName} → ${rounds[activeRound + 1].label}`
+                  : undefined;
+              })();
+
+              return (
+                <View>
+                  {game.phase === '3rd' && (
+                    <View style={s.separator} accessibilityRole="header">
+                      <View style={s.sepLine} />
+                      <Text style={s.sepTxt}>🥉 3º vs 4º Lugar</Text>
+                      <View style={s.sepLine} />
+                    </View>
+                  )}
+                  <GameCard
+                    game={game}
+                    showDoneBadge
+                    onTeamPress={setSheetTeam}
+                    advanceText={advanceLabel}
+                    onEdit={() => navigation.navigate('EditGame', {
+                      tournamentId: tournament.id, vertenteId: vertente.id, gameId: game.id,
+                    })}
+                    onEnterResult={
+                      isPlaceholderTeam(game.team1) || isPlaceholderTeam(game.team2)
+                        ? undefined
+                        : () => navigation.navigate('EnterResult', {
+                            tournamentId: tournament.id, vertenteId: vertente.id, gameId: game.id,
+                          })
+                    }
+                  />
+                </View>
+              );
+            }}
+          />
         </>
       )}
 
@@ -164,7 +196,7 @@ export const BracketScreen = () => {
         games={allBracketGames}
         onClose={() => setSheetTeam(null)}
       />
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />
     </View>
   );
 };
@@ -173,7 +205,6 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
   title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-  scroll: { flex: 1 },
 
   /* Empty state */
   emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg },

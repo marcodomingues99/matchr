@@ -14,7 +14,7 @@ interface SubBadgeProps {
 export const SubBadge: React.FC<SubBadgeProps> = React.memo(({ type, level, small = false }) => {
   const config = VERTENTE_CONFIG[type];
   return (
-    <LinearGradient colors={config.gradient} style={[styles.badge, small && styles.small]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+    <LinearGradient colors={config.gradient} style={[styles.badge, small && styles.small]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} accessibilityLabel={`${config.label} ${level}`}>
       <Text style={styles.emoji}>{config.emoji}</Text>
       <View>
         <Text style={[styles.name, small && styles.nameSmall]}>{config.label}</Text>

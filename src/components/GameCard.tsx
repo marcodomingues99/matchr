@@ -100,6 +100,8 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
       style={[gc.card, isLive && gc.cardLive, isPaused && gc.cardPaused]}
       onPress={onPress}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`${game.team1.name} vs ${game.team2.name}, ${game.time}, ${game.court}${isLive ? ', ao vivo' : isFinished ? ', concluído' : isPaused ? ', pausado' : ', agendado'}`}
     >
       {/* Meta header */}
       <View style={gc.metaRow}>

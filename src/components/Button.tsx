@@ -22,7 +22,7 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = React.memo(({ label, onPress, variant = 'primary', style, disabled }) => {
   if (variant === 'primary' || variant === 'green' || variant === 'red') {
     return (
-      <TouchableOpacity onPress={onPress} disabled={disabled} style={[styles.base, disabled && styles.disabled, style]} activeOpacity={0.85}>
+      <TouchableOpacity onPress={onPress} disabled={disabled} style={[styles.base, disabled && styles.disabled, style]} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}>
         <LinearGradient colors={GRADIENT_COLORS[variant]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           <Text style={styles.primaryText}>{label}</Text>
         </LinearGradient>
@@ -35,6 +35,9 @@ export const Button: React.FC<ButtonProps> = React.memo(({ label, onPress, varia
       disabled={disabled}
       style={[styles.base, styles.secondary, variant === 'ghost' && styles.ghost, disabled && styles.disabled, style]}
       activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
     >
       <Text style={[styles.secondaryText, variant === 'ghost' && styles.ghostText]}>{label}</Text>
     </TouchableOpacity>

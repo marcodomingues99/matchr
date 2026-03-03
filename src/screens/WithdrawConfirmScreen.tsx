@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
+import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Typography, Spacing, Radii } from '../theme';
@@ -34,7 +35,7 @@ export const WithdrawConfirmScreen = () => {
 
     const handleConfirm = () => {
         // In a real app: mutate state based on selected option
-        navigation.navigate('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
+        navigation.goBack();
     };
 
     return (
@@ -44,7 +45,7 @@ export const WithdrawConfirmScreen = () => {
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
                         backLabel="Duplas"
-                        onBack={() => navigation.navigate('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                        onBack={() => navigation.goBack()}
                     />
                     <SubBadge type={vertente.type} level={vertente.level} />
                     <Text style={s.title}>Desistência 🚫</Text>
@@ -126,7 +127,7 @@ export const WithdrawConfirmScreen = () => {
                 </TouchableOpacity>
 
             </ScrollView>
-            <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+            <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
         </View>
     );
 };

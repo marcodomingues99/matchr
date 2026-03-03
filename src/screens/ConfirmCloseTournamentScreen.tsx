@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { parseDatePt } from '../utils/constants';
+import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
@@ -139,7 +140,7 @@ export const ConfirmCloseTournamentScreen = () => {
 
                 <View style={{ height: 32 }} />
             </ScrollView>
-            <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+            <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
         </View>
     );
 };

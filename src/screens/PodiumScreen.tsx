@@ -2,12 +2,14 @@ import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { popTo } from '../utils/navigation';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RootStackParamList } from '../types';
+import { RootStackParamList, Team } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
+import { TeamGamesSheet } from '../components/TeamGamesSheet';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { calcStats } from '../utils/scoring';
@@ -20,6 +22,7 @@ interface PodiumEntry {
   name: string;
   players: string;
   sets: string;
+  team: Team;
 }
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -31,6 +34,7 @@ export const PodiumScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
   // Derive ranking from actual team stats
   const ranking: PodiumEntry[] = React.useMemo(() => {
@@ -44,6 +48,7 @@ export const PodiumScreen = () => {
           name: team.name,
           players: team.players.map(p => p.name).join(' & '),
           sets: `${stats.gamesWon}-${stats.gamesLost}`,
+          team,
           _sortKey: stats.pts * 10000 + (stats.gamesWon - stats.gamesLost),
         };
       })
@@ -82,10 +87,7 @@ export const PodiumScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => tournament.status === 'finished'
-              ? navigation.navigate('FinishedTournament', { tournamentId: tournament.id })
-              : navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })
-            }
+            onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>🏆 Pódio Final</Text>
@@ -101,7 +103,9 @@ export const PodiumScreen = () => {
             return (
               <View key={team.name} style={[s.podiumCol, i === 1 && { marginBottom: 0 }]}>
                 <Text style={s.podiumMedal}>{MEDALS[realPos - 1]}</Text>
-                <Text style={s.podiumTeam} numberOfLines={2}>{team.name}</Text>
+                <TouchableOpacity onPress={() => setSheetTeam(team.team)}>
+                  <Text style={[s.podiumTeam, { textDecorationLine: 'underline' }]} numberOfLines={2}>{team.name}</Text>
+                </TouchableOpacity>
                 <View style={[s.podiumBlock, { height: podiumHeights[i], backgroundColor: PODIUM_COLORS[realPos - 1] }]}>
                   <Text style={s.podiumPos}>{realPos}</Text>
                 </View>
@@ -112,24 +116,24 @@ export const PodiumScreen = () => {
 
         {/* Full ranking list */}
         <Text style={s.sectionLabel}>Classificação Completa</Text>
-        {ranking.map((team) => (
-          <View key={team.name} style={s.rankCard}>
-            <View style={[s.rankBadge, team.pos <= 3 && { backgroundColor: PODIUM_COLORS[team.pos - 1] }]}>
-              {team.pos <= 3 ? (
-                <Text style={s.rankMedal}>{MEDALS[team.pos - 1]}</Text>
+        {ranking.map((entry) => (
+          <TouchableOpacity key={entry.name} style={s.rankCard} onPress={() => setSheetTeam(entry.team)}>
+            <View style={[s.rankBadge, entry.pos <= 3 && { backgroundColor: PODIUM_COLORS[entry.pos - 1] }]}>
+              {entry.pos <= 3 ? (
+                <Text style={s.rankMedal}>{MEDALS[entry.pos - 1]}</Text>
               ) : (
-                <Text style={[s.rankNum, { color: Colors.white }]}>{team.pos}</Text>
+                <Text style={[s.rankNum, { color: Colors.white }]}>{entry.pos}</Text>
               )}
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={s.rankTeam}>{team.name}</Text>
-              <Text style={s.rankPlayers}>{team.players}</Text>
+              <Text style={s.rankTeam}>{entry.name}</Text>
+              <Text style={s.rankPlayers}>{entry.players}</Text>
             </View>
             <View style={s.rankStats}>
-              <Text style={s.rankSets}>{team.sets}</Text>
+              <Text style={s.rankSets}>{entry.sets}</Text>
               <Text style={s.rankSetsLabel}>sets W-L</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ))}
 
         <View style={{ height: 24 }} />
@@ -144,10 +148,14 @@ export const PodiumScreen = () => {
         </TouchableOpacity>
         <View style={{ height: 32 }} />
       </ScrollView>
-      <HomeFAB onPress={() => tournament.status === 'finished'
-        ? navigation.navigate('FinishedTournament', { tournamentId: tournament.id })
-        : navigation.navigate('TournamentDetail', { tournamentId: tournament.id })
-      } />
+      <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
+      <TeamGamesSheet
+        visible={sheetTeam !== null}
+        team={sheetTeam}
+        vertente={vertente}
+        games={mockGames}
+        onClose={() => setSheetTeam(null)}
+      />
     </View>
   );
 };
