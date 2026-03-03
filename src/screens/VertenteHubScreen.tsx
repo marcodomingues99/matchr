@@ -273,7 +273,7 @@ export const VertenteHubScreen = () => {
           >
             <LinearGradient colors={Gradients.green} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               <Text style={s.phaseIcon}>🏁</Text>
-              <Text style={s.phaseTxt}>Fechar Sub-torneio</Text>
+              <Text style={s.phaseTxt}>Fechar Categoria</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}

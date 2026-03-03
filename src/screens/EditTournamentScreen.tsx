@@ -32,8 +32,8 @@ export const EditTournamentScreen = () => {
 
   const handleRemoveVertente = (vertenteId: string) => {
     Alert.alert(
-      'Remover sub-torneio',
-      'Tens a certeza que queres remover este sub-torneio?',
+      'Remover categoria',
+      'Tens a certeza que queres remover esta categoria?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -182,7 +182,7 @@ export const EditTournamentScreen = () => {
           )}
         </View>
 
-        <Text style={s.sectionLabel}>Sub-torneios</Text>
+        <Text style={s.sectionLabel}>Categorias</Text>
         {vertentes.map((v, i) => (
           <View key={v.id} style={s.vertCard}>
             <TouchableOpacity

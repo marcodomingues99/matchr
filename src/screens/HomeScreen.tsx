@@ -222,11 +222,16 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
           {/* Chips */}
           <View style={styles.chipsRow}>
             {t.vertentes.map((v) => (
-              <View key={v.id} style={[styles.chip, { backgroundColor: VERTENTE_CONFIG[v.type].chipBg }]}>
+              <TouchableOpacity
+                key={v.id}
+                style={[styles.chip, { backgroundColor: VERTENTE_CONFIG[v.type].chipBg }]}
+                activeOpacity={0.7}
+                onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+              >
                 <Text style={[styles.chipText, { color: VERTENTE_CONFIG[v.type].chipText }]}>
                   {chipLabel(v)}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ))}
             <View style={[styles.chip, { backgroundColor: Colors.greenBgLight }]}>
               <Text style={[styles.chipText, { color: Colors.greenDeep }]}>
@@ -246,7 +251,7 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
           </View>
           <View style={styles.progressRow}>
             <Text style={styles.progressLabel}>
-              {t.vertentes.length} sub torneios · {roundLabel}
+              {t.vertentes.length} categorias · {roundLabel}
             </Text>
             <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
           </View>
@@ -302,23 +307,26 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
           {t.endDate !== t.startDate ? `–${t.endDate}` : ''}
         </Text>
         <View style={styles.chipsRowSmall}>
-          {t.vertentes.map((v) => (
+          {t.vertentes.map((v) => isFinished ? (
             <View
               key={v.id}
-              style={[
-                styles.chipSmall,
-                { backgroundColor: isFinished ? Colors.gray : VERTENTE_CONFIG[v.type].color },
-              ]}
+              style={[styles.chipSmall, { backgroundColor: Colors.gray }]}
             >
-              <Text
-                style={[
-                  styles.chipSmallText,
-                  isFinished && { color: 'rgba(255,255,255,0.8)' },
-                ]}
-              >
+              <Text style={[styles.chipSmallText, { color: 'rgba(255,255,255,0.8)' }]}>
                 {chipLabel(v)}
               </Text>
             </View>
+          ) : (
+            <TouchableOpacity
+              key={v.id}
+              style={[styles.chipSmall, { backgroundColor: VERTENTE_CONFIG[v.type].color }]}
+              activeOpacity={0.7}
+              onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+            >
+              <Text style={styles.chipSmallText}>
+                {chipLabel(v)}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
       </View>

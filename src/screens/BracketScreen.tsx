@@ -86,7 +86,7 @@ export const BracketScreen = () => {
           </SafeAreaView>
         </LinearGradient>
         <View style={s.emptyWrap}>
-          <Text style={s.emptyTxt}>Torneio ou sub-torneio não encontrado.</Text>
+          <Text style={s.emptyTxt}>Torneio ou categoria não encontrado.</Text>
         </View>
       </View>
     );

@@ -15,9 +15,9 @@ type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfigureVertente'>;
 
 const LEVELS: Record<VertenteType, string[]> = {
-  M: ['M6', 'M5', 'M4', 'M3', 'M2', 'M1'],
-  F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1'],
-  MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1'],
+  M: ['M6', 'M5', 'M4', 'M3', 'M2', 'M1', 'Sem'],
+  F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1', 'Sem'],
+  MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1', 'Sem'],
 };
 
 const calcStructure = (n: number) => {
@@ -91,7 +91,7 @@ export const ConfigureVertenteScreen = () => {
               backLabel="Torneio"
               onBack={() => navigation.goBack()}
             />
-            <Text style={s.title}>Adicionar Vertente</Text>
+            <Text style={s.title}>Adicionar Categoria</Text>
             <Text style={s.selSubtitle}>Escolhe a categoria e nível</Text>
           </SafeAreaView>
         </LinearGradient>
@@ -127,7 +127,7 @@ export const ConfigureVertenteScreen = () => {
                   style={s.levelChip}
                   onPress={() => handleSelectLevel(level)}
                 >
-                  <Text style={s.levelChipTxt}>{typeCfg.emoji} {level}</Text>
+                  <Text style={s.levelChipTxt}>{typeCfg.emoji} {level === 'Sem' ? 'Sem Nível' : level}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -155,10 +155,10 @@ export const ConfigureVertenteScreen = () => {
           <View style={[s.badge, { backgroundColor: cfg.chipBg }]}>
             <Text style={{ fontSize: 16 }}>{cfg.emoji}</Text>
             <Text style={[s.badgeName, { color: cfg.color }]}>
-              {cfg.label} {currentVert.level}
+              {cfg.label} {currentVert.level === 'Sem' ? 'Sem Nível' : currentVert.level}
             </Text>
           </View>
-          <Text style={s.title}>Configurar Vertente</Text>
+          <Text style={s.title}>Configurar Categoria</Text>
         </SafeAreaView>
       </LinearGradient>
 
@@ -241,7 +241,7 @@ export const ConfigureVertenteScreen = () => {
             <Text style={s.nextTxt}>
               {isLast || isAddingToExisting
                 ? '✓ Concluir Configuração'
-                : `Próxima vertente → ${pendingVerts[idx + 1]?.level}`}
+                : `Próxima categoria → ${pendingVerts[idx + 1]?.level}`}
             </Text>
           </LinearGradient>
         </TouchableOpacity>

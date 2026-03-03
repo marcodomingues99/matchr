@@ -173,7 +173,7 @@ export const TournamentDetailScreen = () => {
           <View style={s.statsRow}>
             <View style={s.statCard}>
               <Text style={[s.statNum, { color: Colors.blue }]}>{t.vertentes.length}</Text>
-              <Text style={s.statLbl}>Sub-torneios</Text>
+              <Text style={s.statLbl}>Categorias</Text>
             </View>
             <View style={s.statCard}>
               <Text style={[s.statNum, { color: Colors.orange }]}>{totalTeams}</Text>
@@ -202,8 +202,8 @@ export const TournamentDetailScreen = () => {
           </View>
         )}
 
-        {/* ═══ SUB-TORNEIOS (same grid for both layouts) ═══ */}
-        <Text style={s.sectionTitleSolo}>Seleciona um sub-torneio</Text>
+        {/* ═══ CATEGORIAS (same grid for both layouts) ═══ */}
+        <Text style={s.sectionTitleSolo}>Seleciona uma categoria</Text>
         {pairs.map((row, ri) => (
           <View key={ri} style={s.tileRow}>
             {row.map(v => {
@@ -218,7 +218,7 @@ export const TournamentDetailScreen = () => {
                   onPress={() => navigation.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
                   accessibilityRole="button"
                   accessibilityLabel={`${cfg.label} ${v.level}, ${info.label}`}
-                  accessibilityHint="Abrir sub-torneio"
+                  accessibilityHint="Abrir categoria"
                 >
                   <LinearGradient
                     colors={cfg.gradient}
@@ -260,10 +260,10 @@ export const TournamentDetailScreen = () => {
           </View>
         ))}
 
-        {/* Add sub-torneio */}
+        {/* Add categoria */}
         <TouchableOpacity style={s.addCard} onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: t.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([]) })}>
           <Text style={{ fontSize: Typography.fontSize.xxxl, color: Colors.muted }}>＋</Text>
-          <Text style={s.addTxt}>Adicionar sub-torneio</Text>
+          <Text style={s.addTxt}>Adicionar categoria</Text>
         </TouchableOpacity>
 
         {/* Quick actions (upcoming only) */}

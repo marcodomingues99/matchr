@@ -205,8 +205,8 @@ export const CreateTournamentScreen = () => {
           )}
         </View>
 
-        {/* Sub-torneios */}
-        <Text style={s.sectionLabel}>Sub-torneios (categorias + vertentes)</Text>
+        {/* Categorias */}
+        <Text style={s.sectionLabel}>Categorias</Text>
         <View style={s.card}>
           {(['M', 'F', 'MX'] as VertType[]).map((type, catIdx) => {
             const sel = selectedVerts.filter(v => v.type === type);
@@ -268,7 +268,7 @@ export const CreateTournamentScreen = () => {
           {selectedVerts.length > 0 && (
             <View style={s.summaryBox}>
               <Text style={s.summaryTitle}>
-                {selectedVerts.length} sub-torneio{selectedVerts.length > 1 ? 's' : ''} criado{selectedVerts.length > 1 ? 's' : ''}:
+                {selectedVerts.length} categoria{selectedVerts.length > 1 ? 's' : ''} criada{selectedVerts.length > 1 ? 's' : ''}:
               </Text>
               <Text style={s.summaryBody}>
                 {selectedVerts.map(v => `${VERTENTE_CONFIG[v.type].emoji} ${v.level}`).join('  ·  ')}
@@ -290,7 +290,7 @@ export const CreateTournamentScreen = () => {
           </LinearGradient>
         </TouchableOpacity>
         {selectedVerts.length > 0 && (
-          <Text style={s.createNote}>Configuras o nº de duplas por vertente no passo seguinte</Text>
+          <Text style={s.createNote}>Configuras o nº de duplas por categoria no passo seguinte</Text>
         )}
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -356,7 +356,7 @@ const s = StyleSheet.create({
   regChoose: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.blue },
   regRemove: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.red, padding: 4 },
 
-  /* ── Sub-torneios ── */
+  /* ── Categorias ── */
   catSection: { paddingBottom: 4 },
   catSectionBorder: { borderTopWidth: 1, borderTopColor: Colors.gl, paddingTop: 10, marginTop: 4 },
   catHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 6 },

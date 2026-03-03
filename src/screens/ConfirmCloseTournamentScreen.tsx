@@ -107,7 +107,7 @@ export const ConfirmCloseTournamentScreen = () => {
                     />
                     <SubBadge type={vertente.type} level={vertente.level} />
                     <Text style={s.title}>Confirmar Fecho 🏁</Text>
-                    <Text style={s.subtitle}>Verifica antes de fechar o sub-torneio</Text>
+                    <Text style={s.subtitle}>Verifica antes de fechar a categoria</Text>
                 </SafeAreaView>
             </LinearGradient>
 

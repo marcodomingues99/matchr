@@ -32,7 +32,7 @@ type Section = {
 
 const SECTIONS: Section[] = [
   {
-    title: 'Exportar este sub-torneio',
+    title: 'Exportar esta categoria',
     items: [
       { id: 'pdf_results', icon: '📊', iconBg: Colors.greenBgSoft, title: 'Resultados em PDF', sub: 'Tabelas e resultados completos', btnLabel: '↓ PDF', btnColors: [Colors.green, Colors.greenDark] },
       { id: 'pdf_bracket', icon: '🏆', iconBg: Colors.blueBg, title: 'Bracket / Quadro', sub: 'Fases finais e eliminação', btnLabel: '↓ PDF', btnColors: [Colors.blue, Colors.teal] },

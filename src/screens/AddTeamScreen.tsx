@@ -107,7 +107,7 @@ export const AddTeamScreen = () => {
             autoFocus={!isEditing}
           />
           {isDuplicateName && (
-            <Text style={s.fieldError}>Este nome já existe nesta vertente</Text>
+            <Text style={s.fieldError}>Este nome já existe nesta categoria</Text>
           )}
         </View>
 

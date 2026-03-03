@@ -67,7 +67,7 @@ export const PodiumScreen = () => {
         </LinearGradient>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
           <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.muted, textAlign: 'center' }}>
-            Torneio ou sub-torneio não encontrado.
+            Torneio ou categoria não encontrado.
           </Text>
         </View>
       </View>
