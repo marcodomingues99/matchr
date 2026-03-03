@@ -2,7 +2,7 @@
   "expo": {
     "name": "Matchr",
     "slug": "matchr",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "sdkVersion": "54.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,6 +23,11 @@
     },
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "058dcb91-c540-42b7-b95d-efbc35d72448"
+      }
+    }
   }
 }

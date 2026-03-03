@@ -50,15 +50,44 @@ Os testes estão em `src/__tests__/` e usam **Jest** + **ts-jest**.
 | `filteredGames.test.ts` | Filtragem de jogos por grupo/estado |
 | `saveSetLogic.test.ts` | Lógica de validação e gravação de sets |
 
-## Compilar builds nativos
+## Versão
+
+A versão é gerida a partir de `package.json`. Um script `postversion` sincroniza automaticamente o `app.json`.
 
 ```bash
-# APK (Android)
-npx eas build -p android --profile preview
-
-# IPA (iOS) — requer conta Apple Developer ($99/ano)
-npx eas build -p ios --profile preview
+npm version patch   # 0.1.0 → 0.1.1
+npm version minor   # 0.1.0 → 0.2.0
+npm version major   # 0.1.0 → 1.0.0
 ```
+
+## Compilar APK (Android)
+
+Usa o [EAS Build](https://docs.expo.dev/build/introduction/) (gratuito, compila na cloud).
+
+### Setup (uma única vez)
+
+```bash
+# 1. Instalar EAS CLI
+npm install -g eas-cli
+
+# 2. Criar conta / fazer login (gratuito)
+eas login
+```
+
+### Gerar APK
+
+```bash
+npm run build:apk
+```
+
+Após a build terminar, o terminal mostra um link para descarregar o `.apk`.
+
+### Instalar no telemóvel
+
+1. Transfere o `.apk` para o telemóvel (cabo USB, Google Drive, email, etc.)
+2. Abre o ficheiro no telemóvel
+3. Ativa **"Instalar de fontes desconhecidas"** se solicitado
+4. Instala e abre a app
 
 ## Estrutura do projeto
 
