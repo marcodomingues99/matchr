@@ -14,8 +14,8 @@ export interface TeamStats {
   losses: number;
   played: number;
   pts: number;
-  setsWon: number;
-  setsLost: number;
+  gamesWon: number;
+  gamesLost: number;
 }
 
 export const calcStats = (teamId: string, games: Game[]): TeamStats => {
@@ -23,18 +23,18 @@ export const calcStats = (teamId: string, games: Game[]): TeamStats => {
     g => (g.team1.id === teamId || g.team2.id === teamId) &&
          (g.status === 'finished' || g.status === 'walkover'),
   );
-  let wins = 0, losses = 0, setsWon = 0, setsLost = 0;
+  let wins = 0, losses = 0, gamesWon = 0, gamesLost = 0;
   relevant.forEach(g => {
     const isT1 = g.team1.id === teamId;
     if (g.winnerId === teamId) wins++;
     else if (g.winnerId !== undefined) losses++;
-    // Walkover games have no sets played — only count sets for finished games
+    // Walkover games have no sets played — only count games-within-sets for finished games
     if (g.status === 'finished') {
       (g.sets ?? []).forEach(set => {
-        setsWon  += isT1 ? set.team1 : set.team2;
-        setsLost += isT1 ? set.team2 : set.team1;
+        gamesWon  += isT1 ? set.team1 : set.team2;
+        gamesLost += isT1 ? set.team2 : set.team1;
       });
     }
   });
-  return { wins, losses, played: wins + losses, pts: wins * PTS_PER_WIN, setsWon, setsLost };
+  return { wins, losses, played: wins + losses, pts: wins * PTS_PER_WIN, gamesWon, gamesLost };
 };

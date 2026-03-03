@@ -14,6 +14,7 @@ import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme
 import { calcStats } from '../utils/scoring';
 import { GROUP_GRADIENT_POOL } from '../utils/groupColors';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { GAME_STATUS } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsTable'>;
@@ -35,7 +36,7 @@ export const GroupsTableScreen = () => {
     () => [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort(),
     [vertente.teams],
   );
-  const [activeGroup, setActiveGroup] = useState<string>(groups[0] ?? 'A');
+  const [activeGroup, setActiveGroup] = useState<string>(groups[0] ?? '');
 
   // Brief loading flash on tab or group change
   useEffect(() => {
@@ -48,7 +49,7 @@ export const GroupsTableScreen = () => {
   const grouped = useMemo(() => {
     const result: Record<string, typeof vertente.teams> = {};
     vertente.teams.forEach(t => {
-      const g = t.group ?? 'A';
+      const g = t.group ?? '';
       if (!result[g]) result[g] = [];
       result[g].push(t);
     });
@@ -76,21 +77,6 @@ export const GroupsTableScreen = () => {
   );
 
   const showGroupSelector = activeTab !== 'table' && groups.length > 0;
-
-  /* ── Group selector pills (shared by "Resultados" and "Jogos" tabs) ── */
-  const GroupSelector = () => (
-    <View style={s.groupTabs}>
-      {groups.map(g => (
-        <TouchableOpacity
-          key={g}
-          style={[s.groupTab, activeGroup === g && s.groupTabActive]}
-          onPress={() => setActiveGroup(g)}
-        >
-          <Text style={[s.groupTabTxt, activeGroup === g && s.groupTabTxtActive]}>Grupo {g}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
 
   return (
     <View style={s.container}>
@@ -123,7 +109,19 @@ export const GroupsTableScreen = () => {
       </View>
 
       {/* ═══ Group sub-tabs (Resultados & Jogos only) ═══ */}
-      {showGroupSelector && <GroupSelector />}
+      {showGroupSelector && (
+        <View style={s.groupTabs}>
+          {groups.map(g => (
+            <TouchableOpacity
+              key={g}
+              style={[s.groupTab, activeGroup === g && s.groupTabActive]}
+              onPress={() => setActiveGroup(g)}
+            >
+              <Text style={[s.groupTabTxt, activeGroup === g && s.groupTabTxtActive]}>Grupo {g}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* ═══ Content ═══ */}
       {isLoading ? (
@@ -191,7 +189,7 @@ export const GroupsTableScreen = () => {
                         <Text style={[s.td, { flex: 1 }]}>{stats.played}</Text>
                         <Text style={[s.td, s.tdGreen, { flex: 1 }]}>{stats.wins}</Text>
                         <Text style={[s.td, s.tdRed, { flex: 1 }]}>{stats.losses}</Text>
-                        <Text style={[s.td, { flex: 1.4 }]}>{stats.setsWon}-{stats.setsLost}</Text>
+                        <Text style={[s.td, { flex: 1.4 }]}>{stats.gamesWon}-{stats.gamesLost}</Text>
                         <Text style={[s.td, s.tdPts, { flex: 1 }]}>{stats.pts}</Text>
                       </TouchableOpacity>
                     );
@@ -214,11 +212,11 @@ export const GroupsTableScreen = () => {
                 <View style={s.resultHeader}>
                   <Text style={s.resultTime}>{g.time} · {g.court}</Text>
                   <View style={[s.resultStatus,
-                  g.status === 'finished' ? s.statusDone :
-                    g.status === 'live' ? s.statusLive : s.statusSched
+                  g.status === GAME_STATUS.FINISHED ? s.statusDone :
+                    g.status === GAME_STATUS.LIVE ? s.statusLive : s.statusSched
                   ]}>
                     <Text style={s.resultStatusTxt}>
-                      {g.status === 'finished' ? '✓ Concluído' : g.status === 'live' ? '● Ao vivo' : '⏰ Agendado'}
+                      {g.status === GAME_STATUS.FINISHED ? '✓ Concluído' : g.status === GAME_STATUS.LIVE ? '● Ao vivo' : '⏰ Agendado'}
                     </Text>
                   </View>
                 </View>
@@ -261,7 +259,7 @@ export const GroupsTableScreen = () => {
                 game={g}
                 onTeamPress={setSheetTeam}
                 onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
-                onEnterResult={() => g.status === 'paused'
+                onEnterResult={() => g.status === GAME_STATUS.PAUSED
                   ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
                   : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
                 }

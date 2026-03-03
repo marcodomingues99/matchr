@@ -13,6 +13,12 @@ import { NEW_TOURNAMENT_ID } from '../utils/constants';
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfigureVertente'>;
 
+const LEVELS: Record<VertenteType, string[]> = {
+  M: ['M6', 'M5', 'M4', 'M3', 'M2', 'M1'],
+  F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1'],
+  MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1'],
+};
+
 const calcStructure = (n: number) => {
   if (n <= 4) return { groups: '1 grupo de 4', advance: 'Passam top 2', bracket: 'Semis → Final' };
   if (n <= 8) return { groups: '2 grupos de 4', advance: 'Passam top 2', bracket: 'Quartos → Final' };
@@ -25,13 +31,26 @@ const calcStructure = (n: number) => {
 export const ConfigureVertenteScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { vertenteIndex: idx, isLast, pendingVertentes } = route.params;
+  const { tournamentId, vertenteIndex: idx, isLast, pendingVertentes } = route.params;
+  const isAddingToExisting = tournamentId !== NEW_TOURNAMENT_ID;
 
-  const pendingVerts: Array<{ type: VertenteType; level: string }> = pendingVertentes
-    ? JSON.parse(pendingVertentes)
-    : [];
+  let pendingVerts: Array<{ type: VertenteType; level: string }> = [];
+  if (pendingVertentes) {
+    try {
+      pendingVerts = JSON.parse(pendingVertentes);
+    } catch {
+      // malformed JSON — fallback to empty array
+    }
+  }
 
-  const currentVert = pendingVerts[idx] ?? { type: 'M' as VertenteType, level: 'M5' };
+  // Selection phase: when no vertentes were pre-selected, let the user pick type + level
+  const [pickedType, setPickedType] = useState<VertenteType>('M');
+  const [pickedLevel, setPickedLevel] = useState<string | null>(null);
+  const needsSelection = pendingVerts.length === 0 && pickedLevel === null;
+
+  const currentVert = pickedLevel
+    ? { type: pickedType, level: pickedLevel }
+    : pendingVerts[idx] ?? { type: 'M' as VertenteType, level: 'M5' };
   const cfg = VERTENTE_CONFIG[currentVert.type];
   const totalSteps = pendingVerts.length;
   const stepsLabel = pendingVerts.map(v => v.level).join(' · ');
@@ -41,8 +60,12 @@ export const ConfigureVertenteScreen = () => {
   const structure = calcStructure(maxTeams);
 
   const handleNext = () => {
-    if (isLast) {
-      navigation.navigate('Home');
+    if (isLast || isAddingToExisting) {
+      if (isAddingToExisting) {
+        navigation.navigate('TournamentDetail', { tournamentId });
+      } else {
+        navigation.navigate('Home');
+      }
     } else {
       navigation.navigate('ConfigureVertente', {
         tournamentId: NEW_TOURNAMENT_ID,
@@ -53,15 +76,81 @@ export const ConfigureVertenteScreen = () => {
     }
   };
 
+  const handleSelectLevel = (level: string) => {
+    setPickedLevel(level);
+  };
+
+  // ── Selection phase UI ──
+  if (needsSelection) {
+    return (
+      <View style={s.container}>
+        <LinearGradient colors={Gradients.header} style={s.header}>
+          <SafeAreaView edges={['top']}>
+            <HeaderNav
+              backLabel="Torneio"
+              onBack={() => navigation.goBack()}
+            />
+            <Text style={s.title}>Adicionar Vertente</Text>
+            <Text style={s.selSubtitle}>Escolhe a categoria e nível</Text>
+          </SafeAreaView>
+        </LinearGradient>
+
+        <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg }}>
+          {/* Type selector */}
+          <Text style={s.sectionLabel}>Categoria</Text>
+          <View style={s.typeRow}>
+            {(['M', 'F', 'MX'] as VertenteType[]).map(type => {
+              const typeCfg = VERTENTE_CONFIG[type];
+              const isOn = pickedType === type;
+              return (
+                <TouchableOpacity
+                  key={type}
+                  style={[s.typeCard, isOn && { borderColor: typeCfg.color, backgroundColor: typeCfg.chipBg }]}
+                  onPress={() => setPickedType(type)}
+                >
+                  <Text style={{ fontSize: Typography.fontSize.xxl }}>{typeCfg.emoji}</Text>
+                  <Text style={[s.typeLabel, isOn && { color: typeCfg.color }]}>{typeCfg.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Level selector */}
+          <Text style={s.sectionLabel}>Nível</Text>
+          <View style={s.levelGrid}>
+            {LEVELS[pickedType].map(level => {
+              const typeCfg = VERTENTE_CONFIG[pickedType];
+              return (
+                <TouchableOpacity
+                  key={level}
+                  style={s.levelChip}
+                  onPress={() => handleSelectLevel(level)}
+                >
+                  <Text style={s.levelChipTxt}>{typeCfg.emoji} {level}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={{ height: 32 }} />
+        </ScrollView>
+        <HomeFAB onPress={() => navigation.navigate('Home')} />
+      </View>
+    );
+  }
+
+  // ── Configuration phase UI ──
   return (
     <View style={s.container}>
       <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel="Criar Torneio"
+            backLabel={isAddingToExisting ? 'Torneio' : 'Criar Torneio'}
             onBack={() => navigation.goBack()}
           />
-          <Text style={s.stepHint}>Passo {idx + 1} de {totalSteps}  ·  {stepsLabel}</Text>
+          {!isAddingToExisting && (
+            <Text style={s.stepHint}>Passo {idx + 1} de {totalSteps}  ·  {stepsLabel}</Text>
+          )}
           <View style={[s.badge, { backgroundColor: cfg.chipBg }]}>
             <Text style={{ fontSize: 16 }}>{cfg.emoji}</Text>
             <Text style={[s.badgeName, { color: cfg.color }]}>
@@ -73,11 +162,13 @@ export const ConfigureVertenteScreen = () => {
       </LinearGradient>
 
       {/* Progress dots */}
-      <View style={s.dotsRow}>
-        {pendingVerts.map((_, i) => (
-          <View key={i} style={[s.dot, i === idx && s.dotActive]} />
-        ))}
-      </View>
+      {!isAddingToExisting && (
+        <View style={s.dotsRow}>
+          {pendingVerts.map((_, i) => (
+            <View key={i} style={[s.dot, i === idx && s.dotActive]} />
+          ))}
+        </View>
+      )}
 
       <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg }}>
 
@@ -147,14 +238,16 @@ export const ConfigureVertenteScreen = () => {
         <TouchableOpacity style={s.nextBtn} onPress={handleNext}>
           <LinearGradient colors={Gradients.primary} style={s.nextGrad}>
             <Text style={s.nextTxt}>
-              {isLast
+              {isLast || isAddingToExisting
                 ? '✓ Concluir Configuração'
                 : `Próxima vertente → ${pendingVerts[idx + 1]?.level}`}
             </Text>
           </LinearGradient>
         </TouchableOpacity>
-        {isLast && (
-          <Text style={s.lastNote}>Vais direto para o teu torneio</Text>
+        {(isLast || isAddingToExisting) && (
+          <Text style={s.lastNote}>
+            {isAddingToExisting ? 'Voltas para o teu torneio' : 'Vais direto para o teu torneio'}
+          </Text>
         )}
         <View style={{ height: 32 }} />
       </ScrollView>
@@ -166,7 +259,6 @@ export const ConfigureVertenteScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 4 },
   stepHint: { color: 'rgba(255,255,255,0.6)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, marginBottom: 8 },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -175,6 +267,7 @@ const s = StyleSheet.create({
   },
   badgeName: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack },
   title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 2 },
+  selSubtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
 
   /* Progress dots */
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 14, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.gl },
@@ -183,6 +276,21 @@ const s = StyleSheet.create({
 
   scroll: { flex: 1 },
   sectionLabel: { ...TextStyles.sectionLabel, marginBottom: 10, marginTop: 4 },
+
+  /* ── Selection phase ── */
+  typeRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.lg },
+  typeCard: {
+    flex: 1, padding: 14, backgroundColor: Colors.white,
+    borderRadius: Radii.md, alignItems: 'center', gap: 6,
+    borderWidth: 2, borderColor: 'transparent', ...Shadows.card,
+  },
+  typeLabel: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.navy },
+  levelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  levelChip: {
+    paddingHorizontal: 16, paddingVertical: 12, borderRadius: Radii.md,
+    backgroundColor: Colors.white, borderWidth: 2, borderColor: Colors.gl, ...Shadows.card,
+  },
+  levelChipTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.navy },
 
   /* Incrementor */
   incrementorBox: {

@@ -235,7 +235,7 @@ export const TournamentDetailScreen = () => {
         ))}
 
         {/* Add sub-torneio */}
-        <TouchableOpacity style={s.addCard} onPress={() => navigation.navigate('EditTournament', { tournamentId: t.id })}>
+        <TouchableOpacity style={s.addCard} onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: t.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([]) })}>
           <Text style={{ fontSize: Typography.fontSize.xxxl, color: Colors.muted }}>＋</Text>
           <Text style={s.addTxt}>Adicionar sub-torneio</Text>
         </TouchableOpacity>

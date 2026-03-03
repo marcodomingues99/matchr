@@ -227,7 +227,6 @@ export const EditTournamentScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 8 },
   title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
   scroll: { flex: 1 },
   sectionLabel: { ...TextStyles.sectionLabel, fontSize: Typography.fontSize.md, marginBottom: 10 },

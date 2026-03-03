@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -12,6 +12,8 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Radii, Shadows, Spacing } from '../theme';
 import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { MIN_TEAMS_TO_START } from '../utils/constants';
+import { GROUP_CHIP_POOL } from '../utils/groupColors';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsEmpty'>;
@@ -24,6 +26,18 @@ export const GroupsEmptyScreen = () => {
 
     const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
     const teamsConfirmed = vertente.teams.filter(t => !t.withdrawn).length;
+    const isFull = teamsConfirmed >= vertente.maxTeams;
+    const isPartial = teamsConfirmed >= MIN_TEAMS_TO_START && !isFull;
+    const canImport = isFull || isPartial;
+    const remaining = vertente.maxTeams - teamsConfirmed;
+
+    // Map each sorted group letter to its index for chip color lookup
+    const groupIndex = useMemo(() => {
+        const sorted = [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort();
+        const map: Record<string, number> = {};
+        sorted.forEach((g, i) => { map[g] = i; });
+        return map;
+    }, [vertente.teams]);
 
     const [pickedFile, setPickedFile] = useState<string | null>(null);
 
@@ -71,39 +85,76 @@ export const GroupsEmptyScreen = () => {
                 {/* ── STEPPER ── */}
                 <Text style={s.stepperLabel}>PASSOS PARA COMEÇAR</Text>
 
-                {/* Step 1: Done */}
-                <View style={s.step}>
-                    <LinearGradient colors={Gradients.green} style={s.stepCircle}>
-                        <Text style={s.stepCircleTxt}>✓</Text>
-                    </LinearGradient>
+                {/* Step 1: Duplas inscritas */}
+                <View style={[s.step, !canImport && s.stepActive]}>
+                    {canImport ? (
+                        <LinearGradient
+                            colors={isFull ? Gradients.green : Gradients.paused}
+                            style={s.stepCircle}
+                        >
+                            <Text style={s.stepCircleTxt}>✓</Text>
+                        </LinearGradient>
+                    ) : (
+                        <LinearGradient colors={Gradients.primary} style={s.stepCircle}>
+                            <Text style={s.stepCircleNum}>1</Text>
+                        </LinearGradient>
+                    )}
                     <View style={s.stepContent}>
-                        <Text style={s.stepTitle}>Duplas inscritas</Text>
-                        <Text style={s.stepSub}>{teamsConfirmed}/{vertente.maxTeams} confirmadas</Text>
+                        <Text style={[s.stepTitle, !canImport && { color: Colors.blue }]}>Duplas inscritas</Text>
+                        <Text style={s.stepSub}>
+                            {isFull
+                                ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas`
+                                : isPartial
+                                    ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas — faltam ${remaining}`
+                                    : `${teamsConfirmed}/${vertente.maxTeams} confirmadas — mínimo ${MIN_TEAMS_TO_START}`
+                            }
+                        </Text>
                     </View>
+                    {!canImport && <View style={s.stepDot} />}
                 </View>
 
-                {/* Step 2: Active */}
-                <View style={[s.step, s.stepActive]}>
-                    <LinearGradient colors={Gradients.primary} style={s.stepCircle}>
-                        <Text style={s.stepCircleNum}>2</Text>
-                    </LinearGradient>
+                {/* Step 2: Importar grelha */}
+                <View style={[s.step, canImport && !pickedFile ? s.stepActive : !canImport ? s.stepLocked : undefined]}>
+                    {canImport ? (
+                        pickedFile ? (
+                            <LinearGradient colors={Gradients.green} style={s.stepCircle}>
+                                <Text style={s.stepCircleTxt}>✓</Text>
+                            </LinearGradient>
+                        ) : (
+                            <LinearGradient colors={Gradients.primary} style={s.stepCircle}>
+                                <Text style={s.stepCircleNum}>2</Text>
+                            </LinearGradient>
+                        )
+                    ) : (
+                        <View style={s.stepCircleLocked}>
+                            <Text style={s.stepCircleLockedNum}>2</Text>
+                        </View>
+                    )}
                     <View style={s.stepContent}>
-                        <Text style={[s.stepTitle, { color: Colors.blue }]}>Importar grelha</Text>
-                        <Text style={s.stepSub}>Grupos, horários e courts</Text>
+                        <Text style={[s.stepTitle, { color: canImport ? (pickedFile ? Colors.navy : Colors.blue) : Colors.muted }]}>Importar grelha</Text>
+                        <Text style={[s.stepSub, !canImport && { color: Colors.gray }]}>
+                            {pickedFile ? 'Grelha importada' : 'Grupos, horários e courts'}
+                        </Text>
                     </View>
-                    <View style={s.stepDot} />
+                    {canImport && !pickedFile && <View style={s.stepDot} />}
                 </View>
 
-                {/* Step 3: Locked */}
-                <View style={[s.step, s.stepLocked]}>
-                    <View style={s.stepCircleLocked}>
-                        <Text style={s.stepCircleLockedNum}>3</Text>
-                    </View>
+                {/* Step 3: Fase de grupos */}
+                <View style={[s.step, pickedFile && canImport ? s.stepActive : s.stepLocked]}>
+                    {pickedFile && canImport ? (
+                        <LinearGradient colors={Gradients.primary} style={s.stepCircle}>
+                            <Text style={s.stepCircleNum}>3</Text>
+                        </LinearGradient>
+                    ) : (
+                        <View style={s.stepCircleLocked}>
+                            <Text style={s.stepCircleLockedNum}>3</Text>
+                        </View>
+                    )}
                     <View style={s.stepContent}>
-                        <Text style={[s.stepTitle, { color: Colors.muted }]}>Fase de grupos</Text>
-                        <Text style={[s.stepSub, { color: Colors.gray }]}>Disponível após importação</Text>
+                        <Text style={[s.stepTitle, { color: pickedFile && canImport ? Colors.blue : Colors.muted }]}>Fase de grupos</Text>
+                        <Text style={[s.stepSub, { color: pickedFile && canImport ? Colors.muted : Colors.gray }]}>Disponível após importação</Text>
                     </View>
-                    <Text style={s.lockIcon}>🔒</Text>
+                    {pickedFile && canImport ? <View style={s.stepDot} /> : <Text style={s.lockIcon}>🔒</Text>}
                 </View>
 
                 {/* ── IMPORT CTA ── */}
@@ -127,14 +178,17 @@ export const GroupsEmptyScreen = () => {
                     </View>
                 ) : (
                     <TouchableOpacity
-                        style={s.importBox}
+                        style={[s.importBox, !canImport && s.importBoxDisabled]}
                         activeOpacity={0.8}
                         onPress={handlePickFile}
+                        disabled={!canImport}
                     >
                         <Text style={s.importEmoji}>📥</Text>
                         <Text style={s.importTitle}>Importar grelha via Excel</Text>
-                        <Text style={s.importDesc}>Traz grupos, horários e courts já definidos</Text>
-                        <LinearGradient colors={Gradients.primary} style={s.importBtn}>
+                        <Text style={s.importDesc}>
+                            {canImport ? 'Traz grupos, horários e courts já definidos' : `Adiciona pelo menos ${MIN_TEAMS_TO_START} duplas primeiro`}
+                        </Text>
+                        <LinearGradient colors={canImport ? Gradients.primary : [Colors.gray, Colors.gray] as [string, string]} style={s.importBtn}>
                             <Text style={s.importBtnTxt}>Escolher ficheiro →</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -176,23 +230,14 @@ export const GroupsEmptyScreen = () => {
                                         {team.players.map(p => p.name).join(' · ')}
                                     </Text>
                                 </View>
-                                {team.group && (
-                                    <View style={[
-                                        s.groupChip,
-                                        team.group.startsWith('A') && s.groupChipBlue,
-                                        team.group.startsWith('B') && s.groupChipGreen,
-                                        team.group.startsWith('C') && s.groupChipOrange,
-                                        team.group.startsWith('D') && s.groupChipPurple,
-                                    ]}>
-                                        <Text style={[
-                                            s.groupChipTxt,
-                                            team.group.startsWith('A') && { color: Colors.blue },
-                                            team.group.startsWith('B') && { color: Colors.greenDeep },
-                                            team.group.startsWith('C') && { color: Colors.orange },
-                                            team.group.startsWith('D') && { color: Colors.purple },
-                                        ]}>{team.group}</Text>
-                                    </View>
-                                )}
+                                {team.group && (() => {
+                                    const chip = GROUP_CHIP_POOL[(groupIndex[team.group] ?? 0) % GROUP_CHIP_POOL.length];
+                                    return (
+                                        <View style={[s.groupChip, { backgroundColor: chip.bg }]}>
+                                            <Text style={[s.groupChipTxt, { color: chip.text }]}>{team.group}</Text>
+                                        </View>
+                                    );
+                                })()}
                                 {isWithdrawn && (
                                     <Text style={s.woLabel}>W.O.</Text>
                                 )}
@@ -202,13 +247,15 @@ export const GroupsEmptyScreen = () => {
                 </View>
 
                 {/* Add team */}
-                <TouchableOpacity
-                    style={s.addBtn}
-                    activeOpacity={0.7}
-                    onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
-                >
-                    <Text style={s.addBtnTxt}>+ Adicionar dupla</Text>
-                </TouchableOpacity>
+                {!isFull && (
+                    <TouchableOpacity
+                        style={s.addBtn}
+                        activeOpacity={0.7}
+                        onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                    >
+                        <Text style={s.addBtnTxt}>+ Adicionar dupla</Text>
+                    </TouchableOpacity>
+                )}
             </ScrollView>
             <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
         </View>
@@ -224,7 +271,6 @@ const s = StyleSheet.create({
         position: 'absolute', width: 150, height: 150, borderRadius: 75,
         backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
     },
-    back: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, marginBottom: 8, paddingTop: 8 },
     title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack },
 
     /* Scroll */
@@ -269,6 +315,7 @@ const s = StyleSheet.create({
         borderRadius: Radii.lg, padding: 20, alignItems: 'center',
         backgroundColor: Colors.white, marginBottom: 20,
     },
+    importBoxDisabled: { opacity: 0.4, borderColor: Colors.gray },
     importEmoji: { fontSize: 32, marginBottom: 6 },
     importTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
     importDesc: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 4, lineHeight: 16, textAlign: 'center' },
@@ -318,10 +365,6 @@ const s = StyleSheet.create({
 
     /* Group chips */
     groupChip: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3, marginRight: 4 },
-    groupChipBlue: { backgroundColor: Colors.blueBg },
-    groupChipGreen: { backgroundColor: Colors.greenBgLight },
-    groupChipOrange: { backgroundColor: Colors.orangeBgLight },
-    groupChipPurple: { backgroundColor: Colors.purpleBgLight },
     groupChipTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
     /* Add button */

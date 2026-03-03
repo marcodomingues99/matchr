@@ -19,7 +19,7 @@ export const GamePausedScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
-  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[1];
+  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[0];
 
   return (
     <View style={s.container}>

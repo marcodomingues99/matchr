@@ -10,7 +10,7 @@ import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL } from '../utils/constants';
+import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL, MIN_TEAMS_TO_START } from '../utils/constants';
 import { LiveDot } from '../components/LiveDot';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -39,20 +39,24 @@ export const VertenteHubScreen = () => {
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
 
-  const { vertenteGames, finishedGames, liveGames, allGamesFinished } = useMemo(() => {
+  const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
     const teamIds = new Set(vertente.teams.map(t => t.id));
     const all = mockGames.filter(g => teamIds.has(g.team1.id) || teamIds.has(g.team2.id));
     const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     const live = all.filter(g => g.status === GAME_STATUS.LIVE);
+    const bracket = all.filter(g => g.phase === 'bracket');
+    const bracketDone = bracket.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     return {
       vertenteGames: all,
       finishedGames: finished,
       liveGames: live,
       allGamesFinished: all.length > 0 && all.every(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER),
+      bracketPct: bracket.length > 0 ? Math.round(bracketDone.length / bracket.length * 100) : 0,
     };
   }, [vertente.teams]);
 
-  const teamFillPct = Math.round(vertente.teams.length / vertente.maxTeams * 100);
+  const confirmedTeams = vertente.teams.filter(t => !t.withdrawn);
+  const teamFillPct = Math.round(confirmedTeams.length / vertente.maxTeams * 100);
   const gamesPct = vertenteGames.length > 0 ? Math.round(finishedGames.length / vertenteGames.length * 100) : 0;
 
   const isLive = vertente.status === VERTENTE_STATUS.GROUPS || vertente.status === VERTENTE_STATUS.BRACKET;
@@ -70,7 +74,7 @@ export const VertenteHubScreen = () => {
   const menuItems: MenuItem[] = [
     {
       icon: '👥', title: 'Duplas',
-      sub: `${vertente.teams.length}/${vertente.maxTeams} inscritas`,
+      sub: `${confirmedTeams.length}/${vertente.maxTeams} inscritas`,
       progress: teamFillPct,
       onPress: () => navigation.navigate('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id }),
       enabled: true,
@@ -86,12 +90,12 @@ export const VertenteHubScreen = () => {
         vertenteGames.length > 0 ? 'GroupsTable' : 'GroupsEmpty',
         { tournamentId: tournament.id, vertenteId: vertente.id },
       ),
-      enabled: vertente.status !== 'config',
+      enabled: vertente.status !== VERTENTE_STATUS.CONFIG && vertente.teams.filter(t => !t.withdrawn).length >= MIN_TEAMS_TO_START,
     },
     {
       icon: '🏆', title: 'Bracket Eliminatória',
       sub: 'Fases finais e quadro eliminatório',
-      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : vertente.status === VERTENTE_STATUS.BRACKET ? 35 : 0,
+      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : vertente.status === VERTENTE_STATUS.BRACKET ? bracketPct : 0,
       onPress: () => navigation.navigate('Bracket', { tournamentId: tournament.id, vertenteId: vertente.id }),
       enabled: vertente.status === VERTENTE_STATUS.BRACKET || vertente.status === VERTENTE_STATUS.FINISHED,
     },
@@ -160,7 +164,7 @@ export const VertenteHubScreen = () => {
 
         <View style={s.statsRow}>
           <View style={s.statCard}>
-            <Text style={[s.statNum, { color: Colors.blue }]}>{vertente.teams.length}</Text>
+            <Text style={[s.statNum, { color: Colors.blue }]}>{confirmedTeams.length}</Text>
             <Text style={s.statLbl}>duplas</Text>
           </View>
           <View style={s.statCard}>
@@ -231,7 +235,7 @@ export const VertenteHubScreen = () => {
         ))}
 
         {/* ═══ PHASE ACTIONS ═══ */}
-        {vertente.status === VERTENTE_STATUS.CONFIG && vertente.teams.length >= 4 && (
+        {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= MIN_TEAMS_TO_START && (
           <TouchableOpacity
             style={s.phaseBtn}
             activeOpacity={0.85}
@@ -272,8 +276,6 @@ const s = StyleSheet.create({
     position: 'absolute', width: 150, height: 150, borderRadius: 75,
     backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
   },
-  backBtn: { marginBottom: 10 },
-  back: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8 },
   title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 10 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   statusChip: {

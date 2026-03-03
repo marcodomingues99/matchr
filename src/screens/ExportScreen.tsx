@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -59,11 +59,16 @@ export const ExportScreen = () => {
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string[]>([]);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
 
   const simulateExport = (id: string) => {
     if (exporting !== null) return;
     setExporting(id);
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       setExporting(null);
       setExported(prev => [...prev, id]);
     }, 1500);

@@ -108,6 +108,12 @@ export const BracketScreen = () => {
     [],
   );
 
+  // Memoize current round games so GameCard receives stable references
+  const currentRoundGames = React.useMemo(
+    () => currentRound.matches.map(m => ({ match: m, game: mkGame(m) })),
+    [activeRound],
+  );
+
   return (
     <View style={s.container}>
       <LinearGradient colors={Gradients.header} style={s.header}>
@@ -139,7 +145,7 @@ export const BracketScreen = () => {
       </View>
 
       <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
-        {currentRound.matches.map((match) => (
+        {currentRoundGames.map(({ match, game }) => (
           <React.Fragment key={match.id}>
             {match.is3rd && (
               <View style={s.separator}>
@@ -149,7 +155,7 @@ export const BracketScreen = () => {
               </View>
             )}
             <GameCard
-              game={mkGame(match)}
+              game={game}
               showDoneBadge
               onTeamPress={setSheetTeam}
               advanceText={

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -10,8 +10,9 @@ import { GameCard } from '../components/GameCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
-import { Colors, Gradients, Typography, Spacing, Radii } from '../theme';
+import { Colors, Gradients, Typography, Spacing } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { GAME_STATUS } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsGames'>;
@@ -23,23 +24,21 @@ export const GroupsGamesScreen = () => {
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
   // Extract groups from this vertente's teams
+  const vertenteTeamIds = React.useMemo(() => new Set(vertente.teams.map(t => t.id)), [vertente.teams]);
   const groups = [...new Set(
     vertente.teams.map(t => t.group).filter(Boolean) as string[]
   )].sort();
-  const [activeGroup, setActiveGroup] = React.useState<string>(groups[0] ?? 'A');
+  const [activeGroup, setActiveGroup] = React.useState<string>(groups[0] ?? '');
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    setIsLoading(true);
-    const t = setTimeout(() => setIsLoading(false), 200);
-    return () => clearTimeout(t);
-  }, [activeGroup]);
-
-  // Filter games: show games where either team belongs to the active group
-  const filteredGames = mockGames.filter(g =>
-    g.team1.group === activeGroup || g.team2.group === activeGroup
+  // Filter games: scope to this vertente AND active group
+  const filteredGames = React.useMemo(
+    () => mockGames.filter(g =>
+      vertenteTeamIds.has(g.team1.id) &&
+      vertenteTeamIds.has(g.team2.id) &&
+      (g.team1.group === activeGroup || g.team2.group === activeGroup),
+    ),
+    [activeGroup, vertenteTeamIds],
   );
 
   return (
@@ -71,19 +70,7 @@ export const GroupsGamesScreen = () => {
       )}
 
       <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
-        {isLoading ? (
-          [0, 1, 2].map(i => (
-            <View key={i} style={s.skeletonCard}>
-              <View style={s.skeletonHeader} />
-              <View style={s.skeletonRow}>
-                <View style={[s.skeletonLine, { flex: 1, height: Typography.fontSize.lg }]} />
-                <View style={s.skeletonScore} />
-                <View style={[s.skeletonLine, { flex: 1, height: Typography.fontSize.lg }]} />
-              </View>
-              <View style={[s.skeletonLine, { width: 80, height: Typography.fontSize.xs, marginTop: 8 }]} />
-            </View>
-          ))
-        ) : filteredGames.length === 0 ? (
+        {filteredGames.length === 0 ? (
           <View style={s.empty}>
             <Text style={s.emptyTxt}>Sem jogos para o Grupo {activeGroup}</Text>
           </View>
@@ -94,7 +81,7 @@ export const GroupsGamesScreen = () => {
               game={g}
               onTeamPress={setSheetTeam}
               onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
-              onEnterResult={() => g.status === 'paused'
+              onEnterResult={() => g.status === GAME_STATUS.PAUSED
                 ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
                 : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
               }
@@ -138,12 +125,5 @@ const s = StyleSheet.create({
   scroll: { flex: 1 },
   empty: { alignItems: 'center', marginTop: 40 },
   emptyTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
-
-  /* Skeleton */
-  skeletonCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.sm },
-  skeletonHeader: { height: 10, width: 120, backgroundColor: Colors.gl, borderRadius: 5, marginBottom: Spacing.md },
-  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  skeletonLine: { backgroundColor: Colors.gl, borderRadius: 5 },
-  skeletonScore: { width: 60, height: 28, backgroundColor: Colors.gl, borderRadius: 8 },
 
 });

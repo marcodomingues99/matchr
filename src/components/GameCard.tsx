@@ -150,9 +150,11 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
 
           {/* Bottom actions */}
           <View style={gc.finishedFooter}>
+            {onEnterResult && (
             <TouchableOpacity style={gc.editResultBtn} onPress={onEnterResult}>
               <Text style={gc.editResultTxt}>✏️ Editar resultado</Text>
             </TouchableOpacity>
+            )}
             {advanceText ? (
               <Text style={gc.advanceText}>{advanceText} ›</Text>
             ) : null}

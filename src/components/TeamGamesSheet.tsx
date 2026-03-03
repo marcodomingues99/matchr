@@ -7,7 +7,7 @@ import {
     ScrollView,
     TouchableOpacity,
     StyleSheet,
-    Dimensions,
+    useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,7 +40,7 @@ function formatSets(sets: Game['sets'], isTeam1: boolean): string {
         .join(' / ');
 }
 
-export const TeamGamesSheet: React.FC<Props> = ({
+export const TeamGamesSheet: React.FC<Props> = React.memo(({
     visible,
     onClose,
     team,
@@ -48,6 +48,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
     games,
 }) => {
     const insets = useSafeAreaInsets();
+    const { height: screenH } = useWindowDimensions();
 
     if (!team || !vertente) return null;
 
@@ -90,7 +91,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
             />
 
             {/* Bottom sheet */}
-            <View style={[s.sheet, { paddingBottom: insets.bottom + 8 }]}>
+            <View style={[s.sheet, { paddingBottom: insets.bottom + 8, maxHeight: screenH * 0.82 }]}>
                 {/* Pull handle */}
                 <View style={s.handleWrap}>
                     <View style={s.handle} />
@@ -285,9 +286,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
             </View>
         </Modal>
     );
-};
-
-const { height: SCREEN_H } = Dimensions.get('window');
+});
 
 const s = StyleSheet.create({
     overlay: {
@@ -302,7 +301,6 @@ const s = StyleSheet.create({
         backgroundColor: Colors.white,
         borderTopLeftRadius: 22,
         borderTopRightRadius: 22,
-        maxHeight: SCREEN_H * 0.82,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: -8 },
         shadowOpacity: 0.3,

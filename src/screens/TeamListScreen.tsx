@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -25,6 +25,7 @@ export const TeamListScreen = () => {
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
   const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
+  const isConfig = vertente.status === 'config';
   const statusLabel =
     vertente.status === 'groups' ? 'Grupos gerados' :
       vertente.status === 'bracket' ? 'Bracket ativo' :
@@ -81,7 +82,7 @@ export const TeamListScreen = () => {
         <View style={s.legend}>
           <Text style={s.legendTxt}>✏️ editar</Text>
           <Text style={s.legendSep}>|</Text>
-          <Text style={s.legendTxt}>🚫 desistência</Text>
+          <Text style={s.legendTxt}>{isConfig ? '🗑️ remover' : '🚫 desistência'}</Text>
         </View>
 
         {/* ── Teams ── */}
@@ -156,15 +157,34 @@ export const TeamListScreen = () => {
                   ) : (
                     <View style={s.actions}>
                       <TouchableOpacity
-                        onPress={() => navigation.navigate('EditTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                        onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
                       >
                         <Text style={s.actionIcon}>✏️</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
-                      >
-                        <Text style={[s.actionIcon, s.actionIconMuted]}>🚫</Text>
-                      </TouchableOpacity>
+                      {isConfig ? (
+                        <TouchableOpacity
+                          onPress={() => Alert.alert(
+                            'Remover dupla',
+                            `Remover "${team.name}" da lista?`,
+                            [
+                              { text: 'Cancelar', style: 'cancel' },
+                              { text: 'Remover', style: 'destructive', onPress: () => {
+                                const i = vertente.teams.findIndex(t => t.id === team.id);
+                                if (i !== -1) vertente.teams.splice(i, 1);
+                                navigation.replace('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
+                              }},
+                            ],
+                          )}
+                        >
+                          <Text style={[s.actionIcon, s.actionIconMuted]}>🗑️</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                        >
+                          <Text style={[s.actionIcon, s.actionIconMuted]}>🚫</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
                 </TouchableOpacity>

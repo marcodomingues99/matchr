@@ -22,7 +22,7 @@ export const EnterResultScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
-  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[1];
+  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[0];
 
   const isEditing = game.status === 'finished' && !!game.sets?.length;
 
@@ -172,7 +172,6 @@ export const EnterResultScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 8 },
   title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
   subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
   scroll: { flex: 1 },

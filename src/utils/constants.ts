@@ -1,5 +1,10 @@
+import { Colors } from '../theme';
+
 /** Sentinel used when a tournament is being created and has no real ID yet */
 export const NEW_TOURNAMENT_ID = 'new' as const;
+
+/** Minimum confirmed teams required to start groups phase */
+export const MIN_TEAMS_TO_START = 4;
 
 /** Vertente lifecycle statuses */
 export const VERTENTE_STATUS = {
@@ -39,7 +44,6 @@ export const parseDatePt = (s: string): Date | null => {
 };
 
 /** Accent color per vertente lifecycle status */
-import { Colors } from '../theme';
 export const STATUS_COLOR: Record<string, string> = {
   config: Colors.orange,
   groups: Colors.blue,

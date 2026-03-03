@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VertenteType, VertenteLevel } from '../types';
-import { Colors, Spacing, Radii, Typography } from '../theme';
+import { Colors, Radii, Typography } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 interface SubBadgeProps {
@@ -18,7 +18,6 @@ export const SubBadge: React.FC<SubBadgeProps> = React.memo(({ type, level, smal
       <Text style={styles.emoji}>{config.emoji}</Text>
       <View>
         <Text style={[styles.name, small && styles.nameSmall]}>{config.label}</Text>
-        {!small && <Text style={styles.level}>{level}</Text>}
       </View>
       {!small && <View style={styles.levelBadge}><Text style={styles.levelText}>{level}</Text></View>}
     </LinearGradient>
@@ -42,7 +41,6 @@ const styles = StyleSheet.create({
   emoji: { fontSize: Typography.fontSize.lg },
   name: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
   nameSmall: { fontSize: Typography.fontSize.sm },
-  level: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold },
   levelBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: Radii.full,

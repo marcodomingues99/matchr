@@ -78,16 +78,16 @@ export const mockTournaments: Tournament[] = [
         courts: 2,
         status: 'groups', qualifiersPerGroup: 2,
         teams: [
-          { id: 'tm1', name: 'Relâmpago', players: [{ id: 'pm1', name: 'Duarte Mendes' }, { id: 'pm2', name: 'Henrique Vaz' }] },
-          { id: 'tm2', name: 'Padel Warriors', players: [{ id: 'pm3', name: 'Tomás Ribeiro' }, { id: 'pm4', name: 'Bernardo Gomes' }] },
-          { id: 'tm3', name: 'Full Ace', players: [{ id: 'pm5', name: 'Gustavo Neves' }, { id: 'pm6', name: 'Leonardo Franco' }] },
-          { id: 'tm4', name: 'Bandeja Mortal', players: [{ id: 'pm7', name: 'Samuel Pires' }, { id: 'pm8', name: 'Dinis Soares' }] },
-          { id: 'tm5', name: 'Contra-Ataque', players: [{ id: 'pm9', name: 'Rodrigo Cardoso' }, { id: 'pm10', name: 'Afonso Moreira' }] },
-          { id: 'tm6', name: 'Vibora Kings', players: [{ id: 'pm11', name: 'Martim Oliveira' }, { id: 'pm12', name: 'Lourenço Reis' }] },
-          { id: 'tm7', name: 'Smash Bros', players: [{ id: 'pm13', name: 'Francisco Teixeira' }, { id: 'pm14', name: 'Gonçalo Lima' }] },
-          { id: 'tm8', name: 'Fundo do Court', players: [{ id: 'pm15', name: 'Vicente Araújo' }, { id: 'pm16', name: 'Salvador Matos' }] },
-          { id: 'tm9', name: 'Drop Shot FC', withdrawn: true, players: [{ id: 'pm17', name: 'Carlos Faria' }, { id: 'pm18', name: 'Ricardo Braga' }] },
-          { id: 'tm10', name: 'Os Lobinhos', players: [{ id: 'pm19', name: 'Ivo Monteiro' }, { id: 'pm20', name: 'Alexandre Cunha' }] },
+          { id: 'tm1', name: 'Relâmpago', group: 'A', players: [{ id: 'pm1', name: 'Duarte Mendes' }, { id: 'pm2', name: 'Henrique Vaz' }] },
+          { id: 'tm2', name: 'Padel Warriors', group: 'A', players: [{ id: 'pm3', name: 'Tomás Ribeiro' }, { id: 'pm4', name: 'Bernardo Gomes' }] },
+          { id: 'tm3', name: 'Full Ace', group: 'A', players: [{ id: 'pm5', name: 'Gustavo Neves' }, { id: 'pm6', name: 'Leonardo Franco' }] },
+          { id: 'tm4', name: 'Bandeja Mortal', group: 'B', players: [{ id: 'pm7', name: 'Samuel Pires' }, { id: 'pm8', name: 'Dinis Soares' }] },
+          { id: 'tm5', name: 'Contra-Ataque', group: 'B', players: [{ id: 'pm9', name: 'Rodrigo Cardoso' }, { id: 'pm10', name: 'Afonso Moreira' }] },
+          { id: 'tm6', name: 'Vibora Kings', group: 'B', players: [{ id: 'pm11', name: 'Martim Oliveira' }, { id: 'pm12', name: 'Lourenço Reis' }] },
+          { id: 'tm7', name: 'Smash Bros', group: 'C', players: [{ id: 'pm13', name: 'Francisco Teixeira' }, { id: 'pm14', name: 'Gonçalo Lima' }] },
+          { id: 'tm8', name: 'Fundo do Court', group: 'C', players: [{ id: 'pm15', name: 'Vicente Araújo' }, { id: 'pm16', name: 'Salvador Matos' }] },
+          { id: 'tm9', name: 'Drop Shot FC', group: 'C', withdrawn: true, players: [{ id: 'pm17', name: 'Carlos Faria' }, { id: 'pm18', name: 'Ricardo Braga' }] },
+          { id: 'tm10', name: 'Os Lobinhos', group: 'A', players: [{ id: 'pm19', name: 'Ivo Monteiro' }, { id: 'pm20', name: 'Alexandre Cunha' }] },
         ],
       },
       {
@@ -106,7 +106,12 @@ export const mockTournaments: Tournament[] = [
         maxTeams: 8,
         courts: 2,
         status: 'config',
-        teams: [],
+        teams: [
+          { id: 'tc1', name: 'Mix & Match', players: [{ id: 'pc1', name: 'Ricardo Nunes', phone: '911223344' }, { id: 'pc2', name: 'Sara Oliveira', phone: '911223345' }] },
+          { id: 'tc2', name: 'Padel Fusion', players: [{ id: 'pc3', name: 'André Vieira', phone: '911223346' }, { id: 'pc4', name: 'Marta Rodrigues', phone: '911223347' }] },
+          { id: 'tc3', name: 'Court Breakers', players: [{ id: 'pc5', name: 'Tiago Barros', phone: '911223348' }, { id: 'pc6', name: 'Joana Ferreira', phone: '911223349' }] },
+          { id: 'tc4', name: 'Volley Mix', players: [{ id: 'pc7', name: 'Daniel Sousa', phone: '911223350' }, { id: 'pc8', name: 'Inês Cardoso', phone: '911223351' }] },
+        ],
       },
       {
         id: 'v11',
@@ -152,7 +157,7 @@ export const mockTournaments: Tournament[] = [
   },
   {
     id: '3',
-    name: 'Masters Inverno 2025',
+    name: 'Masters Inverno 2026',
     location: 'Cascais',
     startDate: '10 Jan 2026',
     endDate: '12 Jan 2026',
@@ -383,5 +388,3 @@ export const mockGames: Game[] = [
     status: 'paused',
   },
 ];
-
-export const MOCK_TOURNAMENTS = mockTournaments;

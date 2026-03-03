@@ -146,7 +146,13 @@ export const EditGameScreen = () => {
         </TouchableOpacity>
 
         {/* Walkover */}
-        <TouchableOpacity style={s.walkoverBtn}>
+        <TouchableOpacity
+          style={s.walkoverBtn}
+          onPress={() => {
+            // TODO: implement walkover logic (update game status + navigate back)
+            navigation.goBack();
+          }}
+        >
           <Text style={s.walkoverTxt}>⚠️ Marcar como walkover</Text>
         </TouchableOpacity>
 
