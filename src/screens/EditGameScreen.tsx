@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,8 +17,10 @@ type Route = RouteProp<RootStackParamList, 'EditGame'>;
 export const EditGameScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  if (!tournament) return null;
+  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!vertente) return null;
   const game = mockGames.find(g => g.id === route.params.gameId);
 
   // Fallback: build a placeholder scheduled game when ID is not in mockGames (e.g. bracket-generated IDs)
@@ -56,6 +58,30 @@ export const EditGameScreen = () => {
     () => Array.from({ length: vertente.courts }, (_, i) => `C${i + 1}`),
     [vertente.courts],
   );
+
+  const persistScheduling = () => {
+    if (!game) return;
+    game.court = court;
+    game.date = date;
+    game.time = time;
+  };
+
+  const handleSave = () => {
+    persistScheduling();
+    navigation.goBack();
+  };
+
+  const markWalkover = (winnerId: string) => {
+    if (!game) {
+      navigation.goBack();
+      return;
+    }
+    persistScheduling();
+    game.status = 'walkover';
+    game.winnerId = winnerId;
+    game.sets = [];
+    navigation.goBack();
+  };
 
   return (
     <View style={s.container}>
@@ -140,7 +166,7 @@ export const EditGameScreen = () => {
 
         <View style={{ height: Spacing.xl }} />
 
-        <TouchableOpacity style={s.saveBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={s.saveBtn} onPress={handleSave}>
           <LinearGradient colors={Gradients.primary} style={s.saveGrad}>
             <Text style={s.saveTxt}>✓ Guardar alterações</Text>
           </LinearGradient>
@@ -150,8 +176,15 @@ export const EditGameScreen = () => {
         <TouchableOpacity
           style={s.walkoverBtn}
           onPress={() => {
-            // TODO: implement walkover logic (update game status + navigate back)
-            navigation.goBack();
+            Alert.alert(
+              'Marcar walkover',
+              'Escolhe a equipa vencedora por W.O.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                { text: gameData.team1.name, onPress: () => markWalkover(gameData.team1.id) },
+                { text: gameData.team2.name, onPress: () => markWalkover(gameData.team2.id) },
+              ],
+            );
           }}
         >
           <Text style={s.walkoverTxt}>⚠️ Marcar como walkover</Text>

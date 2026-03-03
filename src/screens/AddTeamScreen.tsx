@@ -19,8 +19,10 @@ type Route = RouteProp<RootStackParamList, 'AddTeam'>;
 export const AddTeamScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  if (!tournament) return null;
+  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!vertente) return null;
 
   // Detect edit mode via teamId param
   const editTeamId = route.params.teamId;

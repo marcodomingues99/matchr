@@ -22,7 +22,8 @@ type Route = RouteProp<RootStackParamList, 'EditTournament'>;
 export const EditTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  if (!tournament) return null;
 
   const [name, setName] = useState(tournament.name);
   const [location, setLocation] = useState(tournament.location);

@@ -5,7 +5,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { mockTournaments, mockGames } from '../mock/data';
 import { Colors, Typography, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
@@ -15,10 +15,14 @@ type Route = RouteProp<RootStackParamList, 'FinishedTournament'>;
 export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const t = mockTournaments.find(x => x.id === route.params.tournamentId) ?? mockTournaments[0];
+    const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+    if (!t) return null;
 
     const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
-    const totalGames = t.vertentes.reduce((sum, v) => sum + Math.max(v.teams.length * 2, 0), 0);
+    const totalGames = React.useMemo(() => {
+        const teamIds = new Set(t.vertentes.flatMap(v => v.teams.map(team => team.id)));
+        return mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id)).length;
+    }, [t]);
 
     return (
         <View style={s.root}>

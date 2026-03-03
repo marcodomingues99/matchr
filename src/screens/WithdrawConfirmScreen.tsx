@@ -21,8 +21,10 @@ export const WithdrawConfirmScreen = () => {
     const route = useRoute<Route>();
     const [selected, setSelected] = useState<WithdrawOption>('walkover');
 
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-    const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+    if (!tournament) return null;
+    const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
+    if (!vertente) return null;
     const teamIdx = vertente.teams.findIndex(t => t.id === route.params.teamId);
     const team = vertente.teams[teamIdx];
 

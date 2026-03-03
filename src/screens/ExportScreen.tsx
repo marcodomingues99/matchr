@@ -55,8 +55,10 @@ const SECTIONS: Section[] = [
 export const ExportScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  if (!tournament) return null;
+  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!vertente) return null;
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);

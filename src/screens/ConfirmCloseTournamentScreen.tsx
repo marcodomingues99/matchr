@@ -32,11 +32,10 @@ const initials = (name: string) =>
 export const ConfirmCloseTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const tournament =
-        mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-    const vertente =
-        tournament.vertentes.find(v => v.id === route.params.vertenteId) ??
-        tournament.vertentes[0];
+    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+    if (!tournament) return null;
+    const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
+    if (!vertente) return null;
 
     // Games for this vertente's teams
     const vertenteTeamIds = new Set(vertente.teams.map(t => t.id));

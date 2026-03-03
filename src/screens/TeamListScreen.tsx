@@ -133,7 +133,7 @@ export const TeamListScreen = () => {
                       {isWithdrawn && <Text style={s.withdrawnLabel}> 🚫 Desistência</Text>}
                     </View>
                     <Text style={s.teamPlayers} numberOfLines={1}>
-                      {team.players.map((p: any) => p.name).join(' · ')}
+                      {team.players.map(p => p.name).join(' · ')}
                     </Text>
                   </View>
 
@@ -166,11 +166,12 @@ export const TeamListScreen = () => {
                             `Remover "${team.name}" da lista?`,
                             [
                               { text: 'Cancelar', style: 'cancel' },
-                              { text: 'Remover', style: 'destructive', onPress: () => {
-                                const i = vertente.teams.findIndex(t => t.id === team.id);
-                                if (i !== -1) vertente.teams.splice(i, 1);
-                                navigation.replace('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
-                              }},
+                              {
+                                text: 'Remover', style: 'destructive', onPress: () => {
+                                  vertente.teams = vertente.teams.filter(t => t.id !== team.id);
+                                  navigation.replace('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
+                                }
+                              },
                             ],
                           )}
                         >
