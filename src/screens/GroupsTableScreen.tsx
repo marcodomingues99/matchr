@@ -14,7 +14,7 @@ import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme
 import { calcStats } from '../utils/scoring';
 import { GROUP_GRADIENT_POOL } from '../utils/groupColors';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS } from '../utils/constants';
+import { GAME_STATUS, GAME_STATUS_LABEL } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsTable'>;
@@ -24,8 +24,9 @@ type TabKey = 'table' | 'results' | 'games';
 export const GroupsTableScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!tournament || !vertente) return null;
 
   const [activeTab, setActiveTab] = useState<TabKey>('table');
   const [sheetTeam, setSheetTeam] = useState<Team | null>(null);
@@ -216,7 +217,7 @@ export const GroupsTableScreen = () => {
                     g.status === GAME_STATUS.LIVE ? s.statusLive : s.statusSched
                   ]}>
                     <Text style={s.resultStatusTxt}>
-                      {g.status === GAME_STATUS.FINISHED ? '✓ Concluído' : g.status === GAME_STATUS.LIVE ? '● Ao vivo' : '⏰ Agendado'}
+                      {GAME_STATUS_LABEL[g.status] ?? g.status}
                     </Text>
                   </View>
                 </View>

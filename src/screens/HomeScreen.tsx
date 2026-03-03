@@ -17,7 +17,7 @@ import { mockTournaments } from '../mock/data';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { LiveDot } from '../components/LiveDot';
-import { parseDatePt, STATUS_LABEL } from '../utils/constants';
+import { parseDatePt, STATUS_LABEL, PHASE_WEIGHT, PHASE_ORDER } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -164,17 +164,15 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
   const currentDay = start ? Math.min(totalDays, Math.max(1, Math.round((now.getTime() - start.getTime()) / 86400000) + 1)) : 1;
 
   // Compute progress from vertente statuses
-  const statusWeight = { config: 0, groups: 0.33, bracket: 0.66, finished: 1 } as const;
   const progress = t.vertentes.length > 0
-    ? t.vertentes.reduce((sum, v) => sum + (statusWeight[v.status] ?? 0), 0) / t.vertentes.length
+    ? t.vertentes.reduce((sum, v) => sum + (PHASE_WEIGHT[v.status] ?? 0), 0) / t.vertentes.length
     : 0;
 
   // Most advanced phase label
-  const phaseOrder = ['config', 'groups', 'bracket', 'finished'] as const;
-  const maxPhase = t.vertentes.reduce((best, v) => {
-    const idx = phaseOrder.indexOf(v.status);
-    return idx > phaseOrder.indexOf(best) ? v.status : best;
-  }, 'config' as typeof phaseOrder[number]);
+  const maxPhase = t.vertentes.reduce<string>((best, v) => {
+    const idx = PHASE_ORDER.indexOf(v.status);
+    return idx > PHASE_ORDER.indexOf(best as typeof v.status) ? v.status : best;
+  }, PHASE_ORDER[0]);
   const roundLabel = STATUS_LABEL[maxPhase] ?? 'Em preparação';
 
   return (

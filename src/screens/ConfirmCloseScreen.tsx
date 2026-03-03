@@ -16,14 +16,32 @@ type Route = RouteProp<RootStackParamList, 'ConfirmClose'>;
 export const ConfirmCloseScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
-  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const game = mockGames.find(g => g.id === route.params.gameId);
+
+  if (!tournament || !vertente || !game) {
+    return (
+      <View style={s.container}>
+        <LinearGradient colors={Gradients.green} style={s.header}>
+          <SafeAreaView edges={['top']}>
+            <HeaderNav backLabel="Voltar" onBack={() => navigation.goBack()} />
+            <Text style={s.title}>Confirmar Resultado</Text>
+          </SafeAreaView>
+        </LinearGradient>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.muted, textAlign: 'center' }}>
+            Jogo não encontrado.
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   const winnerIsTeam1 = game.winnerId === game.team1.id;
   const winner = winnerIsTeam1 ? game.team1 : game.team2;
   const loser = winnerIsTeam1 ? game.team2 : game.team1;
-  const sets = game.sets ?? [{ team1: 6, team2: 4 }, { team1: 6, team2: 3 }];
+  const sets = game.sets ?? [];
   const winnerSets = sets.filter(s => winnerIsTeam1 ? s.team1 > s.team2 : s.team2 > s.team1).length;
   const loserSets = sets.length - winnerSets;
 

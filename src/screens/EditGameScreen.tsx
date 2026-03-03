@@ -9,7 +9,7 @@ import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
-import { MONTHS } from '../utils/constants';
+import { parseDatePt, GAME_STATUS_COLOR, GAME_STATUS_LABEL } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'EditGame'>;
@@ -26,7 +26,7 @@ export const EditGameScreen = () => {
     id: route.params.gameId,
     team1: { id: 'tmp-t1', name: 'Equipa 1', players: [{ id: 'x1', name: '' }, { id: 'x2', name: '' }] },
     team2: { id: 'tmp-t2', name: 'Equipa 2', players: [{ id: 'x3', name: '' }, { id: 'x4', name: '' }] },
-    court: 'C1', date: '14 Mar', time: '10:00', phase: 'groups' as const,
+    court: 'C1', date: '', time: '', phase: 'groups' as const,
     status: 'scheduled' as const,
   };
 
@@ -36,12 +36,9 @@ export const EditGameScreen = () => {
 
   // Generate all tournament days from startDate to endDate
   const tournamentDays = useMemo(() => {
-    const parse = (s: string) => {
-      const [d, m, y] = s.split(' ');
-      return new Date(parseInt(y ?? '2026'), MONTHS[m] ?? 0, parseInt(d));
-    };
-    const start = parse(tournament.startDate);
-    const end = parse(tournament.endDate);
+    const start = parseDatePt(tournament.startDate);
+    const end = parseDatePt(tournament.endDate);
+    if (!start || !end) return [];
     const days: string[] = [];
     const cur = new Date(start);
     while (cur <= end) {
@@ -54,7 +51,11 @@ export const EditGameScreen = () => {
     return days;
   }, [tournament.startDate, tournament.endDate]);
 
-  const courts = ['C1', 'C2', 'C3', 'C4'];
+  // Derive courts from vertente config
+  const courts = useMemo(
+    () => Array.from({ length: vertente.courts }, (_, i) => `C${i + 1}`),
+    [vertente.courts],
+  );
 
   return (
     <View style={s.container}>
@@ -131,9 +132,9 @@ export const EditGameScreen = () => {
         {/* Status */}
         <Text style={s.sectionLabel}>Estado</Text>
         <View style={s.statusCard}>
-          <View style={[s.statusDot, { backgroundColor: gameData.status === 'live' ? Colors.red : gameData.status === 'finished' ? Colors.green : Colors.yellow }]} />
+          <View style={[s.statusDot, { backgroundColor: GAME_STATUS_COLOR[gameData.status] ?? Colors.yellow }]} />
           <Text style={s.statusTxt}>
-            {gameData.status === 'live' ? '● Ao vivo' : gameData.status === 'finished' ? '✓ Concluído' : '⏰ Agendado'}
+            {GAME_STATUS_LABEL[gameData.status] ?? gameData.status}
           </Text>
         </View>
 

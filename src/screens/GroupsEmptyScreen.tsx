@@ -21,8 +21,9 @@ type Route = RouteProp<RootStackParamList, 'GroupsEmpty'>;
 export const GroupsEmptyScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-    const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+    const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+    if (!tournament || !vertente) return null;
 
     const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
     const teamsConfirmed = vertente.teams.filter(t => !t.withdrawn).length;

@@ -17,9 +17,10 @@ type Route = RouteProp<RootStackParamList, 'GamePaused'>;
 export const GamePausedScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
-  const game = mockGames.find(g => g.id === route.params.gameId) ?? mockGames[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const game = mockGames.find(g => g.id === route.params.gameId);
+  if (!tournament || !vertente || !game) return null;
 
   return (
     <View style={s.container}>

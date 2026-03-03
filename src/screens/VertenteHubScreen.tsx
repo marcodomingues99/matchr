@@ -35,8 +35,9 @@ const PROGRESS_GRAD: Record<string, readonly [string, string]> = {
 export const VertenteHubScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!tournament || !vertente) return null;
 
 
   const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {

@@ -51,7 +51,8 @@ const getCountdown = (startDate: string) => {
 export const TournamentDetailScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const t = mockTournaments.find(x => x.id === route.params.tournamentId) ?? mockTournaments[0];
+  const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+  if (!t) return null;
   const isUpcoming = t.status === 'upcoming';
 
   const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);

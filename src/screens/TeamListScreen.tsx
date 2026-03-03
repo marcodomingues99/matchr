@@ -14,6 +14,7 @@ import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
 import { calcStats } from '../utils/scoring';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { STATUS_LABEL } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'TeamList'>;
@@ -21,16 +22,13 @@ type Route = RouteProp<RootStackParamList, 'TeamList'>;
 export const TeamListScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  if (!tournament || !vertente) return null;
 
   const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
   const isConfig = vertente.status === 'config';
-  const statusLabel =
-    vertente.status === 'groups' ? 'Grupos gerados' :
-      vertente.status === 'bracket' ? 'Bracket ativo' :
-        vertente.status === 'finished' ? 'Concluído' :
-          'Em preparação';
+  const statusLabel = STATUS_LABEL[vertente.status] ?? 'Em preparação';
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 

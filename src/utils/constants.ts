@@ -67,3 +67,39 @@ export const STATUS_LABEL: Record<string, string> = {
   bracket: 'Bracket',
   finished: 'Concluído',
 };
+
+/** Display label per game status */
+export const GAME_STATUS_LABEL: Record<string, string> = {
+  [GAME_STATUS.LIVE]: '● Ao vivo',
+  [GAME_STATUS.PAUSED]: '⏸ Pausado',
+  [GAME_STATUS.FINISHED]: '✓ Concluído',
+  [GAME_STATUS.SCHEDULED]: '⏰ Agendado',
+  [GAME_STATUS.WALKOVER]: '⚠️ Walkover',
+};
+
+/** Vertente phase order (least → most advanced) */
+export const PHASE_ORDER = [
+  VERTENTE_STATUS.CONFIG,
+  VERTENTE_STATUS.GROUPS,
+  VERTENTE_STATUS.BRACKET,
+  VERTENTE_STATUS.FINISHED,
+] as const;
+
+/** Progress weight per vertente phase (0–1) */
+export const PHASE_WEIGHT: Record<string, number> = {
+  [VERTENTE_STATUS.CONFIG]: 0,
+  [VERTENTE_STATUS.GROUPS]: 0.33,
+  [VERTENTE_STATUS.BRACKET]: 0.66,
+  [VERTENTE_STATUS.FINISHED]: 1,
+};
+
+/** Bracket round labels by phase key */
+export const BRACKET_ROUND_LABEL: Record<string, string> = {
+  r16: 'Oitavos',
+  qf: 'Quartos',
+  sf: 'Meias',
+  final: 'Final',
+};
+
+/** Bracket round display order */
+export const BRACKET_ROUND_ORDER = ['r16', 'qf', 'sf', 'final'] as const;

@@ -5,21 +5,22 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { calcStats } from '../utils/scoring';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Podium'>;
 
-const MOCK_PODIUM = [
-  { pos: 1, name: 'Os Invencíveis', players: 'João Silva & Miguel Costa', sets: '12-4' },
-  { pos: 2, name: 'Power Smash', players: 'Carlos Lopes & Pedro Martins', sets: '10-7' },
-  { pos: 3, name: 'Net Hunters', players: 'Tiago Rocha & Hugo Pinto', sets: '9-8' },
-  { pos: 4, name: 'Ace Force', players: 'Ricardo Alves & Vítor Cunha', sets: '7-9' },
-];
+interface PodiumEntry {
+  pos: number;
+  name: string;
+  players: string;
+  sets: string;
+}
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 const PODIUM_COLORS = [Colors.yellow, Colors.silver, Colors.bronze];
@@ -28,12 +29,52 @@ const PODIUM_HEIGHTS = [110, 80, 65];
 export const PodiumScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
+  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
 
-  // Reorder for podium display: 2nd, 1st, 3rd
-  const podiumOrder = [MOCK_PODIUM[1], MOCK_PODIUM[0], MOCK_PODIUM[2]];
-  const podiumHeights = [PODIUM_HEIGHTS[1], PODIUM_HEIGHTS[0], PODIUM_HEIGHTS[2]];
+  // Derive ranking from actual team stats
+  const ranking: PodiumEntry[] = React.useMemo(() => {
+    if (!vertente) return [];
+    return vertente.teams
+      .filter(t => !t.withdrawn)
+      .map(team => {
+        const stats = calcStats(team.id, mockGames);
+        return {
+          pos: 0,
+          name: team.name,
+          players: team.players.map(p => p.name).join(' & '),
+          sets: `${stats.gamesWon}-${stats.gamesLost}`,
+          _sortKey: stats.pts * 10000 + (stats.gamesWon - stats.gamesLost),
+        };
+      })
+      .sort((a, b) => b._sortKey - a._sortKey)
+      .map(({ _sortKey, ...rest }, i) => ({ ...rest, pos: i + 1 }));
+  }, [vertente]);
+
+  if (!tournament || !vertente) {
+    return (
+      <View style={s.container}>
+        <LinearGradient colors={Gradients.header} style={s.header}>
+          <SafeAreaView edges={['top']}>
+            <HeaderNav backLabel="Voltar" onBack={() => navigation.goBack()} />
+            <Text style={s.title}>🏆 Pódio Final</Text>
+          </SafeAreaView>
+        </LinearGradient>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg }}>
+          <Text style={{ fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.muted, textAlign: 'center' }}>
+            Torneio ou sub-torneio não encontrado.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Reorder top 3 for podium display: 2nd, 1st, 3rd
+  const top3 = ranking.slice(0, 3);
+  const podiumOrder = top3.length >= 3 ? [top3[1], top3[0], top3[2]] : top3;
+  const podiumHeights = top3.length >= 3
+    ? [PODIUM_HEIGHTS[1], PODIUM_HEIGHTS[0], PODIUM_HEIGHTS[2]]
+    : top3.map((_, i) => PODIUM_HEIGHTS[i]);
 
   return (
     <View style={s.container}>
@@ -41,7 +82,10 @@ export const PodiumScreen = () => {
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onBack={() => tournament.status === 'finished'
+              ? navigation.navigate('FinishedTournament', { tournamentId: tournament.id })
+              : navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })
+            }
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>🏆 Pódio Final</Text>
@@ -68,7 +112,7 @@ export const PodiumScreen = () => {
 
         {/* Full ranking list */}
         <Text style={s.sectionLabel}>Classificação Completa</Text>
-        {MOCK_PODIUM.map((team) => (
+        {ranking.map((team) => (
           <View key={team.name} style={s.rankCard}>
             <View style={[s.rankBadge, team.pos <= 3 && { backgroundColor: PODIUM_COLORS[team.pos - 1] }]}>
               {team.pos <= 3 ? (
@@ -100,7 +144,10 @@ export const PodiumScreen = () => {
         </TouchableOpacity>
         <View style={{ height: 32 }} />
       </ScrollView>
-      <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />
+      <HomeFAB onPress={() => tournament.status === 'finished'
+        ? navigation.navigate('FinishedTournament', { tournamentId: tournament.id })
+        : navigation.navigate('TournamentDetail', { tournamentId: tournament.id })
+      } />
     </View>
   );
 };
