@@ -16,7 +16,7 @@ export const mockTournaments: Tournament[] = [
         level: 'M5',
         maxTeams: 16,
         courts: 4,
-        status: 'groups',
+        status: 'groups', qualifiersPerGroup: 2,
         teams: [
           {
             id: 't1', name: 'Os Invencíveis', group: 'A',
@@ -76,7 +76,7 @@ export const mockTournaments: Tournament[] = [
         level: 'M4',
         maxTeams: 16,
         courts: 2,
-        status: 'groups',
+        status: 'groups', qualifiersPerGroup: 2,
         teams: [
           { id: 'tm1', name: 'Relâmpago', players: [{ id: 'pm1', name: 'Duarte Mendes' }, { id: 'pm2', name: 'Henrique Vaz' }] },
           { id: 'tm2', name: 'Padel Warriors', players: [{ id: 'pm3', name: 'Tomás Ribeiro' }, { id: 'pm4', name: 'Bernardo Gomes' }] },
@@ -96,7 +96,7 @@ export const mockTournaments: Tournament[] = [
         level: 'F4',
         maxTeams: 16,
         courts: 2,
-        status: 'groups',
+        status: 'groups', qualifiersPerGroup: 2,
         teams: [],
       },
       {
@@ -197,7 +197,7 @@ export const mockTournaments: Tournament[] = [
         level: 'M4',
         maxTeams: 4,
         courts: 2,
-        status: 'groups',
+        status: 'groups', qualifiersPerGroup: 2,
         teams: [
           {
             id: 'tz1', name: 'Última Barreira', group: 'Z',

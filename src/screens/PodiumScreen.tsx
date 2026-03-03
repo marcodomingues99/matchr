@@ -8,7 +8,8 @@ import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Podium'>;
@@ -21,7 +22,7 @@ const MOCK_PODIUM = [
 ];
 
 const MEDALS = ['🥇', '🥈', '🥉'];
-const PODIUM_COLORS = ['#FFD600', '#C0C0C0', '#CD7F32'];
+const PODIUM_COLORS = [Colors.yellow, Colors.silver, Colors.bronze];
 const PODIUM_HEIGHTS = [110, 80, 65];
 
 export const PodiumScreen = () => {
@@ -36,10 +37,10 @@ export const PodiumScreen = () => {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#0D2C6B', '#1A5AC8', '#00A5C8']} style={s.header}>
+      <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
             onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
@@ -73,7 +74,7 @@ export const PodiumScreen = () => {
               {team.pos <= 3 ? (
                 <Text style={s.rankMedal}>{MEDALS[team.pos - 1]}</Text>
               ) : (
-                <Text style={[s.rankNum, { color: '#fff' }]}>{team.pos}</Text>
+                <Text style={[s.rankNum, { color: Colors.white }]}>{team.pos}</Text>
               )}
             </View>
             <View style={{ flex: 1 }}>
@@ -107,27 +108,27 @@ export const PodiumScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginTop: 4 },
+  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 8 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
   scroll: { flex: 1 },
-  podiumArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', backgroundColor: '#fff', borderRadius: Radii.xl, padding: Spacing.lg, marginBottom: Spacing.lg, ...Shadows.card, gap: 8 },
+  podiumArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', backgroundColor: Colors.white, borderRadius: Radii.xl, padding: Spacing.lg, marginBottom: Spacing.lg, ...Shadows.card, gap: 8 },
   podiumCol: { flex: 1, alignItems: 'center' },
   podiumMedal: { fontSize: 24, marginBottom: 4 },
-  podiumTeam: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, textAlign: 'center', marginBottom: 6, paddingHorizontal: 2 },
+  podiumTeam: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.navy, textAlign: 'center', marginBottom: 6, paddingHorizontal: 2 },
   podiumBlock: { width: '100%', borderTopLeftRadius: 8, borderTopRightRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  podiumPos: { fontSize: 24, fontFamily: 'Nunito_900Black', color: 'rgba(0,0,0,0.4)' },
-  sectionLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  rankCard: { backgroundColor: '#fff', borderRadius: Radii.md, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: Spacing.sm, ...Shadows.card },
+  podiumPos: { fontSize: 24, fontFamily: Typography.fontFamilyBlack, color: 'rgba(0,0,0,0.4)' },
+  sectionLabel: { ...TextStyles.sectionLabel, marginBottom: 10 },
+  rankCard: { backgroundColor: Colors.white, borderRadius: Radii.md, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: Spacing.sm, ...Shadows.card },
   rankBadge: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.gbg, alignItems: 'center', justifyContent: 'center' },
-  rankMedal: { fontSize: 20 },
-  rankNum: { fontSize: 16, fontFamily: 'Nunito_900Black', color: Colors.muted },
-  rankTeam: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  rankPlayers: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
+  rankMedal: { fontSize: Typography.fontSize.xxl },
+  rankNum: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.muted },
+  rankTeam: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  rankPlayers: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
   rankStats: { alignItems: 'flex-end' },
-  rankSets: { fontSize: 14, fontFamily: 'Nunito_900Black', color: Colors.navy },
-  rankSetsLabel: { fontSize: 9, fontFamily: 'Nunito_700Bold', color: Colors.muted },
+  rankSets: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
+  rankSetsLabel: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
   exportBtn: { borderRadius: Radii.lg, overflow: 'hidden' },
   exportGrad: { padding: 15, alignItems: 'center' },
-  exportTxt: { color: '#fff', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' },
+  exportTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
 });

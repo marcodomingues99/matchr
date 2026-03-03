@@ -6,16 +6,12 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, VertenteType } from '../types';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { NEW_TOURNAMENT_ID } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfigureVertente'>;
-
-const TYPE_CFG = {
-  M: { label: 'Masculino', emoji: '👨', color: Colors.blue, bg: '#E3ECFF' },
-  F: { label: 'Feminino', emoji: '👩', color: '#9B30FF', bg: '#F3E8FF' },
-  MX: { label: 'Misto', emoji: '👫', color: Colors.orange, bg: '#FFF0E3' },
-};
 
 const calcStructure = (n: number) => {
   if (n <= 4) return { groups: '1 grupo de 4', advance: 'Passam top 2', bracket: 'Semis → Final' };
@@ -36,7 +32,7 @@ export const ConfigureVertenteScreen = () => {
     : [];
 
   const currentVert = pendingVerts[idx] ?? { type: 'M' as VertenteType, level: 'M5' };
-  const cfg = TYPE_CFG[currentVert.type];
+  const cfg = VERTENTE_CONFIG[currentVert.type];
   const totalSteps = pendingVerts.length;
   const stepsLabel = pendingVerts.map(v => v.level).join(' · ');
 
@@ -49,7 +45,7 @@ export const ConfigureVertenteScreen = () => {
       navigation.navigate('Home');
     } else {
       navigation.navigate('ConfigureVertente', {
-        tournamentId: 'new',
+        tournamentId: NEW_TOURNAMENT_ID,
         vertenteIndex: idx + 1,
         isLast: idx + 2 >= totalSteps,
         pendingVertentes,
@@ -66,7 +62,7 @@ export const ConfigureVertenteScreen = () => {
             onBack={() => navigation.goBack()}
           />
           <Text style={s.stepHint}>Passo {idx + 1} de {totalSteps}  ·  {stepsLabel}</Text>
-          <View style={[s.badge, { backgroundColor: cfg.bg }]}>
+          <View style={[s.badge, { backgroundColor: cfg.chipBg }]}>
             <Text style={{ fontSize: 16 }}>{cfg.emoji}</Text>
             <Text style={[s.badgeName, { color: cfg.color }]}>
               {cfg.label} {currentVert.level}
@@ -170,23 +166,23 @@ export const ConfigureVertenteScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 4 },
-  stepHint: { color: 'rgba(255,255,255,0.6)', fontSize: 11, fontFamily: 'Nunito_600SemiBold', marginBottom: 8 },
+  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 4 },
+  stepHint: { color: 'rgba(255,255,255,0.6)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, marginBottom: 8 },
   badge: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     alignSelf: 'flex-start', borderRadius: 20,
     paddingHorizontal: 10, paddingVertical: 5, marginBottom: 8,
   },
-  badgeName: { fontSize: 13, fontFamily: 'Nunito_900Black' },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 2 },
+  badgeName: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 2 },
 
   /* Progress dots */
-  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 14, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.gl },
+  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 14, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.gl },
   dot: { width: 24, height: 6, borderRadius: 3, backgroundColor: Colors.gl },
   dotActive: { backgroundColor: Colors.blue },
 
   scroll: { flex: 1 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10, marginTop: 4 },
+  sectionLabel: { ...TextStyles.sectionLabel, marginBottom: 10, marginTop: 4 },
 
   /* Incrementor */
   incrementorBox: {
@@ -195,23 +191,23 @@ const s = StyleSheet.create({
     padding: Spacing.sm, gap: 14, marginBottom: Spacing.lg,
   },
   incMinus: {
-    width: 38, height: 38, backgroundColor: '#fff', borderRadius: 9,
+    width: 38, height: 38, backgroundColor: Colors.white, borderRadius: 9,
     alignItems: 'center', justifyContent: 'center', ...Shadows.card,
   },
-  incMinusTxt: { fontSize: 22, fontFamily: 'Nunito_900Black', color: Colors.navy, lineHeight: 26 },
+  incMinusTxt: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, lineHeight: 26 },
   incPlus: { width: 38, height: 38, borderRadius: 9, overflow: 'hidden' },
   incPlusGrad: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  incPlusTxt: { fontSize: 22, fontFamily: 'Nunito_900Black', color: '#fff', lineHeight: 26 },
+  incPlusTxt: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, color: Colors.white, lineHeight: 26 },
   incCenter: { flex: 1, alignItems: 'center' },
-  incValue: { fontSize: 32, fontFamily: 'Nunito_900Black', color: Colors.navy },
-  incHint: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted },
+  incValue: { fontSize: 32, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
+  incHint: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted },
 
   /* Structure */
-  structureBox: { backgroundColor: '#E3ECFF', borderRadius: Radii.md, padding: 11, marginBottom: Spacing.lg },
-  structureTitle: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue, marginBottom: 6 },
+  structureBox: { backgroundColor: Colors.blueBg, borderRadius: Radii.md, padding: 11, marginBottom: Spacing.lg },
+  structureTitle: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.blue, marginBottom: 6 },
   structureChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  structureChip: { backgroundColor: '#fff', borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 4 },
-  structureChipTxt: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+  structureChip: { backgroundColor: Colors.white, borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 4 },
+  structureChipTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
 
   /* Courts */
   courtsRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.lg },
@@ -220,15 +216,15 @@ const s = StyleSheet.create({
     borderRadius: Radii.md, alignItems: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
-  courtCardActive: { borderColor: Colors.blue, backgroundColor: '#E3ECFF' },
-  courtNum: { fontSize: 18, fontFamily: 'Nunito_900Black', color: Colors.navy },
+  courtCardActive: { borderColor: Colors.blue, backgroundColor: Colors.blueBg },
+  courtNum: { fontSize: 18, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
   courtNumActive: { color: Colors.blue },
-  courtLbl: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
+  courtLbl: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
   courtLblActive: { color: Colors.blue },
 
   /* Next button */
   nextBtn: { borderRadius: Radii.lg, overflow: 'hidden' },
   nextGrad: { padding: 15, alignItems: 'center' },
-  nextTxt: { color: '#fff', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' },
-  lastNote: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, textAlign: 'center', marginTop: 7 },
+  nextTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
+  lastNote: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', marginTop: 7 },
 });

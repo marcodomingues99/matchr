@@ -8,7 +8,8 @@ import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Export'>;
@@ -32,21 +33,21 @@ const SECTIONS: Section[] = [
   {
     title: 'Exportar este sub-torneio',
     items: [
-      { id: 'pdf_results', icon: '📊', iconBg: '#E8F5E9', title: 'Resultados em PDF', sub: 'Tabelas e resultados completos', btnLabel: '↓ PDF', btnColors: ['#22C97A', '#00AA66'] },
-      { id: 'pdf_bracket', icon: '🏆', iconBg: '#E3ECFF', title: 'Bracket / Quadro', sub: 'Fases finais e eliminação', btnLabel: '↓ PDF', btnColors: ['#1A5AC8', '#00A5C8'] },
-      { id: 'pdf_teams', icon: '👥', iconBg: '#EDE9FF', title: 'Lista de duplas', sub: 'Todas as equipas inscritas', btnLabel: '↓ PDF', btnColors: ['#9B30FF', '#6B10DF'] },
+      { id: 'pdf_results', icon: '📊', iconBg: Colors.greenBgSoft, title: 'Resultados em PDF', sub: 'Tabelas e resultados completos', btnLabel: '↓ PDF', btnColors: [Colors.green, Colors.greenDark] },
+      { id: 'pdf_bracket', icon: '🏆', iconBg: Colors.blueBg, title: 'Bracket / Quadro', sub: 'Fases finais e eliminação', btnLabel: '↓ PDF', btnColors: [Colors.blue, Colors.teal] },
+      { id: 'pdf_teams', icon: '👥', iconBg: Colors.purpleBgSoft, title: 'Lista de duplas', sub: 'Todas as equipas inscritas', btnLabel: '↓ PDF', btnColors: [Colors.purple, Colors.purpleDeep] },
     ],
   },
   {
     title: 'Partilhar',
     items: [
-      { id: 'share_link', icon: '🔗', iconBg: '#E3ECFF', title: 'Partilhar link', sub: 'Link para ver resultados ao vivo', btnLabel: '🔗 Link', btnColors: ['#1A5AC8', '#0D2C6B'] },
+      { id: 'share_link', icon: '🔗', iconBg: Colors.blueBg, title: 'Partilhar link', sub: 'Link para ver resultados ao vivo', btnLabel: '🔗 Link', btnColors: [Colors.blue, Colors.navy] },
     ],
   },
   {
     title: 'Dados brutos',
     items: [
-      { id: 'csv', icon: '📋', iconBg: '#FFF0E3', title: 'Exportar CSV', sub: 'Para Excel ou Google Sheets', btnLabel: '↓ CSV', btnColors: ['#FF7A1A', '#FFB300'] },
+      { id: 'csv', icon: '📋', iconBg: Colors.orangeBg, title: 'Exportar CSV', sub: 'Para Excel ou Google Sheets', btnLabel: '↓ CSV', btnColors: [Colors.orange, Colors.yellowAmber] },
     ],
   },
 ];
@@ -60,6 +61,7 @@ export const ExportScreen = () => {
   const [exported, setExported] = useState<string[]>([]);
 
   const simulateExport = (id: string) => {
+    if (exporting !== null) return;
     setExporting(id);
     setTimeout(() => {
       setExporting(null);
@@ -74,7 +76,7 @@ export const ExportScreen = () => {
       <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
             onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
@@ -84,9 +86,9 @@ export const ExportScreen = () => {
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent}>
 
-        {SECTIONS.map((section) => (
+        {SECTIONS.map((section, idx) => (
           <View key={section.title}>
-            <Text style={s.sectionTitle}>{section.title}</Text>
+            <Text style={[s.sectionTitle, idx === 0 && { marginTop: 0 }]}>{section.title}</Text>
             {section.items.map((opt) => {
               const isExporting = exporting === opt.id;
               const isDone = exported.includes(opt.id);
@@ -140,16 +142,15 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
 
-  back: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 6 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 6 },
 
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md },
 
   // Section header (.st style from HTML)
   sectionTitle: {
-    fontSize: 13,
-    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: Typography.fontSize.base,
+    fontFamily: Typography.fontFamily,
     color: Colors.navy,
     marginTop: 16,
     marginBottom: 8,
@@ -158,7 +159,7 @@ const s = StyleSheet.create({
 
   // Card (.card from HTML)
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: Radii.lg,
     padding: Spacing.md,
     flexDirection: 'row',
@@ -177,11 +178,11 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  iconEmoji: { fontSize: 22 },
+  iconEmoji: { fontSize: Typography.fontSize.xxxl },
 
   cardBody: { flex: 1 },
-  cardTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  cardSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
+  cardTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  cardSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
 
   // Action button (.btn .bsm style)
   actionBtn: {
@@ -192,19 +193,19 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     minWidth: 60,
   },
-  actionBtnTxt: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: '#fff' },
+  actionBtnTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.white },
 
   spinner: { width: 60, height: 28 },
 
   doneBadge: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  doneTxt: { fontSize: 15, color: '#fff', fontFamily: 'Nunito_800ExtraBold' },
+  doneTxt: { fontSize: 15, color: Colors.white, fontFamily: Typography.fontFamily },
 
   // Success banner
   successBox: {
-    backgroundColor: '#DFFAEE',
+    backgroundColor: Colors.greenBgLight,
     borderRadius: Radii.md,
     padding: Spacing.md,
     marginTop: Spacing.sm,
   },
-  successTxt: { fontSize: 13, fontFamily: 'Nunito_700Bold', color: '#1A7A4A', textAlign: 'center' },
+  successTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.greenDeep, textAlign: 'center' },
 });

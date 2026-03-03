@@ -9,7 +9,8 @@ import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Button } from '../components/Button';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { MATCH_FORMAT } from '../utils/scoring';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'EnterResult'>;
@@ -49,10 +50,11 @@ export const EnterResultScreen = () => {
   const currentSetIdx = sets.findIndex(s => !s.saved);
 
   const saveSet = () => {
-    const newSets = [...sets];
-    newSets[currentSetIdx].saved = true;
+    const newSets = sets.map((s, i) =>
+      i === currentSetIdx ? { ...s, saved: true } : s,
+    );
     const allSaved = newSets.every(s => s.saved);
-    if (allSaved && newSets.length < 3) {
+    if (allSaved && newSets.length < MATCH_FORMAT.MAX_SETS) {
       // Count sets won by each team
       let t1Wins = 0, t2Wins = 0;
       newSets.forEach(s => {
@@ -60,8 +62,8 @@ export const EnterResultScreen = () => {
         const s2 = parseInt(s.team2) || 0;
         if (s1 > s2) t1Wins++; else if (s2 > s1) t2Wins++;
       });
-      // Only add next set if no team has won 2 sets yet (i.e. 1-1 for super tie-break)
-      if (t1Wins < 2 && t2Wins < 2) {
+      // Only add next set if no team has won enough sets yet (i.e. 1-1 for super tie-break)
+      if (t1Wins < MATCH_FORMAT.SETS_TO_WIN && t2Wins < MATCH_FORMAT.SETS_TO_WIN) {
         newSets.push({ team1: '', team2: '', saved: false });
       }
     }
@@ -69,9 +71,7 @@ export const EnterResultScreen = () => {
   };
 
   const updateSet = (idx: number, field: 'team1' | 'team2', val: string) => {
-    const newSets = [...sets];
-    newSets[idx][field] = val;
-    setSets(newSets);
+    setSets(prev => prev.map((s, i) => i === idx ? { ...s, [field]: val } : s));
   };
 
   return (
@@ -90,14 +90,16 @@ export const EnterResultScreen = () => {
 
       <ScrollView style={styles.scroll} contentContainerStyle={{ padding: Spacing.lg }}>
         <View style={styles.teamsCard}>
-          <Text style={styles.teamName}>{game.team1.name}</Text>
-          <Text style={styles.vs}>vs</Text>
-          <Text style={styles.teamName}>{game.team2.name}</Text>
+          <Text style={styles.teamName} numberOfLines={2}>{game.team1.name}</Text>
+          <View style={styles.vsBadge}>
+            <Text style={styles.vsText}>VS</Text>
+          </View>
+          <Text style={styles.teamName} numberOfLines={2}>{game.team2.name}</Text>
         </View>
 
         {sets.map((set, idx) => {
           const isCurrent = !set.saved && idx === currentSetIdx;
-          const setLabel = idx === 2 ? 'Super Tie-Break' : `Set ${idx + 1}`;
+          const setLabel = idx === MATCH_FORMAT.SUPER_TIE_BREAK_INDEX ? 'Super Tie-Break' : `Set ${idx + 1}`;
           return (
             <View key={idx} style={[styles.setCard, set.saved && styles.setCardSaved, isCurrent && styles.setCardActive]}>
               <View style={styles.setHeader}>
@@ -156,8 +158,8 @@ export const EnterResultScreen = () => {
           </TouchableOpacity>
         )}
 
-        {sets.every(s => s.saved) && sets.length >= 2 && (
-          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId })} variant="green" />
+        {sets.every(s => s.saved) && sets.length >= MATCH_FORMAT.SETS_TO_WIN && (
+          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
         )}
 
         <View style={{ height: 32 }} />
@@ -170,31 +172,32 @@ export const EnterResultScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginTop: 4 },
+  back: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8, marginBottom: 8 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
   scroll: { flex: 1 },
-  teamsCard: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: Spacing.lg, alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
-  teamName: { fontSize: 15, fontFamily: 'Nunito_900Black', color: Colors.navy, textAlign: 'center' },
-  vs: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.muted, marginVertical: 4 },
-  setCard: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 2, borderColor: 'transparent', ...Shadows.card },
+  teamsCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
+  teamName: { flex: 1, fontSize: 15, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, textAlign: 'center' },
+  vsBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.gbg, alignItems: 'center', justifyContent: 'center', marginHorizontal: Spacing.sm },
+  vsText: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBlack, color: Colors.muted },
+  setCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 2, borderColor: 'transparent', ...Shadows.card },
   setCardSaved: { borderColor: Colors.green },
   setCardActive: { borderColor: Colors.yellow },
   setHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  setLabel: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  savedChip: { backgroundColor: '#DFFAEE', borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
-  savedText: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.green },
+  setLabel: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  savedChip: { backgroundColor: Colors.greenBgLight, borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
+  savedText: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.green },
   setInputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
   setInputGroup: { alignItems: 'center', flex: 1 },
-  inputLabel: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.muted, marginBottom: 4, textAlign: 'center' },
-  setInput: { borderWidth: 2, borderColor: Colors.gl, borderRadius: Radii.md, padding: Spacing.sm, fontSize: 28, fontFamily: 'Nunito_900Black', color: Colors.navy, textAlign: 'center', width: 72, height: 64 },
+  inputLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginBottom: 4, textAlign: 'center' },
+  setInput: { borderWidth: 2, borderColor: Colors.gl, borderRadius: Radii.md, padding: Spacing.sm, fontSize: 28, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, textAlign: 'center', width: 72, height: 64 },
   setInputDisabled: { borderColor: Colors.gl, backgroundColor: Colors.gbg, color: Colors.muted },
-  setSep: { fontSize: 22, fontFamily: 'Nunito_900Black', color: Colors.gray },
+  setSep: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, color: Colors.gray },
   saveSetBtn: { marginTop: Spacing.md, backgroundColor: Colors.blue, borderRadius: Radii.md, padding: 11, alignItems: 'center' },
-  saveSetText: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
-  pauseBtn: { backgroundColor: '#FFF8E3', borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
-  pauseText: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  pauseSub: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 3 },
-  editAgainBtn: { backgroundColor: '#fff', borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
-  editAgainText: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+  saveSetText: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
+  pauseBtn: { backgroundColor: Colors.yellowBgWarm, borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
+  pauseText: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  pauseSub: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 3 },
+  editAgainBtn: { backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
+  editAgainText: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.blue },
 });

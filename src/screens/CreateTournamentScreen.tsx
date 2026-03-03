@@ -7,12 +7,14 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import { RootStackParamList } from '../types';
+import { RootStackParamList, VertenteType } from '../types';
 import { HeaderNav } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { PT_MONTHS } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type VertType = 'M' | 'F' | 'MX';
+type VertType = VertenteType;
 type SelectedVert = { type: VertType; level: string };
 
 const LEVELS: Record<VertType, string[]> = {
@@ -20,10 +22,8 @@ const LEVELS: Record<VertType, string[]> = {
   F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1'],
   MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1'],
 };
-const CAT_LABEL: Record<VertType, string> = { M: 'Masculino', F: 'Feminino', MX: 'Misto' };
-const CAT_EMOJI: Record<VertType, string> = { M: '👨', F: '👩', MX: '👫' };
-const CAT_COLOR: Record<VertType, string> = { M: Colors.blue, F: '#9B30FF', MX: Colors.orange };
-const CAT_BG: Record<VertType, string> = { M: '#E3ECFF', F: '#F3E8FF', MX: '#FFF0E3' };
+
+const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
 export const CreateTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -60,9 +60,6 @@ export const CreateTournamentScreen = () => {
     if (!bytes) return '';
     return ` · ${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
-
-  const PT_MONTHS = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
   const toggleVert = (type: VertType, level: string) => {
     if (level === 'Sem') {
@@ -124,9 +121,9 @@ export const CreateTournamentScreen = () => {
               <Text style={s.fieldLabel}>Data início</Text>
               <TouchableOpacity style={s.dateBtn} onPress={() => setShowStartPicker(true)} activeOpacity={0.7}>
                 <Text style={[s.dateTxt, !startDate && s.datePlaceholder]}>
-                  {startDate ? formatDate(startDate) : '14 Mar 2026'}
+                  {startDate ? formatDate(startDate) : 'Selecionar data'}
                 </Text>
-                <Text style={{ fontSize: 14 }}>📅</Text>
+                <Text style={{ fontSize: Typography.fontSize.lg }}>📅</Text>
               </TouchableOpacity>
               {showStartPicker && (
                 <DateTimePicker
@@ -134,7 +131,10 @@ export const CreateTournamentScreen = () => {
                   mode="date"
                   onChange={(_, date) => {
                     setShowStartPicker(Platform.OS === 'ios');
-                    if (date) setStartDate(date);
+                    if (date) {
+                      setStartDate(date);
+                      if (endDate && date > endDate) setEndDate(null);
+                    }
                   }}
                 />
               )}
@@ -144,9 +144,9 @@ export const CreateTournamentScreen = () => {
               <Text style={s.fieldLabel}>Data fim</Text>
               <TouchableOpacity style={s.dateBtn} onPress={() => setShowEndPicker(true)} activeOpacity={0.7}>
                 <Text style={[s.dateTxt, !endDate && s.datePlaceholder]}>
-                  {endDate ? formatDate(endDate) : '16 Mar 2026'}
+                  {endDate ? formatDate(endDate) : 'Selecionar data'}
                 </Text>
-                <Text style={{ fontSize: 14 }}>📅</Text>
+                <Text style={{ fontSize: Typography.fontSize.lg }}>📅</Text>
               </TouchableOpacity>
               {showEndPicker && (
                 <DateTimePicker
@@ -174,7 +174,7 @@ export const CreateTournamentScreen = () => {
               </View>
             ) : (
               <View style={s.photoEmpty}>
-                <Text style={{ fontSize: 22 }}>📷</Text>
+                <Text style={{ fontSize: Typography.fontSize.xxxl }}>📷</Text>
                 <Text style={s.photoEmptyTxt}>Adicionar foto</Text>
               </View>
             )}
@@ -184,7 +184,7 @@ export const CreateTournamentScreen = () => {
           <Text style={[s.fieldLabel, { marginTop: 8 }]}>Regulamento (opcional)</Text>
           {regulamento ? (
             <View style={s.regLoaded}>
-              <View style={s.regIcon}><Text style={{ fontSize: 20 }}>📄</Text></View>
+              <View style={s.regIcon}><Text style={{ fontSize: Typography.fontSize.xxl }}>📄</Text></View>
               <View style={{ flex: 1 }}>
                 <Text style={s.regName} numberOfLines={1}>{regulamento.name}</Text>
                 <Text style={s.regSub}>Carregado{formatSize(regulamento.size)}</Text>
@@ -195,7 +195,7 @@ export const CreateTournamentScreen = () => {
             </View>
           ) : (
             <TouchableOpacity style={s.regEmpty} onPress={pickRegulamento} activeOpacity={0.8}>
-              <View style={s.regIcon}><Text style={{ fontSize: 20 }}>📄</Text></View>
+              <View style={s.regIcon}><Text style={{ fontSize: Typography.fontSize.xxl }}>📄</Text></View>
               <View style={{ flex: 1 }}>
                 <Text style={s.regTitle}>Carregar regulamento</Text>
                 <Text style={s.regSub}>PDF · máx. 10 MB</Text>
@@ -221,9 +221,9 @@ export const CreateTournamentScreen = () => {
                   onPress={() => setExpanded({ ...expanded, [type]: !isExpanded })}
                   activeOpacity={0.7}
                 >
-                  <Text style={s.catEmoji}>{CAT_EMOJI[type]}</Text>
-                  <Text style={s.catLabel}>{CAT_LABEL[type]}</Text>
-                  <Text style={[s.catCount, sel.length > 0 && { color: CAT_COLOR[type] }]}>
+                  <Text style={s.catEmoji}>{VERTENTE_CONFIG[type].emoji}</Text>
+                  <Text style={s.catLabel}>{VERTENTE_CONFIG[type].label}</Text>
+                  <Text style={[s.catCount, sel.length > 0 && { color: VERTENTE_CONFIG[type].color }]}>
                     {countLabel}
                   </Text>
                   <Text style={s.catToggle}>{isExpanded ? '▲' : '▼'}</Text>
@@ -237,11 +237,11 @@ export const CreateTournamentScreen = () => {
                         <TouchableOpacity
                           style={[
                             s.vertChip, s.vertChipSem,
-                            semOn && { borderStyle: 'solid', borderColor: CAT_COLOR[type], backgroundColor: CAT_BG[type] },
+                            semOn && { borderStyle: 'solid', borderColor: VERTENTE_CONFIG[type].color, backgroundColor: VERTENTE_CONFIG[type].chipBg },
                           ]}
                           onPress={() => toggleVert(type, 'Sem')}
                         >
-                          <Text style={[s.vertChipTxt, semOn && { color: CAT_COLOR[type] }]}>Sem</Text>
+                          <Text style={[s.vertChipTxt, semOn && { color: VERTENTE_CONFIG[type].color }]}>Sem</Text>
                         </TouchableOpacity>
                       );
                     })()}
@@ -251,10 +251,10 @@ export const CreateTournamentScreen = () => {
                       return (
                         <TouchableOpacity
                           key={level}
-                          style={[s.vertChip, isOn && { borderColor: CAT_COLOR[type], backgroundColor: CAT_BG[type] }]}
+                          style={[s.vertChip, isOn && { borderColor: VERTENTE_CONFIG[type].color, backgroundColor: VERTENTE_CONFIG[type].chipBg }]}
                           onPress={() => toggleVert(type, level)}
                         >
-                          <Text style={[s.vertChipTxt, isOn && { color: CAT_COLOR[type] }]}>{level}</Text>
+                          <Text style={[s.vertChipTxt, isOn && { color: VERTENTE_CONFIG[type].color }]}>{level}</Text>
                         </TouchableOpacity>
                       );
                     })}
@@ -271,7 +271,7 @@ export const CreateTournamentScreen = () => {
                 {selectedVerts.length} sub-torneio{selectedVerts.length > 1 ? 's' : ''} criado{selectedVerts.length > 1 ? 's' : ''}:
               </Text>
               <Text style={s.summaryBody}>
-                {selectedVerts.map(v => `${CAT_EMOJI[v.type]} ${v.level}`).join('  ·  ')}
+                {selectedVerts.map(v => `${VERTENTE_CONFIG[v.type].emoji} ${v.level}`).join('  ·  ')}
               </Text>
             </View>
           )}
@@ -301,14 +301,13 @@ export const CreateTournamentScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 4 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginTop: 4 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
   scroll: { flex: 1 },
-  sectionLabel: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  card: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.lg, ...Shadows.card },
-  fieldLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, marginTop: 8 },
-  input: { borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.sm, padding: Spacing.sm, fontSize: 14, fontFamily: 'Nunito_700Bold', color: Colors.navy, backgroundColor: Colors.gbg },
+  sectionLabel: { ...TextStyles.sectionLabel, fontSize: Typography.fontSize.md, marginBottom: 10 },
+  card: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.lg, ...Shadows.card },
+  fieldLabel: { ...TextStyles.sectionLabel, marginBottom: 6, marginTop: 8 },
+  input: { borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.sm, padding: Spacing.sm, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold, color: Colors.navy, backgroundColor: Colors.gbg },
   row: { flexDirection: 'row', marginTop: 4 },
 
   /* ── Date picker ── */
@@ -318,7 +317,7 @@ const s = StyleSheet.create({
     backgroundColor: Colors.gbg, flexDirection: 'row',
     alignItems: 'center', justifyContent: 'space-between',
   },
-  dateTxt: { fontSize: 14, fontFamily: 'Nunito_700Bold', color: Colors.navy },
+  dateTxt: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold, color: Colors.navy },
   datePlaceholder: { color: Colors.gray },
 
   /* ── Photo ── */
@@ -327,7 +326,7 @@ const s = StyleSheet.create({
     borderRadius: Radii.md, backgroundColor: Colors.gbg, height: 76,
     alignItems: 'center', justifyContent: 'center', gap: 4,
   },
-  photoEmptyTxt: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
+  photoEmptyTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.muted },
   photoBanner: { height: 76, borderRadius: Radii.md, overflow: 'hidden' },
   photoBannerImg: { width: '100%', height: '100%', resizeMode: 'cover' },
   photoBannerOverlay: {
@@ -335,7 +334,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
     alignItems: 'center', justifyContent: 'center',
   },
-  photoBannerOverlayTxt: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: '#fff' },
+  photoBannerOverlayTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.white },
 
   /* ── Regulamento ── */
   regEmpty: {
@@ -348,43 +347,43 @@ const s = StyleSheet.create({
     padding: Spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 11,
   },
   regIcon: {
-    width: 40, height: 40, backgroundColor: '#fff', borderRadius: 10,
+    width: 40, height: 40, backgroundColor: Colors.white, borderRadius: 10,
     alignItems: 'center', justifyContent: 'center', ...Shadows.card, flexShrink: 0,
   },
-  regTitle: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  regName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  regSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
-  regChoose: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
-  regRemove: { fontSize: 14, fontFamily: 'Nunito_800ExtraBold', color: Colors.red, padding: 4 },
+  regTitle: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
+  regName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
+  regSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
+  regChoose: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.blue },
+  regRemove: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.red, padding: 4 },
 
   /* ── Sub-torneios ── */
   catSection: { paddingBottom: 4 },
   catSectionBorder: { borderTopWidth: 1, borderTopColor: Colors.gl, paddingTop: 10, marginTop: 4 },
   catHeader: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4, gap: 6 },
-  catEmoji: { fontSize: 16 },
-  catLabel: { flex: 1, fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  catCount: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
-  catToggle: { fontSize: 10, color: Colors.muted, marginLeft: 4 },
+  catEmoji: { fontSize: Typography.fontSize.xl },
+  catLabel: { flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  catCount: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.muted },
+  catToggle: { fontSize: Typography.fontSize.xs, color: Colors.muted, marginLeft: 4 },
   vertGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, paddingBottom: 8, paddingTop: 4 },
   vertChip: {
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
-    backgroundColor: '#fff', borderWidth: 2, borderColor: Colors.gl,
+    backgroundColor: Colors.white, borderWidth: 2, borderColor: Colors.gl,
   },
   vertChipSem: { borderStyle: 'dashed' },
-  vertChipTxt: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
+  vertChipTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.muted },
 
   /* ── Summary ── */
   summaryBox: {
-    backgroundColor: '#E3ECFF', borderRadius: Radii.md,
+    backgroundColor: Colors.blueBg, borderRadius: Radii.md,
     padding: 10, marginTop: 8,
   },
-  summaryTitle: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
-  summaryBody: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.navy, marginTop: 4 },
+  summaryTitle: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.blue },
+  summaryBody: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.navy, marginTop: 4 },
 
   /* ── Create ── */
   createBtn: { borderRadius: Radii.lg, overflow: 'hidden' },
   createBtnDisabled: { opacity: 0.4 },
   createBtnGrad: { padding: 15, alignItems: 'center' },
-  createBtnTxt: { fontSize: 15, fontFamily: 'Nunito_900Black', color: '#fff' },
-  createNote: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, textAlign: 'center', marginTop: 7 },
+  createBtnTxt: { fontSize: 15, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
+  createNote: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', marginTop: 7 },
 });

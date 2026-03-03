@@ -6,18 +6,19 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
+import { parseDatePt } from '../utils/constants';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfirmCloseTournament'>;
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 const AVATAR_COLORS: [string, string][] = [
-    ['#AA8800', '#FFD600'],
-    ['#22C97A', '#00AA66'],
-    ['#8B00CC', '#BB44FF'],
+    [Colors.goldDark, Colors.yellow],
+    [Colors.green, Colors.greenDark],
+    [Colors.purpleDark, Colors.purpleLight],
 ];
 
 const initials = (name: string) =>
@@ -45,10 +46,12 @@ export const ConfirmCloseTournamentScreen = () => {
     const totalGames = games.length;
     const totalTeams = vertente.teams.length;
 
-    // Days between startDate and endDate (simple calculation from strings)
-    const parseDay = (d: string) => parseInt(d.split(' ')[0], 10) || 1;
-    const days =
-        Math.max(1, parseDay(tournament.endDate) - parseDay(tournament.startDate) + 1);
+    // Days between startDate and endDate
+    const startD = parseDatePt(tournament.startDate);
+    const endD = parseDatePt(tournament.endDate);
+    const days = startD && endD
+        ? Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86_400_000) + 1)
+        : 1;
 
     // Top 3 teams: take first 3 from vertente (mock ranking order)
     const top3 = vertente.teams.slice(0, 3);
@@ -61,7 +64,7 @@ export const ConfirmCloseTournamentScreen = () => {
 
     return (
         <View style={s.container}>
-            <LinearGradient colors={['#0D2C6B', '#1A5AC8', '#00A5C8']} style={s.header}>
+            <LinearGradient colors={Gradients.header} style={s.header}>
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
                         backLabel="Resultado Final"
@@ -73,7 +76,7 @@ export const ConfirmCloseTournamentScreen = () => {
                 </SafeAreaView>
             </LinearGradient>
 
-            <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg, backgroundColor: '#fff' }}>
+            <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg, backgroundColor: Colors.white }}>
                 {/* Resultado da Final */}
                 <Text style={s.sectionLabel}>Resultado da Final</Text>
                 <View style={s.card}>
@@ -126,7 +129,7 @@ export const ConfirmCloseTournamentScreen = () => {
                         })
                     }
                 >
-                    <LinearGradient colors={['#1A5AC8', '#00A5C8']} style={s.confirmGrad}>
+                    <LinearGradient colors={Gradients.primary} style={s.confirmGrad}>
                         <Text style={s.confirmTxt}>Confirmar e ver pódio 🏆</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -145,29 +148,28 @@ export const ConfirmCloseTournamentScreen = () => {
 const s = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.gbg },
     header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-    back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-    title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
-    subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginTop: 4 },
-    scroll: { flex: 1, backgroundColor: '#fff' },
-    sectionLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+    title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
+    subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
+    scroll: { flex: 1, backgroundColor: Colors.white },
+    sectionLabel: { ...TextStyles.sectionLabel, marginBottom: 10 },
     card: { backgroundColor: Colors.gbg, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, ...Shadows.card },
     teamRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
     teamRowBorder: { borderBottomWidth: 1.5, borderBottomColor: Colors.gl },
     avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-    avatarTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_900Black' },
-    teamName: { flex: 1, fontSize: 13, fontFamily: 'Nunito_900Black', color: Colors.navy },
+    avatarTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack },
+    teamName: { flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
     medal: { fontSize: 20 },
-    finalScore: { textAlign: 'center', marginTop: 10, fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
+    finalScore: { textAlign: 'center', marginTop: 10, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.muted },
     statsRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.md },
-    statBox: { flex: 1, backgroundColor: '#fff', borderRadius: Radii.lg, padding: 11, ...Shadows.card, alignItems: 'center' },
-    statNum: { fontSize: 20, fontFamily: 'Nunito_900Black' },
-    statLbl: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted },
-    warning: { backgroundColor: '#FFF8E3', borderWidth: 1.5, borderColor: '#FFD600', borderRadius: 11, padding: 11, marginBottom: Spacing.lg, flexDirection: 'row', gap: 10 },
+    statBox: { flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: 11, ...Shadows.card, alignItems: 'center' },
+    statNum: { fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack },
+    statLbl: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted },
+    warning: { backgroundColor: Colors.yellowBgWarm, borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.md, padding: 11, marginBottom: Spacing.lg, flexDirection: 'row', gap: 10 },
     warningIcon: { fontSize: 16 },
-    warningTxt: { flex: 1, fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.navy, lineHeight: 18 },
+    warningTxt: { flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.navy, lineHeight: 18 },
     confirmBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: Spacing.sm },
     confirmGrad: { padding: 15, alignItems: 'center' },
-    confirmTxt: { color: '#fff', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' },
-    backBtn: { alignItems: 'center', padding: 12, backgroundColor: '#fff', borderRadius: Radii.lg, borderWidth: 2, borderColor: Colors.gl },
-    backBtnTxt: { color: Colors.navy, fontSize: 14, fontFamily: 'Nunito_800ExtraBold' },
+    confirmTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
+    backBtn: { alignItems: 'center', padding: 12, backgroundColor: Colors.white, borderRadius: Radii.lg, borderWidth: 2, borderColor: Colors.gl },
+    backBtnTxt: { color: Colors.navy, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
 });

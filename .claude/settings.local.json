@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(npx expo install expo-image-picker)",
-      "Bash(npx expo install @react-native-community/datetimepicker)"
+      "Bash(npx expo install @react-native-community/datetimepicker)",
+      "Bash(wc -l \"/c/Users/mardo/Desktop/matchr/src/screens\"/*.tsx)",
+      "Bash(grep -i \"quadro\\\\|quartos\\\\|semifinal\\\\|final\" \"/c/Users/mardo/Desktop/matchr/src/screens\"/*.tsx)",
+      "Bash(grep -n \"TeamGamesSheet\\\\|BottomSheet\\\\|Mini\" \"/c/Users/mardo/Desktop/matchr/src/screens\"/*.tsx)"
     ]
   }
 }

@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Game, SetScore } from '../types';
-import { Colors, Spacing, Radii, Shadows, Gradients } from '../theme';
+import { Game, SetScore, Team } from '../types';
+import { Colors, Spacing, Radii, Shadows, Gradients, Typography } from '../theme';
+import { GAME_STATUS, GAME_STATUS_COLOR } from '../utils/constants';
 
 interface GameCardProps {
   game: Game;
@@ -27,8 +28,8 @@ const ScoreBox = ({
 }) => {
   if (variant === 'live') {
     return (
-      <LinearGradient colors={[Colors.red, Colors.orange]} style={gc.box}>
-        <Text style={[gc.boxTxt, { color: '#fff', fontSize: 8 }]}>●</Text>
+      <LinearGradient colors={Gradients.live} style={gc.box}>
+        <Text style={[gc.boxTxt, { color: Colors.white, fontSize: 8 }]}>●</Text>
       </LinearGradient>
     );
   }
@@ -41,11 +42,11 @@ const ScoreBox = ({
   );
 };
 
-export const GameCard: React.FC<GameCardProps> = ({ game, onPress, onEdit, onEnterResult, onTeamPress, showDoneBadge, advanceText }) => {
-  const isLive = game.status === 'live';
-  const isFinished = game.status === 'finished';
-  const isScheduled = game.status === 'scheduled';
-  const isPaused = game.status === 'paused';
+export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, onEdit, onEnterResult, onTeamPress, showDoneBadge, advanceText }) => {
+  const isLive = game.status === GAME_STATUS.LIVE;
+  const isFinished = game.status === GAME_STATUS.FINISHED;
+  const isScheduled = game.status === GAME_STATUS.SCHEDULED;
+  const isPaused = game.status === GAME_STATUS.PAUSED;
 
   // Determine winner / loser for finished games
   const winner = isFinished && game.winnerId
@@ -201,11 +202,11 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onPress, onEdit, onEnt
       )}
     </TouchableOpacity>
   );
-};
+});
 
 const gc = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: Radii.lg,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
@@ -222,28 +223,28 @@ const gc = StyleSheet.create({
 
   /* Meta row */
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  meta: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase' },
-  metaLive: { color: Colors.red },
-  metaPaused: { color: Colors.orange },
-  editBtn: { backgroundColor: Colors.gbg, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 },
-  editBtnTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  doneBadge: { backgroundColor: '#DFFAEE', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
-  doneBadgeTxt: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.green },
-  pausedBadge: { backgroundColor: '#FFF0E3', borderRadius: 20, paddingHorizontal: 8, paddingVertical: 2 },
-  pausedBadgeTxt: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.orange },
+  meta: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.muted, textTransform: 'uppercase' },
+  metaLive: { color: GAME_STATUS_COLOR.live },
+  metaPaused: { color: GAME_STATUS_COLOR.paused },
+  editBtn: { backgroundColor: Colors.gbg, borderRadius: Radii.sm, paddingHorizontal: 9, paddingVertical: 3 },
+  editBtnTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.navy },
+  doneBadge: { backgroundColor: Colors.greenBgLight, borderRadius: Radii.xl, paddingHorizontal: 8, paddingVertical: 2 },
+  doneBadgeTxt: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.green },
+  pausedBadge: { backgroundColor: Colors.orangeBg, borderRadius: Radii.xl, paddingHorizontal: 8, paddingVertical: 2 },
+  pausedBadgeTxt: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.orange },
 
   /* ── Finished condensed row ── */
   finishedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8 },
   finishedNames: { flex: 1, minWidth: 0 },
-  winnerName: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
-  vsLoser: { fontSize: 9, color: Colors.muted, marginTop: 2 },
+  winnerName: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.blue },
+  vsLoser: { fontSize: Typography.fontSize.xxs, color: Colors.muted, marginTop: 2 },
   finishedFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  advanceText: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.green },
+  advanceText: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.green },
 
   /* ── Live / Scheduled team rows ── */
   teamRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 6 },
   teamRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.gl },
-  teamName: { flex: 1, fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  teamName: { flex: 1, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
 
   /* Score boxes */
   scores: { flexDirection: 'row', gap: 3 },
@@ -251,23 +252,23 @@ const gc = StyleSheet.create({
     width: 24, height: 24, borderRadius: 6,
     alignItems: 'center', justifyContent: 'center',
   },
-  boxWin: { backgroundColor: '#E3ECFF' },
+  boxWin: { backgroundColor: Colors.blueBg },
   boxLose: { backgroundColor: Colors.gbg },
   boxPending: { backgroundColor: Colors.gbg },
-  boxTxt: { fontSize: 11, fontFamily: 'Nunito_900Black' },
+  boxTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBlack },
   boxTxtWin: { color: Colors.blue },
   boxTxtLose: { color: Colors.muted },
   boxTxtPending: { color: Colors.gray },
 
   resumeWrap: { borderWidth: 1.5, borderColor: Colors.orange, borderRadius: 10, padding: 9, marginTop: 8, alignItems: 'center' },
-  resumeTxt: { color: Colors.orange, fontSize: 12, fontFamily: 'Nunito_800ExtraBold' },
+  resumeTxt: { color: Colors.orange, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily },
   /* Buttons */
   resultWrap: { borderRadius: 10, overflow: 'hidden', marginTop: 8 },
   resultGrad: { padding: 10, alignItems: 'center' },
-  resultTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_800ExtraBold' },
+  resultTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily },
   editResultBtn: {
     borderWidth: 1.5, borderColor: Colors.gl,
-    borderRadius: 10, paddingVertical: 6, paddingHorizontal: 13, alignItems: 'center',
+    borderRadius: 10, paddingVertical: 6, paddingHorizontal: Spacing.md, alignItems: 'center',
   },
-  editResultTxt: { color: Colors.navy, fontSize: 11, fontFamily: 'Nunito_700Bold' },
+  editResultTxt: { color: Colors.navy, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold },
 });

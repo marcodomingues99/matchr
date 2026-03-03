@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -9,22 +9,14 @@ import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
-import { Colors, Gradients, Spacing, Radii } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
+import { calcStats } from '../utils/scoring';
+import { GROUP_CHIP_POOL } from '../utils/groupColors';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'TeamList'>;
-
-const AVATAR_GRADIENTS = [
-  ['#1A5AC8', '#00A5C8'],
-  ['#8B00CC', '#BB44FF'],
-  ['#22C97A', '#00AA66'],
-  ['#FF7A1A', '#FFD600'],
-  ['#FF3B5C', '#FF9A8B'],
-  ['#9B30FF', '#FF44AA'],
-];
-
-const getInitials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
 export const TeamListScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -32,7 +24,7 @@ export const TeamListScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
-  const typeLabel = vertente.type === 'M' ? 'Masculino' : vertente.type === 'F' ? 'Feminino' : 'Misto';
+  const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
   const statusLabel =
     vertente.status === 'groups' ? 'Grupos gerados' :
       vertente.status === 'bracket' ? 'Bracket ativo' :
@@ -40,6 +32,22 @@ export const TeamListScreen = () => {
           'Em preparação';
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
+
+  // Build group rank map: teamId → position within its group (1-based)
+  const { sortedGroups, groupRankMap } = useMemo(() => {
+    const sg = [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort();
+    const map: Record<string, number> = {};
+    sg.forEach(g => {
+      const members = vertente.teams
+        .filter(t => t.group === g)
+        .sort((a, b) => calcStats(b.id, mockGames).pts - calcStats(a.id, mockGames).pts);
+      members.forEach((t, i) => { map[t.id] = i + 1; });
+    });
+    return { sortedGroups: sg, groupRankMap: map };
+  }, [vertente.teams, mockGames]);
+
+  const getChipStyle = (group: string) =>
+    GROUP_CHIP_POOL[sortedGroups.indexOf(group) % GROUP_CHIP_POOL.length];
 
   return (
     <View style={s.container}>
@@ -112,7 +120,7 @@ export const TeamListScreen = () => {
                   {team.photo ? (
                     <Image source={{ uri: team.photo }} style={s.avatar} />
                   ) : (
-                    <LinearGradient colors={avatarColors as any} style={s.avatar}>
+                    <LinearGradient colors={avatarColors} style={s.avatar}>
                       <Text style={s.avatarTxt}>{getInitials(team.name)}</Text>
                     </LinearGradient>
                   )}
@@ -131,11 +139,16 @@ export const TeamListScreen = () => {
                   </View>
 
                   {/* Group chip */}
-                  {team.group && (
-                    <View style={s.groupChip}>
-                      <Text style={s.groupChipTxt}>{team.group}</Text>
-                    </View>
-                  )}
+                  {team.group && (() => {
+                    const chip = getChipStyle(team.group);
+                    return (
+                      <View style={[s.groupChip, { backgroundColor: chip.bg }]}>
+                        <Text style={[s.groupChipTxt, { color: chip.text }]}>
+                          {team.group}{groupRankMap[team.id] ?? ''}
+                        </Text>
+                      </View>
+                    );
+                  })()}
 
                   {/* Actions */}
                   {isWithdrawn ? (
@@ -178,39 +191,35 @@ const s = StyleSheet.create({
 
   // Header
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 6 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 6 },
   chipsRow: { flexDirection: 'row', gap: 6, marginTop: 6 },
   chip: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
-  chipTxt: { color: '#fff', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+  chipTxt: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
   // Scroll
   scroll: { flex: 1 },
 
   // Section
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, marginTop: 4 },
-  sectionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  sectionAction: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+  sectionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  sectionAction: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
 
   // Legend
-  legend: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  legendTxt: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.muted },
-  legendSep: { fontSize: 10, color: Colors.gl, fontFamily: 'Nunito_700Bold' },
+  legend: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.sm },
+  legendTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
+  legendSep: { fontSize: Typography.fontSize.xs, color: Colors.gl, fontFamily: Typography.fontFamilyBold },
 
   // Teams card — single white card holds all rows
   teamsCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: Radii.md,
-    paddingHorizontal: 13,
-    shadowColor: '#0D2C6B',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    paddingHorizontal: Spacing.md,
+    ...Shadows.card,
   },
   teamRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: Spacing.sm,
     paddingVertical: 8,
   },
   teamRowBorder: {
@@ -218,54 +227,53 @@ const s = StyleSheet.create({
     borderBottomColor: Colors.gl,
   },
   teamRowWithdrawn: {
-    opacity: 0.5,
-    backgroundColor: '#FFF5F5',
-    marginHorizontal: -13,
-    paddingHorizontal: 13,
+    opacity: 0.6,
+    backgroundColor: Colors.redBgLight,
+    marginHorizontal: -Spacing.md,
+    paddingHorizontal: Spacing.md,
     borderRadius: 0,
   },
 
   // Number
-  teamNum: { width: 16, textAlign: 'center', fontSize: 11, fontFamily: 'Nunito_900Black', color: Colors.muted },
+  teamNum: { width: 16, textAlign: 'center', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBlack, color: Colors.muted },
 
   // Avatar
   avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  avatarTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_900Black' },
+  avatarTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack },
 
   // Info
   teamInfo: { flex: 1, minWidth: 0 },
   teamNameRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-  teamName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  teamName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
   teamNameMuted: { color: Colors.muted },
-  withdrawnLabel: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: '#FF3B5C' },
-  teamPlayers: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
+  withdrawnLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.red },
+  teamPlayers: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
 
   // Group chip
   groupChip: {
-    backgroundColor: '#E3ECFF',
+    backgroundColor: Colors.blueBg,
     borderRadius: Radii.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
     marginRight: 6,
   },
-  groupChipTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+  groupChipTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
   // Actions
-  woTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: '#FF3B5C' },
-  actions: { flexDirection: 'row', gap: 6 },
-  actionIcon: { fontSize: 15 },
+  woTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.red },
+  actions: { flexDirection: 'row', gap: Spacing.sm },
+  actionIcon: { fontSize: 15, padding: Spacing.xs, minWidth: 30, minHeight: 30, textAlign: 'center' },
   actionIconMuted: { opacity: 0.55 },
 
   // Empty
   emptyCard: {
-    backgroundColor: '#fff', borderRadius: Radii.lg, padding: 32, alignItems: 'center',
-    shadowColor: '#0D2C6B', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
-    elevation: 3, marginTop: 20,
+    backgroundColor: Colors.white, borderRadius: Radii.lg, padding: 32, alignItems: 'center',
+    ...Shadows.card, marginTop: 20,
   },
   emptyIcon: { fontSize: 48, marginBottom: 12 },
-  emptyTitle: { fontSize: 16, fontFamily: 'Nunito_900Black', color: Colors.navy, marginBottom: 6 },
-  emptySub: { fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginBottom: 20 },
+  emptyTitle: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, marginBottom: 6 },
+  emptySub: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginBottom: 20 },
   addFirstBtn: { backgroundColor: Colors.blue, borderRadius: Radii.md, paddingHorizontal: 24, paddingVertical: 12 },
-  addFirstTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' },
+  addFirstTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
 
 });

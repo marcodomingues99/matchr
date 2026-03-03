@@ -12,7 +12,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Team, Vertente, Game } from '../types';
-import { Colors, Gradients, Spacing, Radii } from '../theme';
+import { Colors, Gradients, Spacing, Radii, Shadows, Typography } from '../theme';
+import { MONTHS, GAME_STATUS } from '../utils/constants';
+import { getInitials } from '../utils/teamUtils';
 
 interface Props {
     visible: boolean;
@@ -30,12 +32,6 @@ const phaseLabel: Record<string, string> = {
     final: 'Final',
     '3rd': '3º Lugar',
 };
-
-function teamInitials(name: string): string {
-    const words = name.trim().split(/\s+/);
-    if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-}
 
 function formatSets(sets: Game['sets'], isTeam1: boolean): string {
     if (!sets?.length) return '';
@@ -61,22 +57,18 @@ export const TeamGamesSheet: React.FC<Props> = ({
     );
 
     // Sort by date + time chronologically
-    const MONTHS: Record<string, number> = {
-        Jan: 0, Fev: 1, Mar: 2, Abr: 3, Mai: 4, Jun: 5,
-        Jul: 6, Ago: 7, Set: 8, Out: 9, Nov: 10, Dez: 11,
-    };
+    const currentYear = new Date().getFullYear();
     const parseDateTime = (g: Game): number => {
         const [day, mon] = g.date.split(' ');
         const [h, m] = g.time.split(':').map(Number);
-        const d = new Date(2026, MONTHS[mon] ?? 0, Number(day), h, m);
-        return d.getTime();
+        return new Date(currentYear, MONTHS[mon] ?? 0, Number(day), h, m).getTime();
     };
     const sorted = [...teamGames].sort((a, b) => parseDateTime(a) - parseDateTime(b));
 
     // Group phase progress
     const groupGames = teamGames.filter(g => g.phase === 'groups');
     const groupPlayed = groupGames.filter(
-        g => g.status === 'finished' || g.status === 'walkover',
+        g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER,
     ).length;
     const groupTotal = groupGames.length;
 
@@ -107,7 +99,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
                 {/* Team gradient banner */}
                 <View style={s.headerPad}>
                     <LinearGradient
-                        colors={Gradients.header as [string, string, ...string[]]}
+                        colors={Gradients.header}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={s.teamBanner}
@@ -121,7 +113,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Text style={s.avatarTxt}>{teamInitials(team.name)}</Text>
+                                <Text style={s.avatarTxt}>{getInitials(team.name)}</Text>
                             )}
                         </View>
 
@@ -199,25 +191,25 @@ export const TeamGamesSheet: React.FC<Props> = ({
                         sorted.map(game => {
                             const isTeam1 = game.team1.id === team.id;
                             const opponent = isTeam1 ? game.team2 : game.team1;
-                            const isFinished = game.status === 'finished';
-                            const isLive = game.status === 'live';
-                            const isPaused = game.status === 'paused';
-                            const isScheduled = game.status === 'scheduled';
+                            const isFinished = game.status === GAME_STATUS.FINISHED;
+                            const isLive = game.status === GAME_STATUS.LIVE;
+                            const isPaused = game.status === GAME_STATUS.PAUSED;
+                            const isScheduled = game.status === GAME_STATUS.SCHEDULED;
 
-                            let headerColors: string[];
+                            let headerColors: readonly [string, string, ...string[]];
                             let headerLabel: string;
 
                             if (isFinished) {
-                                headerColors = ['#1A7A4A', Colors.green];
+                                headerColors = Gradients.finished;
                                 headerLabel = `✅ ${phaseLabel[game.phase] ?? game.phase}`;
                             } else if (isLive) {
-                                headerColors = ['#9B0000', Colors.red];
+                                headerColors = Gradients.live;
                                 headerLabel = `● Ao vivo · ${phaseLabel[game.phase] ?? game.phase}`;
                             } else if (isPaused) {
-                                headerColors = ['#7A4A00', Colors.orange];
+                                headerColors = Gradients.paused;
                                 headerLabel = `⏸ Pausado · ${phaseLabel[game.phase] ?? game.phase}`;
                             } else {
-                                headerColors = ['#3A4060', '#5566AA'];
+                                headerColors = Gradients.scheduled;
                                 headerLabel = `🕒 ${phaseLabel[game.phase] ?? game.phase}`;
                             }
 
@@ -245,7 +237,7 @@ export const TeamGamesSheet: React.FC<Props> = ({
                                 <View key={game.id} style={s.gameCard}>
                                     {/* Coloured header */}
                                     <LinearGradient
-                                        colors={headerColors as [string, string]}
+                                        colors={headerColors}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         style={s.gameHeader}
@@ -300,7 +292,7 @@ const { height: SCREEN_H } = Dimensions.get('window');
 const s = StyleSheet.create({
     overlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(10,15,35,0.65)',
+        backgroundColor: Colors.overlayDark,
     },
     sheet: {
         position: 'absolute',
@@ -320,12 +312,12 @@ const s = StyleSheet.create({
 
     /* Handle */
     handleWrap: { paddingTop: 10, alignItems: 'center' },
-    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDE1ED' },
+    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.handleGray },
 
     /* Team banner */
     headerPad: { paddingHorizontal: 18, paddingTop: 14 },
     teamBanner: {
-        borderRadius: 16,
+        borderRadius: Radii.lg,
         padding: 14,
         flexDirection: 'row',
         alignItems: 'center',
@@ -348,16 +340,16 @@ const s = StyleSheet.create({
     },
     avatarTxt: {
         fontSize: 17,
-        fontFamily: 'Nunito_900Black',
-        color: '#fff',
+        fontFamily: Typography.fontFamilyBlack,
+        color: Colors.white,
     },
     teamInfo: { flex: 1, minWidth: 0 },
-    teamName: { fontSize: 16, fontFamily: 'Nunito_900Black', color: '#fff' },
+    teamName: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
     playersLine: {
-        fontSize: 11,
+        fontSize: Typography.fontSize.sm,
         color: 'rgba(255,255,255,0.7)',
         marginTop: 2,
-        fontFamily: 'Nunito_600SemiBold',
+        fontFamily: Typography.fontFamilySemiBold,
     },
     badges: { flexDirection: 'row', gap: 5, marginTop: 6 },
     badge: {
@@ -367,15 +359,15 @@ const s = StyleSheet.create({
         paddingVertical: 2,
     },
     badgeTxt: {
-        fontSize: 10,
-        fontFamily: 'Nunito_800ExtraBold',
-        color: '#fff',
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily,
+        color: Colors.white,
     },
     closeBtn: { alignSelf: 'flex-start', padding: 4 },
     closeTxt: { fontSize: 18, color: 'rgba(255,255,255,0.5)' },
 
     /* Progress */
-    progressPad: { paddingHorizontal: 18, paddingTop: 12 },
+    progressPad: { paddingHorizontal: 18, paddingTop: Spacing.md },
     progressRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -383,13 +375,13 @@ const s = StyleSheet.create({
         marginBottom: 5,
     },
     progressLabel: {
-        fontSize: 10,
-        fontFamily: 'Nunito_800ExtraBold',
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily,
         color: Colors.muted,
     },
     progressCount: {
-        fontSize: 10,
-        fontFamily: 'Nunito_800ExtraBold',
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily,
         color: Colors.navy,
     },
     progressBg: {
@@ -404,14 +396,14 @@ const s = StyleSheet.create({
     scroll: { flex: 1 },
     scrollContent: {
         paddingHorizontal: 18,
-        paddingTop: 12,
-        paddingBottom: 24,
+        paddingTop: Spacing.md,
+        paddingBottom: Spacing.xl,
         gap: 10,
     },
     empty: { alignItems: 'center', paddingTop: 30 },
     emptyTxt: {
-        fontSize: 13,
-        fontFamily: 'Nunito_700Bold',
+        fontSize: Typography.fontSize.base,
+        fontFamily: Typography.fontFamilyBold,
         color: Colors.muted,
     },
 
@@ -419,11 +411,7 @@ const s = StyleSheet.create({
     gameCard: {
         borderRadius: 14,
         overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.07,
-        shadowRadius: 8,
-        elevation: 2,
+        ...Shadows.card,
     },
     gameHeader: {
         paddingVertical: 8,
@@ -437,42 +425,42 @@ const s = StyleSheet.create({
         width: 7,
         height: 7,
         borderRadius: 4,
-        backgroundColor: '#fff',
+        backgroundColor: Colors.white,
         flexShrink: 0,
     },
     gameHeaderLabel: {
-        fontSize: 10,
-        fontFamily: 'Nunito_800ExtraBold',
-        color: '#fff',
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamily,
+        color: Colors.white,
         flex: 1,
     },
     gameHeaderMeta: {
-        fontSize: 10,
-        fontFamily: 'Nunito_700Bold',
+        fontSize: Typography.fontSize.xs,
+        fontFamily: Typography.fontFamilyBold,
         color: 'rgba(255,255,255,0.8)',
     },
     gameBody: {
-        backgroundColor: '#fff',
-        padding: 11,
+        backgroundColor: Colors.white,
+        padding: Spacing.sm,
         paddingHorizontal: 14,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    vsLabel: { fontSize: 11, color: Colors.muted, marginBottom: 2 },
+    vsLabel: { fontSize: Typography.fontSize.sm, color: Colors.muted, marginBottom: 2 },
     opponentName: {
-        fontSize: 13,
-        fontFamily: 'Nunito_900Black',
+        fontSize: Typography.fontSize.base,
+        fontFamily: Typography.fontFamilyBlack,
         color: Colors.navy,
     },
     resultBlock: { alignItems: 'flex-end' },
-    resultLabel: { fontSize: 10, color: Colors.muted, marginBottom: 2 },
+    resultLabel: { fontSize: Typography.fontSize.xs, color: Colors.muted, marginBottom: 2 },
     resultScore: {
-        fontSize: 16,
-        fontFamily: 'Nunito_900Black',
+        fontSize: Typography.fontSize.xl,
+        fontFamily: Typography.fontFamilyBlack,
         color: Colors.blue,
     },
     resultScoreLive: { color: Colors.red },
     resultScorePaused: { color: Colors.orange },
-    resultMuted: { fontSize: 10, color: Colors.muted },
+    resultMuted: { fontSize: Typography.fontSize.xs, color: Colors.muted },
 });

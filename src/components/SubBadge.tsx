@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { VertenteType, VertenteLevel } from '../types';
-import { Colors, Spacing, Radii } from '../theme';
+import { Colors, Spacing, Radii, Typography } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 interface SubBadgeProps {
   type: VertenteType;
@@ -10,16 +11,10 @@ interface SubBadgeProps {
   small?: boolean;
 }
 
-const typeConfig = {
-  M: { emoji: '👨', label: 'Masculino', colors: ['#0D2C6B', '#1A5AC8'] as string[] },
-  F: { emoji: '👩', label: 'Feminino', colors: ['#8B0050', '#D4006A'] as string[] },
-  MX: { emoji: '👫', label: 'Misto', colors: ['#5C3A00', '#C87800'] as string[] },
-};
-
-export const SubBadge: React.FC<SubBadgeProps> = ({ type, level, small = false }) => {
-  const config = typeConfig[type];
+export const SubBadge: React.FC<SubBadgeProps> = React.memo(({ type, level, small = false }) => {
+  const config = VERTENTE_CONFIG[type];
   return (
-    <LinearGradient colors={config.colors} style={[styles.badge, small && styles.small]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+    <LinearGradient colors={config.gradient} style={[styles.badge, small && styles.small]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
       <Text style={styles.emoji}>{config.emoji}</Text>
       <View>
         <Text style={[styles.name, small && styles.nameSmall]}>{config.label}</Text>
@@ -28,7 +23,7 @@ export const SubBadge: React.FC<SubBadgeProps> = ({ type, level, small = false }
       {!small && <View style={styles.levelBadge}><Text style={styles.levelText}>{level}</Text></View>}
     </LinearGradient>
   );
-};
+});
 
 const styles = StyleSheet.create({
   badge: {
@@ -44,10 +39,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
-  emoji: { fontSize: 14 },
-  name: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
-  nameSmall: { fontSize: 11 },
-  level: { color: 'rgba(255,255,255,0.75)', fontSize: 10, fontFamily: 'Nunito_700Bold' },
+  emoji: { fontSize: Typography.fontSize.lg },
+  name: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
+  nameSmall: { fontSize: Typography.fontSize.sm },
+  level: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold },
   levelBadge: {
     backgroundColor: 'rgba(255,255,255,0.2)',
     borderRadius: Radii.full,
@@ -55,5 +50,5 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     marginLeft: 4,
   },
-  levelText: { color: '#fff', fontSize: 11, fontFamily: 'Nunito_900Black' },
+  levelText: { color: Colors.white, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBlack },
 });

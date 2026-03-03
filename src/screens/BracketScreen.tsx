@@ -10,7 +10,8 @@ import { GameCard } from '../components/GameCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'Bracket'>;
@@ -26,18 +27,24 @@ interface BracketMatch {
   is3rd?: boolean;
 }
 
-const mkGame = (m: BracketMatch): Game => ({
-  id: m.id,
-  team1: { id: `${m.id}-t1`, name: m.team1, players: [{ id: 'p1', name: '' }, { id: 'p2', name: '' }] },
-  team2: { id: `${m.id}-t2`, name: m.team2, players: [{ id: 'p3', name: '' }, { id: 'p4', name: '' }] },
-  court: 'C1',
-  date: '14 Mar',
-  time: '10:00',
-  phase: 'qf',
-  sets: m.sets,
-  status: m.status,
-  winnerId: m.winnerId,
-});
+const mkGame = (m: BracketMatch): Game => {
+  // Use team names as stable IDs so TeamGamesSheet can match across rounds
+  const resolvedWinner = m.winnerId
+    ? (m.winnerId === `${m.id}-t1` ? m.team1 : m.team2)
+    : undefined;
+  return {
+    id: m.id,
+    team1: { id: m.team1, name: m.team1, players: [{ id: 'p1', name: '' }, { id: 'p2', name: '' }] },
+    team2: { id: m.team2, name: m.team2, players: [{ id: 'p3', name: '' }, { id: 'p4', name: '' }] },
+    court: 'C1',
+    date: '14 Mar',
+    time: '10:00',
+    phase: 'qf',
+    sets: m.sets,
+    status: m.status,
+    winnerId: resolvedWinner,
+  };
+};
 
 interface BracketRound {
   label: string;
@@ -95,15 +102,18 @@ export const BracketScreen = () => {
   const currentRound = ROUNDS[activeRound];
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
-  // All bracket games for the sheet (so it can filter by team id)
-  const allBracketGames: Game[] = ROUNDS.flatMap(r => r.matches.map(m => mkGame(m)));
+  // All bracket games for the sheet — computed once since ROUNDS is a module-level constant
+  const allBracketGames = React.useMemo(
+    () => ROUNDS.flatMap(r => r.matches.map(m => mkGame(m))),
+    [],
+  );
 
   return (
     <View style={s.container}>
       <LinearGradient colors={Gradients.header} style={s.header}>
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
             onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
@@ -144,8 +154,7 @@ export const BracketScreen = () => {
               onTeamPress={setSheetTeam}
               advanceText={
                 match.status === 'finished' && match.winnerId
-                  ? `${match.winnerId === `${match.id}-t1` ? match.team1 : match.team2} → ${activeRound + 1 < ROUNDS.length ? ROUNDS[activeRound + 1].label : 'Próxima ronda'
-                  }`
+                  ? `${match.winnerId === `${match.id}-t1` ? match.team1 : match.team2} → ${activeRound + 1 < ROUNDS.length ? ROUNDS[activeRound + 1].label : 'Próxima ronda'}`
                   : undefined
               }
               onEdit={() => navigation.navigate('EditGame', {
@@ -175,25 +184,25 @@ export const BracketScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
   scroll: { flex: 1 },
 
   /* Tabs */
-  tabs: { flexDirection: 'row', backgroundColor: '#fff', borderBottomWidth: 1.5, borderBottomColor: Colors.gl },
+  tabs: { flexDirection: 'row', backgroundColor: Colors.white, borderBottomWidth: 1.5, borderBottomColor: Colors.gl },
   tab: {
     flex: 1, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4,
     borderBottomWidth: 3, borderBottomColor: 'transparent', position: 'relative',
   },
   tabActive: { borderBottomColor: Colors.blue },
   tabDot: { position: 'absolute', top: 6, right: 8, width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.red },
-  tabLabel: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
+  tabLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.muted },
   tabLabelActive: { color: Colors.blue },
-  tabCount: { fontSize: 9, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
+  tabCount: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
   tabCountActive: { color: Colors.blue },
 
   /* 3rd place separator */
   separator: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4, marginBottom: 8 },
   sepLine: { flex: 1, height: 1, backgroundColor: Colors.gl },
-  sepTxt: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.orange },
+  sepTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.orange },
 
 });

@@ -9,13 +9,12 @@ import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii } from '../theme';
+import { getInitials } from '../utils/teamUtils';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'AddTeam'>;
-
-const typeEmoji = { M: '👨', F: '👩', MX: '👫' };
-const typeLabel = { M: 'Masculino', F: 'Feminino', MX: 'Misto' };
 
 export const AddTeamScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -24,7 +23,7 @@ export const AddTeamScreen = () => {
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
   // Detect edit mode via teamId param
-  const editTeamId = (route.params as any).teamId as string | undefined;
+  const editTeamId = route.params.teamId;
   const existingTeam = editTeamId ? vertente.teams.find(t => t.id === editTeamId) : undefined;
   const isEditing = !!existingTeam;
 
@@ -37,28 +36,31 @@ export const AddTeamScreen = () => {
   const [p2Phone, setP2Phone] = useState(existingTeam?.players[1].phone ?? '');
   const [p2Email, setP2Email] = useState(existingTeam?.players[1].email ?? '');
 
-  const canSave = teamName.trim() && p1Name.trim() && p2Name.trim();
+  const isDuplicateName = vertente.teams.some(
+    t => t.id !== editTeamId && t.name.trim().toLowerCase() === teamName.trim().toLowerCase(),
+  );
+  const canSave = teamName.trim() && p1Name.trim() && p2Name.trim() && !isDuplicateName;
 
-  const label = typeLabel[vertente.type];
-  const emoji = typeEmoji[vertente.type];
-
-  const getInitials = (name: string) =>
-    name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  const { label, emoji } = VERTENTE_CONFIG[vertente.type];
 
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para escolher uma foto.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setPhoto(result.assets[0].uri);
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permissão necessária', 'Precisamos de acesso à galeria para escolher uma foto.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        setPhoto(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert('Erro', 'Não foi possível aceder à galeria. Tenta novamente.');
     }
   };
 
@@ -94,13 +96,16 @@ export const AddTeamScreen = () => {
         <View style={s.fieldGroup}>
           <Text style={s.fieldLabel}>Nome da dupla</Text>
           <TextInput
-            style={s.fieldInput}
+            style={[s.fieldInput, isDuplicateName && s.fieldInputError]}
             value={teamName}
             onChangeText={setTeamName}
             placeholder="Ex: Os Invencíveis"
             placeholderTextColor={Colors.gray}
             autoFocus={!isEditing}
           />
+          {isDuplicateName && (
+            <Text style={s.fieldError}>Este nome já existe nesta vertente</Text>
+          )}
         </View>
 
         {/* ── Foto da dupla ── */}
@@ -211,49 +216,51 @@ export const AddTeamScreen = () => {
 };
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: Colors.white },
 
   // Header
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 4 },
-  subtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 12, fontFamily: 'Nunito_600SemiBold', marginTop: 3 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
+  subtitle: { color: 'rgba(255,255,255,0.65)', fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilySemiBold, marginTop: 3 },
 
   // Content
   scroll: { flex: 1 },
-  scrollContent: { padding: 14, paddingBottom: 28 },
+  scrollContent: { padding: Spacing.lg, paddingBottom: 28 },
 
   // Context info box
   contextBox: {
-    backgroundColor: '#E3ECFF',
-    borderRadius: 11,
+    backgroundColor: Colors.blueBg,
+    borderRadius: Radii.md,
     padding: Spacing.md,
-    marginBottom: 14,
+    marginBottom: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: Spacing.md,
   },
-  contextEmoji: { fontSize: 20 },
-  contextName: { fontSize: 12, fontFamily: 'Nunito_900Black', color: Colors.navy },
-  contextTournament: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted },
+  contextEmoji: { fontSize: Typography.fontSize.xxl },
+  contextName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
+  contextTournament: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted },
 
   // Fields
-  fieldGroup: { marginBottom: 11 },
-  fieldLabel: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 },
+  fieldGroup: { marginBottom: Spacing.md },
+  fieldLabel: { ...TextStyles.sectionLabel, marginBottom: Spacing.xs },
   fieldInput: {
     width: '100%',
     backgroundColor: Colors.gbg,
     borderWidth: 2,
     borderColor: Colors.gl,
-    borderRadius: 11,
-    padding: 11,
-    paddingHorizontal: 13,
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
+    borderRadius: Radii.md,
+    padding: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    fontFamily: Typography.fontFamilyBold,
+    fontSize: Typography.fontSize.base,
     color: Colors.navy,
   },
+  fieldInputError: { borderColor: Colors.red },
+  fieldError: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.red, marginTop: 4 },
 
   // Photo
-  photoRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  photoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   photoCircle: {
     width: 66, height: 66,
     borderWidth: 2, borderColor: Colors.gray, borderStyle: 'dashed',
@@ -262,45 +269,45 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 2,
   },
   photoImage: { width: 66, height: 66, borderRadius: 33 },
-  photoIcon: { fontSize: 20 },
-  photoHint: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted },
-  photoCaption: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, lineHeight: 16 },
+  photoIcon: { fontSize: Typography.fontSize.xxl },
+  photoHint: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.muted },
+  photoCaption: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, lineHeight: 16 },
   photoActions: { flexDirection: 'column', gap: 6 },
   photoBtn: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderWidth: 1.5, borderColor: Colors.gl,
-    borderRadius: 8,
+    borderRadius: Radii.sm,
     paddingHorizontal: 12, paddingVertical: 5,
   },
-  photoBtnTxt: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  photoBtnTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.navy },
   photoBtnDanger: { borderColor: Colors.red },
   photoBtnDangerTxt: { color: Colors.red },
   avatarCircle: { width: 66, height: 66, borderRadius: 33, alignItems: 'center', justifyContent: 'center' },
-  avatarTxt: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black' },
+  avatarTxt: { color: Colors.white, fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack },
 
   // Divider
   divider: { height: 1, backgroundColor: Colors.gl, marginVertical: 12 },
 
   // Player section
-  playerHeader: { fontSize: 12, fontFamily: 'Nunito_900Black', color: Colors.navy, marginBottom: 9 },
+  playerHeader: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, marginBottom: Spacing.sm },
 
   // 2-col row
-  row2col: { flexDirection: 'row', gap: 8, marginBottom: 11 },
+  row2col: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
   col: { flex: 1 },
 
   // Buttons
-  btnPrimary: { borderRadius: 11, overflow: 'hidden', marginBottom: 7 },
+  btnPrimary: { borderRadius: Radii.md, overflow: 'hidden', marginBottom: 7 },
   btnDisabled: { opacity: 0.4 },
-  btnGrad: { padding: 13, alignItems: 'center' },
-  btnPrimaryTxt: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
+  btnGrad: { padding: Spacing.md, alignItems: 'center' },
+  btnPrimaryTxt: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
   btnSecondary: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderWidth: 2,
     borderColor: Colors.gl,
-    borderRadius: 11,
+    borderRadius: Radii.md,
     padding: 12,
     alignItems: 'center',
   },
-  btnSecondaryTxt: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  btnSecondaryTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
 
 });

@@ -37,6 +37,7 @@ export interface Vertente {
   teams: Team[];
   courts: number;
   status: 'config' | 'groups' | 'bracket' | 'finished';
+  qualifiersPerGroup?: number; // how many teams advance from each group (default 2)
 }
 
 export interface SetScore {
@@ -66,7 +67,7 @@ export type RootStackParamList = {
   UpcomingTournament: { tournamentId: string };
   ConfigureVertente: { tournamentId: string; vertenteIndex: number; isLast: boolean; pendingVertentes?: string };
   VertenteHub: { tournamentId: string; vertenteId: string };
-  AddTeam: { tournamentId: string; vertenteId: string };
+  AddTeam: { tournamentId: string; vertenteId: string; teamId?: string };
   EditTeam: { tournamentId: string; vertenteId: string; teamId: string };
   TeamList: { tournamentId: string; vertenteId: string };
   WithdrawConfirm: { tournamentId: string; vertenteId: string; teamId: string };
@@ -77,7 +78,7 @@ export type RootStackParamList = {
   EditGame: { tournamentId: string; vertenteId: string; gameId: string };
   EnterResult: { tournamentId: string; vertenteId: string; gameId: string };
   GamePaused: { tournamentId: string; vertenteId: string; gameId: string };
-  ConfirmClose: { tournamentId: string; vertenteId: string };
+  ConfirmClose: { tournamentId: string; vertenteId: string; gameId: string };
   ConfirmCloseTournament: { tournamentId: string; vertenteId: string };
   Podium: { tournamentId: string; vertenteId: string };
   Export: { tournamentId: string; vertenteId: string };

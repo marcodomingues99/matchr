@@ -1,21 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, Vertente } from '../types';
 import { mockTournaments } from '../mock/data';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { parseDatePt } from '../utils/constants';
+import { LiveDot } from '../components/LiveDot';
 
-type Nav = StackNavigationProp<RootStackParamList>;
+type Nav = StackNavigationProp<RootStackParamList, 'TournamentDetail'>;
 type Route = RouteProp<RootStackParamList, 'TournamentDetail'>;
-
-const VERT_CFG = {
-  M: { emoji: '👨', label: 'Masculino', letter: 'M', colors: [Colors.navy, Colors.blue] as string[], progressColors: [Colors.blue, Colors.teal] as string[] },
-  F: { emoji: '👩', label: 'Feminino', letter: 'F', colors: ['#7B00CC', '#9B30FF'] as string[], progressColors: ['#9B30FF', '#FF44AA'] as string[] },
-  MX: { emoji: '👫', label: 'Misto', letter: 'MX', colors: ['#CC4400', Colors.orange] as string[], progressColors: [Colors.orange, Colors.yellow] as string[] },
-};
 
 type StatusKey = 'live' | 'wait' | 'done' | 'cfg';
 
@@ -30,24 +27,13 @@ const phaseInfo = (v: Vertente): { label: string; pct: number; statusKey: Status
   return { label: `${v.teams.length} duplas · Concluído`, pct: 1, statusKey: 'done' };
 };
 
-const getDays = (start: string, end: string) => {
-  const s = parseInt(start), e = parseInt(end);
-  return (!isNaN(s) && !isNaN(e) && e >= s) ? e - s + 1 : 1;
-};
 
-/* ── Parse "5 Abr 2026" → Date ── */
-const MONTHS: Record<string, number> = {
-  Jan: 0, Fev: 1, Mar: 2, Abr: 3, Mai: 4, Jun: 5,
-  Jul: 6, Ago: 7, Set: 8, Out: 9, Nov: 10, Dez: 11,
-};
-const parseDatePt = (s: string): Date | null => {
-  const parts = s.trim().split(/\s+/);
-  if (parts.length < 3) return null;
-  const day = parseInt(parts[0]);
-  const month = MONTHS[parts[1]];
-  const year = parseInt(parts[2]);
-  if (isNaN(day) || month === undefined || isNaN(year)) return null;
-  return new Date(year, month, day);
+const getDays = (start: string, end: string) => {
+  const startDate = parseDatePt(start);
+  const endDate = parseDatePt(end);
+  if (!startDate || !endDate) return 1;
+  const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 ? diffDays + 1 : 1;
 };
 const getCountdown = (startDate: string) => {
   const target = parseDatePt(startDate);
@@ -60,20 +46,6 @@ const getCountdown = (startDate: string) => {
     hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
     minutes: Math.floor((diff / (1000 * 60)) % 60),
   };
-};
-
-/* ── Pulsing live dot ── */
-const LiveDot = () => {
-  const opacity = React.useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.2, duration: 500, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [opacity]);
-  return <Animated.View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: '#fff', opacity }} />;
 };
 
 export const TournamentDetailScreen = () => {
@@ -93,14 +65,20 @@ export const TournamentDetailScreen = () => {
     return () => clearInterval(timer);
   }, [isUpcoming, t.startDate]);
 
-  // Chunk vertentes into pairs for the 2-column grid (active only)
-  const pairs: Vertente[][] = [];
-  for (let i = 0; i < t.vertentes.length; i += 2) {
-    pairs.push(t.vertentes.slice(i, i + 2));
-  }
+  // Chunk vertentes into pairs for the 2-column grid
+  const pairs = useMemo(() => {
+    const result: Vertente[][] = [];
+    for (let i = 0; i < t.vertentes.length; i += 2) {
+      result.push(t.vertentes.slice(i, i + 2));
+    }
+    return result;
+  }, [t.vertentes]);
 
   // Unique vertente types for chips
-  const vertenteTypes = [...new Set(t.vertentes.map(v => v.type))];
+  const vertenteTypes = useMemo(
+    () => [...new Set(t.vertentes.map(v => v.type))],
+    [t.vertentes],
+  );
 
   return (
     <View style={s.container}>
@@ -145,7 +123,7 @@ export const TournamentDetailScreen = () => {
         {/* ═══ COUNTDOWN (upcoming only) ═══ */}
         {isUpcoming && (
           <View style={s.countdownWrap}>
-            <LinearGradient colors={[Colors.navy, Colors.blue]} style={s.countdownCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <LinearGradient colors={Gradients.masc} style={s.countdownCard} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
               <Text style={s.countdownLabel}>Começa em</Text>
               <View style={s.countdownRow}>
                 <View style={s.countdownUnit}>
@@ -194,7 +172,7 @@ export const TournamentDetailScreen = () => {
               <Text style={s.regSub}>{t.regulamento}</Text>
             </View>
             <TouchableOpacity>
-              <LinearGradient colors={[Colors.blue, Colors.teal]} style={s.dlBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+              <LinearGradient colors={Gradients.primary} style={s.dlBtn} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                 <Text style={s.dlTxt}>↓ PDF</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -206,9 +184,9 @@ export const TournamentDetailScreen = () => {
         {pairs.map((row, ri) => (
           <View key={ri} style={s.tileRow}>
             {row.map(v => {
-              const cfg = VERT_CFG[v.type];
+              const cfg = VERTENTE_CONFIG[v.type];
               const info = phaseInfo(v);
-              const pctStr = `${Math.round(info.pct * 100)}%` as any;
+              const pctStr = `${Math.round(info.pct * 100)}%` as `${number}%`;
               return (
                 <TouchableOpacity
                   key={v.id}
@@ -217,7 +195,7 @@ export const TournamentDetailScreen = () => {
                   onPress={() => navigation.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
                 >
                   <LinearGradient
-                    colors={cfg.colors}
+                    colors={cfg.gradient}
                     style={s.tileGrad}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
@@ -257,8 +235,8 @@ export const TournamentDetailScreen = () => {
         ))}
 
         {/* Add sub-torneio */}
-        <TouchableOpacity style={s.addCard} onPress={() => navigation.navigate('CreateTournament')}>
-          <Text style={{ fontSize: 22, color: Colors.muted }}>＋</Text>
+        <TouchableOpacity style={s.addCard} onPress={() => navigation.navigate('EditTournament', { tournamentId: t.id })}>
+          <Text style={{ fontSize: Typography.fontSize.xxxl, color: Colors.muted }}>＋</Text>
           <Text style={s.addTxt}>Adicionar sub-torneio</Text>
         </TouchableOpacity>
 
@@ -290,74 +268,74 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
 
   /* ── Header ── */
-  header: { paddingHorizontal: 18, paddingBottom: 20, position: 'relative', overflow: 'hidden' },
+  header: { paddingHorizontal: Spacing.lg, paddingBottom: 20, position: 'relative', overflow: 'hidden' },
   headerCircle: {
     position: 'absolute', width: 150, height: 150, borderRadius: 75,
     backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
   },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, marginBottom: 8 },
-  back: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_700Bold' },
+  back: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold },
   editBtn: { backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 9, paddingHorizontal: 11, paddingVertical: 5 },
-  editBtnTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_800ExtraBold' },
-  title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 4 },
-  subtitle: { color: 'rgba(255,255,255,0.65)', fontSize: 12, fontFamily: 'Nunito_600SemiBold', marginTop: 3 },
+  editBtnTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
+  subtitle: { color: 'rgba(255,255,255,0.65)', fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilySemiBold, marginTop: 3 },
   scroll: { flex: 1 },
 
   /* ── Chips (upcoming header) ── */
   chipRow: { flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
   chipWhite: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
-  chipWhiteTxt: { color: '#fff', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
-  chipYellow: { backgroundColor: '#FFFBE6', borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
-  chipYellowTxt: { color: '#997700', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+  chipWhiteTxt: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
+  chipYellow: { backgroundColor: Colors.yellowBg, borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3 },
+  chipYellowTxt: { color: Colors.yellowDark, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
   /* ── Countdown (upcoming) ── */
   countdownWrap: { marginHorizontal: 12, marginTop: 12 },
   countdownCard: { borderRadius: Radii.lg, padding: 16, alignItems: 'center', ...Shadows.card },
-  countdownLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  countdownLabel: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
   countdownRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   countdownUnit: { alignItems: 'center' },
-  countdownNum: { fontSize: 30, fontFamily: 'Nunito_900Black', color: '#fff' },
-  countdownSub: { fontSize: 10, color: 'rgba(255,255,255,0.6)', fontFamily: 'Nunito_600SemiBold' },
-  countdownSep: { fontSize: 28, fontFamily: 'Nunito_900Black', color: 'rgba(255,255,255,0.3)', lineHeight: 40 },
+  countdownNum: { fontSize: 30, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
+  countdownSub: { fontSize: Typography.fontSize.xs, color: 'rgba(255,255,255,0.6)', fontFamily: Typography.fontFamilySemiBold },
+  countdownSep: { fontSize: 28, fontFamily: Typography.fontFamilyBlack, color: 'rgba(255,255,255,0.3)', lineHeight: 40 },
 
   /* ── Stats strip (active) ── */
-  statsRow: { flexDirection: 'row', gap: 8, padding: 12, paddingBottom: 4 },
-  statCard: { flex: 1, backgroundColor: '#fff', borderRadius: Radii.lg, padding: 11, alignItems: 'center', ...Shadows.card },
-  statNum: { fontSize: 20, fontFamily: 'Nunito_900Black' },
-  statLbl: { fontSize: 10, color: Colors.muted, fontFamily: 'Nunito_600SemiBold', marginTop: 2, textAlign: 'center' },
+  statsRow: { flexDirection: 'row', gap: Spacing.sm, padding: Spacing.md, paddingBottom: Spacing.xs },
+  statCard: { flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, alignItems: 'center', ...Shadows.card },
+  statNum: { fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack },
+  statLbl: { fontSize: Typography.fontSize.xs, color: Colors.muted, fontFamily: Typography.fontFamilySemiBold, marginTop: 2, textAlign: 'center' },
 
   /* ── Regulamento ── */
   regCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 11,
-    backgroundColor: '#fff', borderRadius: Radii.lg, padding: 12,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+    backgroundColor: Colors.white, borderRadius: Radii.lg, padding: 12,
     marginHorizontal: 12, marginBottom: 4, ...Shadows.card,
   },
   regIconBox: {
-    width: 38, height: 38, backgroundColor: '#FFF0E3',
+    width: 38, height: 38, backgroundColor: Colors.orangeBg,
     borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
-  regName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  regSub: { fontSize: 10, color: Colors.muted, fontFamily: 'Nunito_600SemiBold', marginTop: 2 },
+  regName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
+  regSub: { fontSize: Typography.fontSize.xs, color: Colors.muted, fontFamily: Typography.fontFamilySemiBold, marginTop: 2 },
   dlBtn: { borderRadius: 8, paddingHorizontal: 11, paddingVertical: 6 },
-  dlTxt: { color: '#fff', fontSize: 11, fontFamily: 'Nunito_800ExtraBold' },
+  dlTxt: { color: Colors.white, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily },
 
   /* ── Section titles ── */
-  sectionTitleSolo: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, margin: 12, marginBottom: 8 },
+  sectionTitleSolo: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy, margin: 12, marginBottom: 8 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginHorizontal: 12, marginTop: 14, marginBottom: 8 },
-  sectionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  sectionAction: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+  sectionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  sectionAction: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
 
   /* ── Quick actions (upcoming) ── */
   quickRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingBottom: 20 },
   quickCard: {
-    flex: 1, backgroundColor: '#fff', borderRadius: Radii.lg, padding: 13,
+    flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
     alignItems: 'center', ...Shadows.card,
   },
-  quickEmoji: { fontSize: 22 },
-  quickLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, marginTop: 5 },
+  quickEmoji: { fontSize: Typography.fontSize.xxxl },
+  quickLabel: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.navy, marginTop: 5 },
 
   /* ── Tile grid (active) ── */
-  tileRow: { flexDirection: 'row', gap: 10, marginHorizontal: 12, marginBottom: 10 },
+  tileRow: { flexDirection: 'row', gap: Spacing.sm, marginHorizontal: Spacing.md, marginBottom: Spacing.sm },
   tile: { flex: 1, minHeight: 110, borderRadius: Radii.lg, overflow: 'hidden', elevation: 3 },
   tileEmpty: { flex: 1 },
   tileGrad: { flex: 1, padding: 12, paddingBottom: 10 },
@@ -369,15 +347,15 @@ const s = StyleSheet.create({
     paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10,
   },
   badgeLive: { backgroundColor: Colors.red },
-  badgeDone: { backgroundColor: 'rgba(255,255,255,0.25)' },
-  badgeWait: { backgroundColor: 'rgba(255,255,255,0.15)' },
-  statusTxt: { fontSize: 9, fontFamily: 'Nunito_800ExtraBold', color: 'rgba(255,255,255,0.7)' },
-  statusTxtWhite: { color: '#fff' },
+  badgeDone: { backgroundColor: 'rgba(255,255,255,0.35)' },
+  badgeWait: { backgroundColor: 'rgba(255,255,255,0.25)' },
+  statusTxt: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: 'rgba(255,255,255,0.85)' },
+  statusTxtWhite: { color: Colors.white },
 
   /* Tile content */
-  tileCat: { fontSize: 10, fontFamily: 'Nunito_900Black', color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5, marginTop: 8 },
-  tileLevel: { fontSize: 18, fontFamily: 'Nunito_900Black', color: '#fff', marginTop: 2 },
-  tileInfo: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: 'rgba(255,255,255,0.65)', marginTop: 2 },
+  tileCat: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBlack, color: 'rgba(255,255,255,0.7)', letterSpacing: 0.5, marginTop: 8 },
+  tileLevel: { fontSize: 18, fontFamily: Typography.fontFamilyBlack, color: Colors.white, marginTop: 2 },
+  tileInfo: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: 'rgba(255,255,255,0.65)', marginTop: 2 },
   tileProgBg: { height: 3, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, marginTop: 8 },
   tileProgFill: { height: 3, backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 2 },
   tileWatermark: { position: 'absolute', fontSize: 48, right: -4, bottom: -8, opacity: 0.12 },
@@ -385,8 +363,8 @@ const s = StyleSheet.create({
   /* Add card */
   addCard: {
     borderWidth: 2, borderStyle: 'dashed', borderColor: Colors.gray,
-    borderRadius: Radii.lg, padding: 13, marginHorizontal: 12,
-    alignItems: 'center', backgroundColor: '#fff',
+    borderRadius: Radii.lg, padding: Spacing.md, marginHorizontal: Spacing.md,
+    alignItems: 'center', backgroundColor: Colors.white,
   },
-  addTxt: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, marginTop: 3 },
+  addTxt: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.muted, marginTop: 3 },
 });

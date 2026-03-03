@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Animated } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -8,23 +8,28 @@ import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL } from '../utils/constants';
+import { LiveDot } from '../components/LiveDot';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'VertenteHub'>;
 
-/* ── Pulsing live dot ── */
-const LiveDot = () => {
-  const opacity = React.useRef(new Animated.Value(1)).current;
-  React.useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(opacity, { toValue: 0.2, duration: 500, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [opacity]);
-  return <Animated.View style={[s.liveDot, { opacity }]} />;
+const ICON_BG: Record<string, string> = {
+  '👥': Colors.blueBg,
+  '📊': Colors.greenBgLight,
+  '🏆': Colors.orangeBg,
+  '🥇': Colors.purpleBg,
+  '📥': Colors.gbg,
+};
+
+const PROGRESS_GRAD: Record<string, readonly [string, string]> = {
+  '👥': [Colors.blue, Colors.teal],
+  '📊': [Colors.green, Colors.greenDark],
+  '🏆': [Colors.orange, Colors.yellow],
+  '🥇': [Colors.purple, Colors.pink],
+  '📥': [Colors.gray, Colors.gray],
 };
 
 export const VertenteHubScreen = () => {
@@ -33,34 +38,36 @@ export const VertenteHubScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
   const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
-  const statusLabel: Record<string, string> = { config: 'A configurar', groups: 'Fase de grupos', bracket: 'Bracket', finished: 'Concluído' };
-  const statusColor: Record<string, string> = { config: Colors.orange, groups: Colors.blue, bracket: Colors.teal, finished: Colors.green };
 
-  const vertenteTeamIds = new Set(vertente.teams.map(t => t.id));
-  const vertenteGames = mockGames.filter(
-    g => vertenteTeamIds.has(g.team1.id) || vertenteTeamIds.has(g.team2.id),
-  );
-  const finishedGames = vertenteGames.filter(g => g.status === 'finished' || g.status === 'walkover');
-  const liveGames = vertenteGames.filter(g => g.status === 'live');
-  const allGamesFinished =
-    vertenteGames.length > 0 &&
-    vertenteGames.every(g => g.status === 'finished' || g.status === 'walkover');
+  const { vertenteGames, finishedGames, liveGames, allGamesFinished } = useMemo(() => {
+    const teamIds = new Set(vertente.teams.map(t => t.id));
+    const all = mockGames.filter(g => teamIds.has(g.team1.id) || teamIds.has(g.team2.id));
+    const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
+    const live = all.filter(g => g.status === GAME_STATUS.LIVE);
+    return {
+      vertenteGames: all,
+      finishedGames: finished,
+      liveGames: live,
+      allGamesFinished: all.length > 0 && all.every(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER),
+    };
+  }, [vertente.teams]);
+
   const teamFillPct = Math.round(vertente.teams.length / vertente.maxTeams * 100);
   const gamesPct = vertenteGames.length > 0 ? Math.round(finishedGames.length / vertenteGames.length * 100) : 0;
 
-  const isLive = vertente.status === 'groups' || vertente.status === 'bracket';
+  const isLive = vertente.status === VERTENTE_STATUS.GROUPS || vertente.status === VERTENTE_STATUS.BRACKET;
 
-  /* ── Card definitions ── */
-  const iconBg: Record<string, string> = { '👥': '#E3ECFF', '📊': '#DFFAEE', '🏆': '#FFF0E3', '🥇': '#F5EAFF', '📥': Colors.gbg };
-  const progressGrad: Record<string, string[]> = {
-    '👥': [Colors.blue, Colors.teal],
-    '📊': [Colors.green, '#00AA66'],
-    '🏆': [Colors.orange, Colors.yellow],
-    '🥇': ['#9B30FF', '#D4006A'],
-    '📥': [],
-  };
+  interface MenuItem {
+    icon: string;
+    title: string;
+    sub: string;
+    progress: number;
+    live?: number;
+    onPress: () => void;
+    enabled: boolean;
+  }
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       icon: '👥', title: 'Duplas',
       sub: `${vertente.teams.length}/${vertente.maxTeams} inscritas`,
@@ -84,16 +91,16 @@ export const VertenteHubScreen = () => {
     {
       icon: '🏆', title: 'Bracket Eliminatória',
       sub: 'Fases finais e quadro eliminatório',
-      progress: vertente.status === 'finished' ? 100 : vertente.status === 'bracket' ? 35 : 0,
+      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : vertente.status === VERTENTE_STATUS.BRACKET ? 35 : 0,
       onPress: () => navigation.navigate('Bracket', { tournamentId: tournament.id, vertenteId: vertente.id }),
-      enabled: vertente.status === 'bracket' || vertente.status === 'finished',
+      enabled: vertente.status === VERTENTE_STATUS.BRACKET || vertente.status === VERTENTE_STATUS.FINISHED,
     },
     {
       icon: '🥇', title: 'Pódio',
       sub: 'Classificação final do torneio',
-      progress: vertente.status === 'finished' ? 100 : 0,
+      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : 0,
       onPress: () => navigation.navigate('Podium', { tournamentId: tournament.id, vertenteId: vertente.id }),
-      enabled: vertente.status === 'finished',
+      enabled: vertente.status === VERTENTE_STATUS.FINISHED,
     },
     {
       icon: '📥', title: 'Exportar',
@@ -104,17 +111,12 @@ export const VertenteHubScreen = () => {
     },
   ];
 
-  const vertGradients: Record<string, string[]> = {
-    M: [Colors.navy, Colors.blue, Colors.teal],
-    F: ['#8B0050', '#D4006A', '#FF6B9D'],
-    MX: ['#5C3A00', '#C87800', '#FFB347'],
-  };
 
   return (
     <View style={s.container}>
       {/* ═══ HEADER ═══ */}
       <LinearGradient
-        colors={vertGradients[vertente.type] as string[]}
+        colors={VERTENTE_CONFIG[vertente.type].gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={s.header}
@@ -128,12 +130,12 @@ export const VertenteHubScreen = () => {
           />
           <SubBadge type={vertente.type} level={vertente.level} />
           <Text style={s.title}>
-            {vertente.type === 'M' ? 'Masculino' : vertente.type === 'F' ? 'Feminino' : 'Misto'} {vertente.level}
+            {VERTENTE_CONFIG[vertente.type].label} {vertente.level}
           </Text>
           <View style={s.statusRow}>
             <View style={s.statusChip}>
-              <View style={[s.statusDot, { backgroundColor: statusColor[vertente.status] }]} />
-              <Text style={s.statusChipTxt}>{statusLabel[vertente.status]}</Text>
+              <View style={[s.statusDot, { backgroundColor: STATUS_COLOR[vertente.status] }]} />
+              <Text style={s.statusChipTxt}>{STATUS_LABEL[vertente.status]}</Text>
             </View>
             {isLive && liveGames.length > 0 && (
               <View style={s.liveChip}>
@@ -149,8 +151,8 @@ export const VertenteHubScreen = () => {
         {/* ═══ CONFIGURAÇÃO ═══ */}
         <View style={s.sectionHeader}>
           <Text style={s.sectionTitle}>Configuração</Text>
-          {vertente.status === 'config' && (
-            <TouchableOpacity>
+          {vertente.status === VERTENTE_STATUS.CONFIG && (
+            <TouchableOpacity onPress={() => navigation.navigate('EditTournament', { tournamentId: tournament.id })}>
               <Text style={s.sectionAction}>✏️ Editar</Text>
             </TouchableOpacity>
           )}
@@ -173,7 +175,7 @@ export const VertenteHubScreen = () => {
         </View>
 
         {/* Add team CTA */}
-        {vertente.status === 'config' && (
+        {vertente.status === VERTENTE_STATUS.CONFIG && (
           <TouchableOpacity
             style={s.addTeamBtn}
             onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
@@ -196,7 +198,7 @@ export const VertenteHubScreen = () => {
             activeOpacity={0.7}
           >
             {/* Icon box */}
-            <View style={[s.iconBox, { backgroundColor: item.enabled ? iconBg[item.icon] : Colors.gl }]}>
+            <View style={[s.iconBox, { backgroundColor: item.enabled ? ICON_BG[item.icon] : Colors.gl }]}>
               <Text style={s.iconEmoji}>{item.icon}</Text>
               {!item.enabled && <View style={s.iconLock}><Text style={s.iconLockTxt}>🔒</Text></View>}
             </View>
@@ -206,19 +208,19 @@ export const VertenteHubScreen = () => {
               {item.progress >= 0 && item.enabled && (
                 <View style={s.miniProgress}>
                   <LinearGradient
-                    colors={progressGrad[item.icon].length > 0 ? progressGrad[item.icon] : [Colors.gray, Colors.gray]}
+                    colors={PROGRESS_GRAD[item.icon]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[s.miniProgressFill, { width: `${Math.max(item.progress, 2)}%` as any }]}
+                    style={[s.miniProgressFill, { width: `${Math.max(item.progress, 2)}%` as `${number}%` }]}
                   />
                 </View>
               )}
               <View style={s.navCardSubRow}>
                 <Text style={s.navCardSub} numberOfLines={1}>{item.sub}</Text>
-                {'live' in item && (item as any).live > 0 && (
+                {item.live != null && item.live > 0 && (
                   <View style={s.liveIndicator}>
                     <LiveDot />
-                    <Text style={s.liveCountTxt}>{(item as any).live} ao vivo</Text>
+                    <Text style={s.liveCountTxt}>{item.live} ao vivo</Text>
                   </View>
                 )}
               </View>
@@ -229,29 +231,25 @@ export const VertenteHubScreen = () => {
         ))}
 
         {/* ═══ PHASE ACTIONS ═══ */}
-        {vertente.status === 'config' && vertente.teams.length >= 4 && (
-          <TouchableOpacity style={s.phaseBtn} activeOpacity={0.85}>
-            <LinearGradient colors={[Colors.green, '#00AA66']} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+        {vertente.status === VERTENTE_STATUS.CONFIG && vertente.teams.length >= 4 && (
+          <TouchableOpacity
+            style={s.phaseBtn}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('GroupsEmpty', { tournamentId: tournament.id, vertenteId: vertente.id })}
+          >
+            <LinearGradient colors={Gradients.green} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               <Text style={s.phaseIcon}>🚀</Text>
               <Text style={s.phaseTxt}>Iniciar Fase de Grupos</Text>
             </LinearGradient>
           </TouchableOpacity>
         )}
-        {vertente.status === 'groups' && !allGamesFinished && (
-          <TouchableOpacity style={s.phaseBtn} activeOpacity={0.85}>
-            <LinearGradient colors={Gradients.primary} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.phaseIcon}>🏆</Text>
-              <Text style={s.phaseTxt}>Avançar para Bracket</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-        {vertente.status === 'groups' && allGamesFinished && (
+        {vertente.status === VERTENTE_STATUS.GROUPS && allGamesFinished && (
           <TouchableOpacity
             style={s.phaseBtn}
             activeOpacity={0.85}
             onPress={() => navigation.navigate('ConfirmCloseTournament', { tournamentId: tournament.id, vertenteId: vertente.id })}
           >
-            <LinearGradient colors={[Colors.green, '#00AA66']} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+            <LinearGradient colors={Gradients.green} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
               <Text style={s.phaseIcon}>🏁</Text>
               <Text style={s.phaseTxt}>Fechar Sub-torneio</Text>
             </LinearGradient>
@@ -269,14 +267,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
 
   /* ── Header ── */
-  header: { paddingHorizontal: 18, paddingBottom: 22, position: 'relative', overflow: 'hidden' },
+  header: { paddingHorizontal: Spacing.lg, paddingBottom: 22, position: 'relative', overflow: 'hidden' },
   headerCircle: {
     position: 'absolute', width: 150, height: 150, borderRadius: 75,
     backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
   },
   backBtn: { marginBottom: 10 },
-  back: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8 },
-  title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 10 },
+  back: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, paddingTop: 8 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 10 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
   statusChip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -284,45 +282,44 @@ const s = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 4,
   },
   statusDot: { width: 7, height: 7, borderRadius: 4 },
-  statusChipTxt: { color: '#fff', fontSize: 11, fontFamily: 'Nunito_800ExtraBold' },
+  statusChipTxt: { color: 'rgba(255,255,255,0.9)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily },
   liveChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
   },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.red },
-  liveTxt: { color: 'rgba(255,255,255,0.8)', fontSize: 11, fontFamily: 'Nunito_700Bold' },
+  liveTxt: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold },
 
   /* ── Scroll ── */
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.md, paddingTop: 14, paddingBottom: 8 },
+  scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
 
   /* ── Section headers ── */
   sectionHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginBottom: 10,
   },
-  sectionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-  sectionAction: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+  sectionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+  sectionAction: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
 
   /* ── Stat cards ── */
   statsRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   statCard: {
-    flex: 1, backgroundColor: '#fff', borderRadius: Radii.lg, padding: Spacing.md,
+    flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
     alignItems: 'center', ...Shadows.card,
   },
-  statNum: { fontSize: 22, fontFamily: 'Nunito_900Black' },
-  statLbl: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.muted, marginTop: 2 },
+  statNum: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack },
+  statLbl: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginTop: 2 },
 
 
   /* ── Add team CTA ── */
   addTeamBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: 10 },
-  addTeamGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 14, gap: 6 },
+  addTeamGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: Spacing.md, gap: Spacing.xs },
   addTeamIcon: { fontSize: 16 },
-  addTeamTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' },
+  addTeamTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
 
   /* ── Navigation cards ── */
   navCard: {
-    backgroundColor: '#fff', borderRadius: Radii.lg, padding: 13,
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
     marginBottom: 8, ...Shadows.card,
   },
   navCardDisabled: { opacity: 0.4 },
@@ -337,20 +334,20 @@ const s = StyleSheet.create({
   },
   iconLockTxt: { fontSize: 12 },
   navCardContent: { flex: 1 },
-  navCardTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  navCardTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
   navCardTitleDisabled: { color: Colors.muted },
   miniProgress: { height: 4, backgroundColor: Colors.gl, borderRadius: 2, marginTop: 5 },
   miniProgressFill: { height: 4, borderRadius: 2 },
   navCardSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-  navCardSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, flexShrink: 1 },
+  navCardSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, flexShrink: 1 },
   liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  liveCountTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.red },
-  chevron: { fontSize: 22, color: Colors.gray, fontFamily: 'Nunito_400Regular' },
+  liveCountTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.red },
+  chevron: { fontSize: Typography.fontSize.xxxl, color: Colors.gray, fontFamily: Typography.fontFamilyRegular },
   chevronDisabled: { color: Colors.gl },
 
   /* ── Phase buttons ── */
   phaseBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginTop: 10, marginBottom: 6 },
   phaseGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, gap: 8 },
   phaseIcon: { fontSize: 16 },
-  phaseTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_900Black' },
+  phaseTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack },
 });

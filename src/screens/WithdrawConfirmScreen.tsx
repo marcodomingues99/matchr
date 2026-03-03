@@ -8,22 +8,11 @@ import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Spacing, Radii } from '../theme';
+import { Colors, Typography, Spacing, Radii } from '../theme';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'WithdrawConfirm'>;
-
-const AVATAR_GRADIENTS = [
-    ['#1A5AC8', '#00A5C8'],
-    ['#8B00CC', '#BB44FF'],
-    ['#22C97A', '#00AA66'],
-    ['#FF7A1A', '#FFD600'],
-    ['#FF3B5C', '#FF9A8B'],
-    ['#9B30FF', '#FF44AA'],
-];
-
-const getInitials = (name: string) =>
-    name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
 type WithdrawOption = 'walkover' | 'remove';
 
@@ -49,7 +38,7 @@ export const WithdrawConfirmScreen = () => {
     return (
         <View style={s.container}>
             {/* ── Header (red gradient) ── */}
-            <LinearGradient colors={['#7A0000', '#FF3B5C', '#FF6B6B']} style={s.header}>
+            <LinearGradient colors={[Colors.redDeep, Colors.red, Colors.redLight]} style={s.header}>
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
                         backLabel="Duplas"
@@ -67,7 +56,7 @@ export const WithdrawConfirmScreen = () => {
                     {team.photo ? (
                         <Image source={{ uri: team.photo }} style={s.teamAvatar} />
                     ) : (
-                        <LinearGradient colors={avatarColors as any} style={s.teamAvatar}>
+                        <LinearGradient colors={avatarColors} style={s.teamAvatar}>
                             <Text style={s.teamAvatarTxt}>{getInitials(team.name)}</Text>
                         </LinearGradient>
                     )}
@@ -125,7 +114,7 @@ export const WithdrawConfirmScreen = () => {
 
                 {/* ── Buttons ── */}
                 <TouchableOpacity onPress={handleConfirm} activeOpacity={0.85}>
-                    <LinearGradient colors={['#7A0000', '#FF3B5C']} style={s.btnConfirm}>
+                    <LinearGradient colors={[Colors.redDeep, Colors.red]} style={s.btnConfirm}>
                         <Text style={s.btnConfirmTxt}>Confirmar desistência</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -141,11 +130,11 @@ export const WithdrawConfirmScreen = () => {
 };
 
 const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1, backgroundColor: Colors.white },
 
     // Header
     header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-    title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', marginTop: 4 },
+    title: { color: Colors.white, fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
 
     scroll: { flex: 1 },
     scrollContent: { padding: 14, paddingBottom: 28 },
@@ -161,16 +150,16 @@ const s = StyleSheet.create({
         marginBottom: 20,
     },
     teamAvatar: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-    teamAvatarTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_900Black' },
-    teamName: { fontSize: 14, fontFamily: 'Nunito_900Black', color: Colors.navy },
-    teamPlayers: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2 },
+    teamAvatarTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack },
+    teamName: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
+    teamPlayers: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
 
     // Question
-    question: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, marginBottom: 12 },
+    question: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy, marginBottom: 12 },
 
     // Option
     option: {
-        backgroundColor: '#fff',
+        backgroundColor: Colors.white,
         borderWidth: 2,
         borderColor: Colors.gl,
         borderRadius: Radii.md,
@@ -183,8 +172,8 @@ const s = StyleSheet.create({
     optionSelected: { borderColor: Colors.orange },
     optionSelectedBlue: { borderColor: Colors.blue },
     optionEmoji: { fontSize: 24, flexShrink: 0 },
-    optionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    optionDesc: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 2, lineHeight: 16 },
+    optionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+    optionDesc: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2, lineHeight: 16 },
 
     // Radio
     radio: {
@@ -203,7 +192,7 @@ const s = StyleSheet.create({
 
     // Warning
     warning: {
-        backgroundColor: '#FFF8E3',
+        backgroundColor: Colors.yellowBgWarm,
         borderWidth: 1.5,
         borderColor: Colors.yellow,
         borderRadius: 11,
@@ -214,19 +203,19 @@ const s = StyleSheet.create({
         gap: 10,
     },
     warningIcon: { fontSize: 16, flexShrink: 0 },
-    warningText: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.navy, lineHeight: 18, flex: 1 },
+    warningText: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.navy, lineHeight: 18, flex: 1 },
 
     // Buttons
     btnConfirm: { borderRadius: 11, padding: 12, alignItems: 'center', marginBottom: 8 },
-    btnConfirmTxt: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
+    btnConfirmTxt: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
     btnCancel: {
-        backgroundColor: '#fff',
+        backgroundColor: Colors.white,
         borderWidth: 2,
         borderColor: Colors.gl,
         borderRadius: 11,
         padding: 12,
         alignItems: 'center',
     },
-    btnCancelTxt: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+    btnCancelTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
 
 });

@@ -8,7 +8,8 @@ import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { MATCH_FORMAT } from '../utils/scoring';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GamePaused'>;
@@ -22,7 +23,7 @@ export const GamePausedScreen = () => {
 
   return (
     <View style={s.container}>
-      <LinearGradient colors={['#4A2C00', '#C87800']} style={s.header}>
+      <LinearGradient colors={[Colors.brownDeep, Colors.brownLight]} style={s.header}>
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Jogos"
@@ -54,7 +55,7 @@ export const GamePausedScreen = () => {
             <Text style={s.setsLabel}>Resultados guardados</Text>
             {game.sets.map((set, i) => (
               <View key={i} style={s.setRow}>
-                <Text style={s.setNum}>{i === 2 ? 'STB' : `Set ${i + 1}`}</Text>
+                <Text style={s.setNum}>{i === MATCH_FORMAT.SUPER_TIE_BREAK_INDEX ? 'STB' : `Set ${i + 1}`}</Text>
                 <Text style={s.setScore}>{set.team1} – {set.team2}</Text>
               </View>
             ))}
@@ -89,25 +90,24 @@ export const GamePausedScreen = () => {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.gbg },
   header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  back: { color: 'rgba(255,255,255,0.8)', fontSize: 13, fontFamily: 'Nunito_700Bold', paddingTop: 8, marginBottom: 8 },
-  title: { color: '#fff', fontSize: 22, fontFamily: 'Nunito_900Black', marginTop: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_600SemiBold', marginTop: 4 },
+  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
+  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
   body: { flex: 1, padding: Spacing.lg },
-  teamsCard: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: Spacing.md, alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
-  teamName: { fontSize: 15, fontFamily: 'Nunito_900Black', color: Colors.navy },
-  vs: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.muted, marginVertical: 4 },
-  pausedInfo: { backgroundColor: '#FFF8E3', borderRadius: Radii.lg, padding: 24, alignItems: 'center', marginBottom: Spacing.md, borderWidth: 1.5, borderColor: Colors.yellow },
+  teamsCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
+  teamName: { fontSize: 15, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
+  vs: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginVertical: 4 },
+  pausedInfo: { backgroundColor: Colors.yellowBgWarm, borderRadius: Radii.lg, padding: 24, alignItems: 'center', marginBottom: Spacing.md, borderWidth: 1.5, borderColor: Colors.yellow },
   pausedIcon: { fontSize: 48, marginBottom: 12 },
-  pausedTitle: { fontSize: 18, fontFamily: 'Nunito_900Black', color: Colors.navy, marginBottom: 8 },
-  pausedSub: { fontSize: 13, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, textAlign: 'center', lineHeight: 20 },
-  setsCard: { backgroundColor: '#fff', borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.md, ...Shadows.card },
-  setsLabel: { fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted, textTransform: 'uppercase', marginBottom: 8 },
+  pausedTitle: { fontSize: 18, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, marginBottom: 8 },
+  pausedSub: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
+  setsCard: { backgroundColor: Colors.white, borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.md, ...Shadows.card },
+  setsLabel: { ...TextStyles.sectionLabel, marginBottom: 8 },
   setRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.gl },
-  setNum: { fontSize: 13, fontFamily: 'Nunito_700Bold', color: Colors.muted },
-  setScore: { fontSize: 14, fontFamily: 'Nunito_900Black', color: Colors.navy },
+  setNum: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
+  setScore: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
   resumeBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: Spacing.sm },
   resumeGrad: { padding: 15, alignItems: 'center' },
-  resumeTxt: { color: '#fff', fontSize: 15, fontFamily: 'Nunito_800ExtraBold' },
+  resumeTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
   backBtn: { alignItems: 'center', padding: 12 },
-  backBtnTxt: { color: Colors.blue, fontSize: 14, fontFamily: 'Nunito_700Bold' },
+  backBtnTxt: { color: Colors.blue, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold },
 });

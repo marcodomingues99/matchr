@@ -6,36 +6,11 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
-import { Colors, Radii, Shadows } from '../theme';
+import { Colors, Typography, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
-type Nav = StackNavigationProp<RootStackParamList>;
+type Nav = StackNavigationProp<RootStackParamList, 'FinishedTournament'>;
 type Route = RouteProp<RootStackParamList, 'FinishedTournament'>;
-
-const VERT_CFG: Record<string, {
-    emoji: string; label: string;
-    colors: [string, string];
-    barColors: [string, string];
-    tint: string;
-}> = {
-    M: {
-        emoji: '👨', label: 'Masculino',
-        colors: [Colors.navy, Colors.blue],
-        barColors: ['#D6E4FF', '#EBF0FF'],
-        tint: '#EDF2FF',
-    },
-    F: {
-        emoji: '👩', label: 'Feminino',
-        colors: ['#9B30FF', '#D946EF'],
-        barColors: ['#F3E4FF', '#F9F0FF'],
-        tint: '#F8F0FF',
-    },
-    MX: {
-        emoji: '👫', label: 'Misto',
-        colors: [Colors.orange, '#FFB347'],
-        barColors: ['#FFF0DB', '#FFF7ED'],
-        tint: '#FFF6EC',
-    },
-};
 
 export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
@@ -97,7 +72,7 @@ export const FinishedTournamentScreen = () => {
             {/* ═══ BODY ═══ */}
             <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
                 {t.vertentes.map((v) => {
-                    const cfg = VERT_CFG[v.type] ?? VERT_CFG.M;
+                    const cfg = VERTENTE_CONFIG[v.type];
                     const winner = v.teams[0];
                     const runnerUp = v.teams[1];
                     const third = v.teams[2];
@@ -106,15 +81,15 @@ export const FinishedTournamentScreen = () => {
                         <TouchableOpacity
                             key={v.id}
                             activeOpacity={0.85}
-                            style={[s.card, { backgroundColor: cfg.tint }]}
+                            style={[s.card, { backgroundColor: cfg.barBg }]}
                             onPress={() => navigation.navigate('Podium', { tournamentId: t.id, vertenteId: v.id })}
                         >
                             {/* Colored top bar */}
-                            <LinearGradient colors={cfg.colors} style={s.cardAccent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                            <LinearGradient colors={cfg.gradient} style={s.cardAccent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
 
                             {/* Header */}
                             <View style={s.cardHeader}>
-                                <LinearGradient colors={cfg.colors} style={s.catBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                                <LinearGradient colors={cfg.gradient} style={s.catBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
                                     <Text style={s.catBadgeTxt}>{cfg.emoji}</Text>
                                 </LinearGradient>
                                 <View style={{ flex: 1 }}>
@@ -130,8 +105,8 @@ export const FinishedTournamentScreen = () => {
                                 {runnerUp && (
                                     <View style={[s.podCol, { marginTop: 16 }]}>
                                         <Text style={s.podMedal}>🥈</Text>
-                                        <View style={[s.podBar, { height: 44, backgroundColor: cfg.barColors[0] }]}>
-                                            <Text style={[s.podRank, { color: cfg.colors[0] }]}>2</Text>
+                                        <View style={[s.podBar, { height: 44, backgroundColor: cfg.chipBg }]}>
+                                            <Text style={[s.podRank, { color: cfg.color }]}>2</Text>
                                         </View>
                                         <Text style={s.podName} numberOfLines={1}>{runnerUp.name}</Text>
                                         <Text style={s.podPlayers} numberOfLines={1}>
@@ -144,14 +119,14 @@ export const FinishedTournamentScreen = () => {
                                     <View style={s.podCol}>
                                         <Text style={s.podMedalGold}>🥇</Text>
                                         <LinearGradient
-                                            colors={cfg.colors}
+                                            colors={cfg.gradient}
                                             style={[s.podBar, { height: 60 }]}
                                             start={{ x: 0, y: 0 }}
                                             end={{ x: 0, y: 1 }}
                                         >
                                             <Text style={s.podRankGold}>1</Text>
                                         </LinearGradient>
-                                        <Text style={[s.podName, { color: cfg.colors[0], fontFamily: 'Nunito_900Black' }]} numberOfLines={1}>
+                                        <Text style={[s.podName, { color: cfg.color, fontFamily: Typography.fontFamilyBlack }]} numberOfLines={1}>
                                             {winner.name}
                                         </Text>
                                         <Text style={s.podPlayers} numberOfLines={1}>
@@ -163,8 +138,8 @@ export const FinishedTournamentScreen = () => {
                                 {third && (
                                     <View style={[s.podCol, { marginTop: 24 }]}>
                                         <Text style={s.podMedal}>🥉</Text>
-                                        <View style={[s.podBar, { height: 34, backgroundColor: cfg.barColors[1] }]}>
-                                            <Text style={[s.podRank, { color: cfg.colors[0] }]}>3</Text>
+                                        <View style={[s.podBar, { height: 34, backgroundColor: cfg.barBg }]}>
+                                            <Text style={[s.podRank, { color: cfg.color }]}>3</Text>
                                         </View>
                                         <Text style={s.podName} numberOfLines={1}>{third.name}</Text>
                                         <Text style={s.podPlayers} numberOfLines={1}>
@@ -198,12 +173,12 @@ const s = StyleSheet.create({
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         paddingTop: 6, paddingBottom: 4,
     },
-    backTxt: { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontFamily: 'Nunito_700Bold' },
+    backTxt: { color: 'rgba(255,255,255,0.7)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold },
     donePill: {
         backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20,
         paddingHorizontal: 10, paddingVertical: 4,
     },
-    donePillTxt: { color: '#fff', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+    donePillTxt: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
     heroRow: { alignItems: 'center', marginTop: 4, marginBottom: 6 },
     trophyGlow: {
@@ -213,8 +188,8 @@ const s = StyleSheet.create({
         borderWidth: 2, borderColor: 'rgba(255,214,0,0.2)',
     },
     trophyEmoji: { fontSize: 34 },
-    heroTitle: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black', textAlign: 'center' },
-    heroSub: { color: 'rgba(255,255,255,0.55)', fontSize: 12, fontFamily: 'Nunito_600SemiBold', marginTop: 3, textAlign: 'center' },
+    heroTitle: { color: Colors.white, fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack, textAlign: 'center' },
+    heroSub: { color: 'rgba(255,255,255,0.55)', fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilySemiBold, marginTop: 3, textAlign: 'center' },
 
     statRow: {
         flexDirection: 'row', alignItems: 'center',
@@ -222,8 +197,8 @@ const s = StyleSheet.create({
         marginTop: 14, paddingVertical: 10, paddingHorizontal: 6,
     },
     statItem: { flex: 1, alignItems: 'center' },
-    statNum: { fontSize: 20, fontFamily: 'Nunito_900Black', color: '#fff' },
-    statLbl: { fontSize: 9, fontFamily: 'Nunito_700Bold', color: 'rgba(255,255,255,0.55)', marginTop: 1 },
+    statNum: { fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
+    statLbl: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamilyBold, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
     statSep: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.15)' },
 
     /* ── Scroll ── */
@@ -245,8 +220,8 @@ const s = StyleSheet.create({
         alignItems: 'center', justifyContent: 'center',
     },
     catBadgeTxt: { fontSize: 18 },
-    catTitle: { fontSize: 14, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    catSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
+    catTitle: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.navy },
+    catSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
     chevron: { fontSize: 24, color: Colors.gray },
 
     /* ── Podium ── */
@@ -262,8 +237,8 @@ const s = StyleSheet.create({
         width: '100%', borderRadius: Radii.sm, alignItems: 'center',
         justifyContent: 'flex-end', paddingBottom: 4,
     },
-    podRank: { fontSize: 12, fontFamily: 'Nunito_900Black', opacity: 0.35 },
-    podRankGold: { fontSize: 16, fontFamily: 'Nunito_900Black', color: '#fff', opacity: 0.7 },
-    podName: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, textAlign: 'center', marginTop: 5 },
-    podPlayers: { fontSize: 8, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, textAlign: 'center', marginTop: 1 },
+    podRank: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack, opacity: 0.35 },
+    podRankGold: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.white, opacity: 0.7 },
+    podName: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.navy, textAlign: 'center', marginTop: 5 },
+    podPlayers: { fontSize: 8, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', marginTop: 1 },
 });

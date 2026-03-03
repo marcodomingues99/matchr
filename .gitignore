@@ -1,1 +1,56 @@
-node_modules/**
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+android/
+ios/
+
+# Build output
+build/
+*.jsbundle
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Claude
+.claude/
+
+# Archives
+*.zip
+*.tar.gz
+*.bak
+
+# TypeScript
+*.tsbuildinfo

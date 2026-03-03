@@ -9,22 +9,12 @@ import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Radii, Shadows, Spacing } from '../theme';
+import { Colors, Gradients, Typography, TextStyles, Radii, Shadows, Spacing } from '../theme';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsEmpty'>;
-
-const AVATAR_GRADIENTS: [string, string][] = [
-    [Colors.blue, Colors.teal],
-    ['#8B00CC', '#BB44FF'],
-    [Colors.green, '#00AA66'],
-    [Colors.orange, Colors.yellow],
-    [Colors.red, '#FF9A8B'],
-    ['#9B30FF', '#FF44AA'],
-];
-
-const getInitials = (name: string) =>
-    name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
 export const GroupsEmptyScreen = () => {
     const navigation = useNavigation<Nav>();
@@ -32,7 +22,7 @@ export const GroupsEmptyScreen = () => {
     const tournament = mockTournaments.find(t => t.id === route.params.tournamentId) ?? mockTournaments[0];
     const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId) ?? tournament.vertentes[0];
 
-    const typeLabel = vertente.type === 'M' ? 'Masculino' : vertente.type === 'F' ? 'Feminino' : 'Misto';
+    const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
     const teamsConfirmed = vertente.teams.filter(t => !t.withdrawn).length;
 
     const [pickedFile, setPickedFile] = useState<string | null>(null);
@@ -67,7 +57,7 @@ export const GroupsEmptyScreen = () => {
                 <View style={s.headerDeco} />
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
-                        backLabel={`${vertente.type === 'M' ? 'Masc' : vertente.type === 'F' ? 'Fem' : 'Misto'} ${vertente.level}`}
+                        backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
                         onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
                     />
                     <View style={{ marginBottom: 10 }}>
@@ -83,7 +73,7 @@ export const GroupsEmptyScreen = () => {
 
                 {/* Step 1: Done */}
                 <View style={s.step}>
-                    <LinearGradient colors={[Colors.green, '#00AA66']} style={s.stepCircle}>
+                    <LinearGradient colors={Gradients.green} style={s.stepCircle}>
                         <Text style={s.stepCircleTxt}>✓</Text>
                     </LinearGradient>
                     <View style={s.stepContent}>
@@ -94,7 +84,7 @@ export const GroupsEmptyScreen = () => {
 
                 {/* Step 2: Active */}
                 <View style={[s.step, s.stepActive]}>
-                    <LinearGradient colors={[Colors.blue, Colors.teal]} style={s.stepCircle}>
+                    <LinearGradient colors={Gradients.primary} style={s.stepCircle}>
                         <Text style={s.stepCircleNum}>2</Text>
                     </LinearGradient>
                     <View style={s.stepContent}>
@@ -121,7 +111,7 @@ export const GroupsEmptyScreen = () => {
                     <View style={s.importDone}>
                         <View style={s.importDoneRow}>
                             <View style={s.importDoneIcon}>
-                                <Text style={{ fontSize: 20 }}>📄</Text>
+                                <Text style={{ fontSize: Typography.fontSize.xxl }}>📄</Text>
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={s.importDoneName} numberOfLines={1}>{pickedFile}</Text>
@@ -144,7 +134,7 @@ export const GroupsEmptyScreen = () => {
                         <Text style={s.importEmoji}>📥</Text>
                         <Text style={s.importTitle}>Importar grelha via Excel</Text>
                         <Text style={s.importDesc}>Traz grupos, horários e courts já definidos</Text>
-                        <LinearGradient colors={[Colors.blue, Colors.teal]} style={s.importBtn}>
+                        <LinearGradient colors={Gradients.primary} style={s.importBtn}>
                             <Text style={s.importBtnTxt}>Escolher ficheiro →</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -197,9 +187,9 @@ export const GroupsEmptyScreen = () => {
                                         <Text style={[
                                             s.groupChipTxt,
                                             team.group.startsWith('A') && { color: Colors.blue },
-                                            team.group.startsWith('B') && { color: '#1A7A4A' },
+                                            team.group.startsWith('B') && { color: Colors.greenDeep },
                                             team.group.startsWith('C') && { color: Colors.orange },
-                                            team.group.startsWith('D') && { color: '#9B30FF' },
+                                            team.group.startsWith('D') && { color: Colors.purple },
                                         ]}>{team.group}</Text>
                                     </View>
                                 )}
@@ -229,115 +219,115 @@ const s = StyleSheet.create({
     root: { flex: 1, backgroundColor: Colors.gbg },
 
     /* Header */
-    header: { paddingHorizontal: 18, paddingBottom: 24, overflow: 'hidden' },
+    header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl, overflow: 'hidden' },
     headerDeco: {
         position: 'absolute', width: 150, height: 150, borderRadius: 75,
         backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
     },
-    back: { color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'Nunito_700Bold', marginBottom: 8, paddingTop: 8 },
-    title: { color: '#fff', fontSize: 20, fontFamily: 'Nunito_900Black' },
+    back: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, marginBottom: 8, paddingTop: 8 },
+    title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack },
 
     /* Scroll */
     scroll: { flex: 1 },
-    scrollContent: { padding: 14, paddingBottom: 40 },
+    scrollContent: { padding: Spacing.lg, paddingBottom: 40 },
 
     /* Stepper */
     stepperLabel: {
-        fontSize: 11, fontFamily: 'Nunito_800ExtraBold', color: Colors.muted,
-        letterSpacing: 0.5, marginBottom: 12,
+        ...TextStyles.sectionLabel,
+        marginBottom: 12,
     },
     step: {
-        backgroundColor: '#fff', borderRadius: Radii.lg, padding: 13,
-        flexDirection: 'row', alignItems: 'center', gap: 12,
+        backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
         marginBottom: 8, ...Shadows.card,
     },
     stepActive: { borderWidth: 2, borderColor: Colors.blue },
     stepLocked: {
-        backgroundColor: Colors.gbg, opacity: 0.5,
+        backgroundColor: Colors.gbg, opacity: 0.6,
         shadowOpacity: 0, elevation: 0, marginBottom: 20,
     },
     stepCircle: {
         width: 28, height: 28, borderRadius: 14,
         alignItems: 'center', justifyContent: 'center',
     },
-    stepCircleTxt: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_900Black' },
-    stepCircleNum: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_900Black' },
+    stepCircleTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack },
+    stepCircleNum: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack },
     stepCircleLocked: {
         width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.gl,
         alignItems: 'center', justifyContent: 'center',
     },
-    stepCircleLockedNum: { color: Colors.gray, fontSize: 13, fontFamily: 'Nunito_900Black' },
+    stepCircleLockedNum: { color: Colors.gray, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack },
     stepContent: { flex: 1 },
-    stepTitle: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    stepSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
+    stepTitle: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
+    stepSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
     stepDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.orange },
-    lockIcon: { fontSize: 16 },
+    lockIcon: { fontSize: Typography.fontSize.xl },
 
     /* Import CTA */
     importBox: {
         borderWidth: 2, borderStyle: 'dashed', borderColor: Colors.blue,
         borderRadius: Radii.lg, padding: 20, alignItems: 'center',
-        backgroundColor: '#fff', marginBottom: 20,
+        backgroundColor: Colors.white, marginBottom: 20,
     },
     importEmoji: { fontSize: 32, marginBottom: 6 },
-    importTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    importDesc: { fontSize: 11, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 4, lineHeight: 16, textAlign: 'center' },
+    importTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+    importDesc: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 4, lineHeight: 16, textAlign: 'center' },
     importBtn: { borderRadius: 9, paddingVertical: 11, paddingHorizontal: 20, marginTop: 14 },
-    importBtnTxt: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
+    importBtnTxt: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
 
     /* Import done state */
     importDone: {
-        backgroundColor: '#fff', borderRadius: Radii.lg, padding: 14,
+        backgroundColor: Colors.white, borderRadius: Radii.lg, padding: 14,
         marginBottom: 20, borderWidth: 2, borderColor: Colors.green, ...Shadows.card,
     },
-    importDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+    importDoneRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
     importDoneIcon: {
         width: 42, height: 42, backgroundColor: Colors.gbg, borderRadius: 10,
         alignItems: 'center', justifyContent: 'center',
     },
-    importDoneName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    importDoneSub: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.green, marginTop: 1 },
-    importDoneRemove: { fontSize: 16, color: Colors.gray, fontFamily: 'Nunito_800ExtraBold', padding: 4 },
+    importDoneName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
+    importDoneSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.green, marginTop: 1 },
+    importDoneRemove: { fontSize: Typography.fontSize.xl, color: Colors.gray, fontFamily: Typography.fontFamily, padding: 4 },
     importDoneChange: { marginTop: 10, alignItems: 'center' },
-    importDoneChangeTxt: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.blue },
+    importDoneChangeTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
 
     /* Section */
     sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
-    sectionTitle: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
-    sectionCount: { fontSize: 11, fontFamily: 'Nunito_700Bold', color: Colors.muted },
+    sectionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
+    sectionCount: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
 
     /* Teams card */
-    teamsCard: { backgroundColor: '#fff', borderRadius: Radii.lg, padding: 13, ...Shadows.card, marginBottom: 12 },
+    teamsCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, ...Shadows.card, marginBottom: Spacing.md },
     teamRow: {
-        flexDirection: 'row', alignItems: 'center', gap: 9,
+        flexDirection: 'row', alignItems: 'center', gap: Spacing.sm,
         paddingVertical: 8, borderBottomWidth: 1.5, borderBottomColor: Colors.gl,
     },
-    teamWithdrawn: { opacity: 0.5, backgroundColor: '#FFF5F5', marginHorizontal: -13, paddingHorizontal: 13, borderRadius: 0 },
-    teamIdx: { width: 16, textAlign: 'center', fontSize: 11, fontFamily: 'Nunito_900Black', color: Colors.gray },
+    teamWithdrawn: { opacity: 0.6, backgroundColor: Colors.redBgLight, marginHorizontal: -Spacing.md, paddingHorizontal: Spacing.md, borderRadius: 0 },
+    teamIdx: { width: 16, textAlign: 'center', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBlack, color: Colors.gray },
     avatar: {
         width: 38, height: 38, borderRadius: 19,
         alignItems: 'center', justifyContent: 'center',
     },
-    avatarTxt: { color: '#fff', fontSize: 12, fontFamily: 'Nunito_900Black' },
+    avatarTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack },
     teamInfo: { flex: 1, minWidth: 0 },
     teamNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    teamName: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy, flexShrink: 1 },
-    teamPlayers: { fontSize: 10, fontFamily: 'Nunito_600SemiBold', color: Colors.muted, marginTop: 1 },
-    woBadge: { fontSize: 10, fontFamily: 'Nunito_700Bold', color: Colors.red },
-    woLabel: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold', color: Colors.red },
+    teamName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy, flexShrink: 1 },
+    teamPlayers: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
+    woBadge: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.red },
+    woLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.red },
 
     /* Group chips */
     groupChip: { borderRadius: 20, paddingHorizontal: 9, paddingVertical: 3, marginRight: 4 },
-    groupChipBlue: { backgroundColor: '#E3ECFF' },
-    groupChipGreen: { backgroundColor: '#DFFAEE' },
-    groupChipOrange: { backgroundColor: '#FFF0DB' },
-    groupChipPurple: { backgroundColor: '#F3E4FF' },
-    groupChipTxt: { fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+    groupChipBlue: { backgroundColor: Colors.blueBg },
+    groupChipGreen: { backgroundColor: Colors.greenBgLight },
+    groupChipOrange: { backgroundColor: Colors.orangeBgLight },
+    groupChipPurple: { backgroundColor: Colors.purpleBgLight },
+    groupChipTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
     /* Add button */
     addBtn: {
-        backgroundColor: '#fff', borderRadius: Radii.lg, padding: 13,
+        backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
         alignItems: 'center', borderWidth: 2, borderColor: Colors.gl,
     },
-    addBtnTxt: { fontSize: 13, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+    addBtnTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.blue },
 });

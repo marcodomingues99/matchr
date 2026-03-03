@@ -14,37 +14,18 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList, Tournament, Vertente } from '../types';
 import { mockTournaments } from '../mock/data';
-import { Colors, Gradients, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { LiveDot } from '../components/LiveDot';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Home'>;
 
 /* ── Logo reference ──────────────────────────────────────── */
 const logo = require('../../assets/logo.png');
 
-/* ── Chip helpers ────────────────────────────────────────── */
-const chipBg = (type: string) => {
-  if (type === 'M') return '#2563EB';
-  if (type === 'F') return '#E8346E';
-  return '#7C3AED'; // MX
-};
-
 /** Show level (M5, F4…) unless it's 'Sem', then just show type letter */
 const chipLabel = (v: Vertente) =>
   v.level === 'Sem' ? v.type : v.level;
-
-/** Pastel chip background for active card (white body) */
-const chipBgPastel = (type: string) => {
-  if (type === 'M') return '#E3ECFF';
-  if (type === 'F') return '#F3E8FF';
-  return '#FFF0E3'; // MX
-};
-
-/** Colored text for pastel chips */
-const chipTextPastel = (type: string) => {
-  if (type === 'M') return Colors.blue;
-  if (type === 'F') return '#9B30FF';
-  return Colors.orange; // MX
-};
 
 /* ═════════════════════════════════════════════════════════════
    HomeScreen
@@ -52,6 +33,10 @@ const chipTextPastel = (type: string) => {
 export const HomeScreen = () => {
   const navigation = useNavigation<Nav>();
   const tournaments = mockTournaments;
+
+  const active   = React.useMemo(() => tournaments.filter(t => t.status === 'active'),   [tournaments]);
+  const upcoming = React.useMemo(() => tournaments.filter(t => t.status === 'upcoming'), [tournaments]);
+  const finished = React.useMemo(() => tournaments.filter(t => t.status === 'finished'), [tournaments]);
 
   /* ── Empty state ── */
   if (tournaments.length === 0) {
@@ -92,11 +77,6 @@ export const HomeScreen = () => {
     );
   }
 
-  /* ── Group by status ── */
-  const active = tournaments.filter((t) => t.status === 'active');
-  const upcoming = tournaments.filter((t) => t.status === 'upcoming');
-  const finished = tournaments.filter((t) => t.status === 'finished');
-
   return (
     <View style={styles.flex1}>
       {/* ── Header ── */}
@@ -135,7 +115,7 @@ export const HomeScreen = () => {
             <View style={styles.sectionRow}>
               <Text style={styles.sectionLabel}>Em Curso</Text>
               <View style={styles.liveBadge}>
-                <View style={styles.liveDot} />
+                <LiveDot size={8} color={Colors.red} />
                 <Text style={styles.liveText}>Ao vivo</Text>
               </View>
             </View>
@@ -165,7 +145,7 @@ export const HomeScreen = () => {
           </>
         )}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: Spacing.xxl }} />
       </ScrollView>
     </View>
   );
@@ -174,7 +154,7 @@ export const HomeScreen = () => {
 /* ═════════════════════════════════════════════════════════════
    Active card  (gradient, progress bar)
    ═════════════════════════════════════════════════════════════ */
-const ActiveCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
+const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
   const progress = 0.55;
   const currentDay = 2;
   const totalDays = 3;
@@ -214,14 +194,14 @@ const ActiveCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
           {/* Chips */}
           <View style={styles.chipsRow}>
             {t.vertentes.map((v) => (
-              <View key={v.id} style={[styles.chip, { backgroundColor: chipBgPastel(v.type) }]}>
-                <Text style={[styles.chipText, { color: chipTextPastel(v.type) }]}>
+              <View key={v.id} style={[styles.chip, { backgroundColor: VERTENTE_CONFIG[v.type].chipBg }]}>
+                <Text style={[styles.chipText, { color: VERTENTE_CONFIG[v.type].chipText }]}>
                   {chipLabel(v)}
                 </Text>
               </View>
             ))}
-            <View style={[styles.chip, { backgroundColor: '#DFFAEE' }]}>
-              <Text style={[styles.chipText, { color: '#1A7A4A' }]}>
+            <View style={[styles.chip, { backgroundColor: Colors.greenBgLight }]}>
+              <Text style={[styles.chipText, { color: Colors.greenDeep }]}>
                 Dia {currentDay}/{totalDays}
               </Text>
             </View>
@@ -230,10 +210,10 @@ const ActiveCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
           {/* Progress */}
           <View style={styles.progressTrack}>
             <LinearGradient
-              colors={[Colors.blue, Colors.teal]}
+              colors={Gradients.primary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.progressFill, { width: `${progress * 100}%` as any }]}
+              style={[styles.progressFill, { width: `${progress * 100}%` as `${number}%` }]}
             />
           </View>
           <View style={styles.progressRow}>
@@ -246,12 +226,12 @@ const ActiveCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 /* ═════════════════════════════════════════════════════════════
    Compact card  (white, icon on left)
    ═════════════════════════════════════════════════════════════ */
-const CompactCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
+const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
   const target = t.status === 'upcoming' ? 'UpcomingTournament' : t.status === 'finished' ? 'FinishedTournament' : 'TournamentDetail';
   const isFinished = t.status === 'finished';
 
@@ -272,7 +252,7 @@ const CompactCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
         </View>
       ) : (
         <LinearGradient
-          colors={['#FF7A1A', '#FFD600']}
+          colors={[Colors.orange, Colors.yellow]}
           style={styles.compactIcon}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
@@ -296,7 +276,7 @@ const CompactCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
               key={v.id}
               style={[
                 styles.chipSmall,
-                { backgroundColor: isFinished ? Colors.gray : chipBg(v.type) },
+                { backgroundColor: isFinished ? Colors.gray : VERTENTE_CONFIG[v.type].color },
               ]}
             >
               <Text
@@ -311,9 +291,12 @@ const CompactCard = ({ t, nav }: { t: Tournament; nav: Nav }) => {
           ))}
         </View>
       </View>
+
+      {/* Chevron */}
+      <Text style={[styles.compactChevron, isFinished && styles.compactChevronFinished]}>›</Text>
     </TouchableOpacity>
   );
-};
+});
 
 /* ═════════════════════════════════════════════════════════════
    Styles
@@ -331,21 +314,23 @@ const styles = StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoSmall: { width: 34, height: 34, resizeMode: 'contain' },
-  appName: { color: '#fff', fontSize: 24, fontFamily: 'Nunito_900Black', lineHeight: 28 },
+  appName: { color: Colors.white, fontSize: 24, fontFamily: Typography.fontFamilyBlack, lineHeight: 28 },
   headerSub: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 12,
-    fontFamily: 'Nunito_600SemiBold',
+    fontSize: Typography.fontSize.md,
+    fontFamily: Typography.fontFamilySemiBold,
     marginTop: 1,
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   newBtn: {
-    backgroundColor: '#22C97A',
+    backgroundColor: Colors.green,
     borderRadius: Radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  newBtnText: { color: '#fff', fontSize: 13, fontFamily: 'Nunito_800ExtraBold' },
+  newBtnText: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
 
   /* ── Scroll ── */
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
@@ -358,18 +343,17 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
   },
   sectionLabel: {
-    fontSize: 14,
-    fontFamily: 'Nunito_800ExtraBold',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamily,
     color: Colors.navy,
     marginBottom: Spacing.sm,
   },
-  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.red },
-  liveText: { fontSize: 12, fontFamily: 'Nunito_800ExtraBold', color: Colors.blue },
+  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
+  liveText: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.blue },
 
   /* ── Active card ── */
   activeCardOuter: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: Radii.xl,
     overflow: 'hidden',
     ...Shadows.card,
@@ -382,38 +366,38 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   activeBannerTitle: {
-    color: '#fff',
-    fontSize: 14,
-    fontFamily: 'Nunito_900Black',
+    color: Colors.white,
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamilyBlack,
     flex: 1,
     zIndex: 1,
   },
   activeBannerEmoji: {
     position: 'absolute',
     fontSize: 50,
-    opacity: 0.15,
+    opacity: 0.08,
     right: 12,
-    bottom: -6,
+    bottom: 4,
   },
   activeCardBody: {
     padding: Spacing.md,
-    paddingHorizontal: 13,
+    paddingHorizontal: Spacing.md,
   },
   activeSub: {
     color: Colors.muted,
-    fontSize: 11,
-    fontFamily: 'Nunito_600SemiBold',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamilySemiBold,
     marginBottom: 6,
   },
 
   /* ── Chips ── */
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.md },
   chip: {
     borderRadius: Radii.full,
-    paddingHorizontal: 10,
+    paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
   },
-  chipText: { color: '#fff', fontSize: 11, fontFamily: 'Nunito_800ExtraBold' },
+  chipText: { color: Colors.white, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily },
 
   chipsRowSmall: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
   chipSmall: {
@@ -421,7 +405,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
-  chipSmallText: { color: '#fff', fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+  chipSmallText: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
 
   /* ── Progress ── */
   progressRow: {
@@ -432,10 +416,10 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     color: Colors.muted,
-    fontSize: 10,
-    fontFamily: 'Nunito_600SemiBold',
+    fontSize: Typography.fontSize.xs,
+    fontFamily: Typography.fontFamilySemiBold,
   },
-  progressPct: { color: Colors.blue, fontSize: 10, fontFamily: 'Nunito_800ExtraBold' },
+  progressPct: { color: Colors.blue, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
   progressTrack: {
     height: 4,
     borderRadius: 2,
@@ -449,7 +433,7 @@ const styles = StyleSheet.create({
   compactCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: Radii.xl,
     padding: Spacing.md,
     marginBottom: Spacing.sm,
@@ -465,16 +449,19 @@ const styles = StyleSheet.create({
   },
   compactLogo: { width: 26, height: 26, resizeMode: 'contain' },
   compactInfo: { flex: 1 },
-  compactName: { fontSize: 14, fontFamily: 'Nunito_800ExtraBold', color: Colors.navy },
+  compactName: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.navy },
   compactSub: {
-    fontSize: 11,
-    fontFamily: 'Nunito_600SemiBold',
-    color: '#64748B',
+    fontSize: Typography.fontSize.sm,
+    fontFamily: Typography.fontFamilySemiBold,
+    color: Colors.graySlate,
     marginTop: 2,
   },
 
+  compactChevron: { fontSize: Typography.fontSize.xxxl, color: Colors.gray, fontFamily: Typography.fontFamilyRegular, marginLeft: 4 },
+  compactChevronFinished: { color: Colors.gl },
+
   /* ── Compact card – finished (muted) ── */
-  compactCardFinished: { opacity: 0.65 },
+  compactCardFinished: { opacity: 0.7 },
   compactIconFinished: { backgroundColor: Colors.gl },
   compactNameFinished: { color: Colors.muted },
   compactSubFinished: { color: Colors.gray },
@@ -504,24 +491,24 @@ const styles = StyleSheet.create({
   },
   emptyLogo: { width: 56, height: 56, resizeMode: 'contain' },
   emptyTitle: {
-    color: '#fff',
-    fontSize: 22,
-    fontFamily: 'Nunito_900Black',
+    color: Colors.white,
+    fontSize: Typography.fontSize.xxxl,
+    fontFamily: Typography.fontFamilyBlack,
     marginBottom: 8,
   },
   emptySubtitle: {
     color: 'rgba(255,255,255,0.75)',
-    fontSize: 14,
-    fontFamily: 'Nunito_600SemiBold',
+    fontSize: Typography.fontSize.lg,
+    fontFamily: Typography.fontFamilySemiBold,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: Spacing.xl,
   },
   emptyBtn: {
-    backgroundColor: '#1A3A6B',
+    backgroundColor: Colors.navyDark,
     borderRadius: Radii.lg,
     paddingHorizontal: 28,
     paddingVertical: 14,
   },
-  emptyBtnText: { color: '#fff', fontSize: 14, fontFamily: 'Nunito_800ExtraBold' },
+  emptyBtnText: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
 });
