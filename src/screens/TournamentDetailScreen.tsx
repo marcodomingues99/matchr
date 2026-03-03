@@ -8,7 +8,7 @@ import { RootStackParamList, Vertente } from '../types';
 import { mockTournaments } from '../mock/data';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { parseDatePt } from '../utils/constants';
+import { parseDatePt, VERTENTE_STATUS } from '../utils/constants';
 import { LiveDot } from '../components/LiveDot';
 
 type Nav = StackNavigationProp<RootStackParamList, 'TournamentDetail'>;
@@ -86,6 +86,16 @@ export const TournamentDetailScreen = () => {
     () => [...new Set(t.vertentes.map(v => v.type))],
     [t.vertentes],
   );
+
+  const quickExportVertenteId = useMemo(() => {
+    const liveVertente = t.vertentes.find(v => v.status === VERTENTE_STATUS.GROUPS || v.status === VERTENTE_STATUS.BRACKET);
+    if (liveVertente) return liveVertente.id;
+
+    const configuredVertente = t.vertentes.find(v => v.status !== VERTENTE_STATUS.CONFIG);
+    if (configuredVertente) return configuredVertente.id;
+
+    return t.vertentes[0]?.id;
+  }, [t.vertentes]);
 
   return (
     <View style={s.container}>
@@ -267,7 +277,11 @@ export const TournamentDetailScreen = () => {
                 <Text style={s.quickEmoji}>⚙️</Text>
                 <Text style={s.quickLabel}>Configurar</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.quickCard} activeOpacity={0.7} onPress={() => navigation.navigate('Export', { tournamentId: t.id, vertenteId: t.vertentes[0]?.id ?? '' })}>
+              <TouchableOpacity
+                style={s.quickCard}
+                activeOpacity={0.7}
+                onPress={() => quickExportVertenteId && navigation.navigate('Export', { tournamentId: t.id, vertenteId: quickExportVertenteId })}
+              >
                 <Text style={s.quickEmoji}>📥</Text>
                 <Text style={s.quickLabel}>Exportar</Text>
               </TouchableOpacity>

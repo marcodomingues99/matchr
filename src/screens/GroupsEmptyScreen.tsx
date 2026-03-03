@@ -12,7 +12,7 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Radii, Shadows, Spacing } from '../theme';
 import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { MIN_TEAMS_TO_START } from '../utils/constants';
+import { getMinTeamsToStart } from '../utils/constants';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
 import { popTo } from '../utils/navigation';
 
@@ -28,8 +28,9 @@ export const GroupsEmptyScreen = () => {
 
     const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
     const teamsConfirmed = vertente.teams.filter(t => !t.withdrawn).length;
+    const minTeamsToStart = getMinTeamsToStart(vertente);
     const isFull = teamsConfirmed >= vertente.maxTeams;
-    const isPartial = teamsConfirmed >= MIN_TEAMS_TO_START && !isFull;
+    const isPartial = teamsConfirmed >= minTeamsToStart && !isFull;
     const canImport = isFull || isPartial;
     const remaining = vertente.maxTeams - teamsConfirmed;
 
@@ -108,7 +109,7 @@ export const GroupsEmptyScreen = () => {
                                 ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas`
                                 : isPartial
                                     ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas — faltam ${remaining}`
-                                    : `${teamsConfirmed}/${vertente.maxTeams} confirmadas — mínimo ${MIN_TEAMS_TO_START}`
+                                    : `${teamsConfirmed}/${vertente.maxTeams} confirmadas — mínimo ${minTeamsToStart}`
                             }
                         </Text>
                     </View>
@@ -188,7 +189,7 @@ export const GroupsEmptyScreen = () => {
                         <Text style={s.importEmoji}>📥</Text>
                         <Text style={s.importTitle}>Importar grelha via Excel</Text>
                         <Text style={s.importDesc}>
-                            {canImport ? 'Traz grupos, horários e courts já definidos' : `Adiciona pelo menos ${MIN_TEAMS_TO_START} duplas primeiro`}
+                            {canImport ? 'Traz grupos, horários e courts já definidos' : `Adiciona pelo menos ${minTeamsToStart} duplas primeiro`}
                         </Text>
                         <LinearGradient colors={canImport ? Gradients.primary : [Colors.gray, Colors.gray] as [string, string]} style={s.importBtn}>
                             <Text style={s.importBtnTxt}>Escolher ficheiro →</Text>

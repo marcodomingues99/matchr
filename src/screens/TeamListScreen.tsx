@@ -44,7 +44,7 @@ export const TeamListScreen = () => {
     sg.forEach(g => {
       const members = vertente.teams
         .filter(t => t.group === g)
-        .sort((a, b) => calcStats(b.id, mockGames).pts - calcStats(a.id, mockGames).pts);
+        .sort((a, b) => calcStats(b.id, mockGames, vertente.pointsPerWin).pts - calcStats(a.id, mockGames, vertente.pointsPerWin).pts);
       members.forEach((t, i) => { map[t.id] = i + 1; });
     });
     return { sortedGroups: sg, groupRankMap: map };

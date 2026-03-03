@@ -1,4 +1,5 @@
 import { Game } from '../types';
+import type { Vertente } from '../types';
 
 export const PTS_PER_WIN = 3;
 
@@ -9,6 +10,18 @@ export const MATCH_FORMAT = {
   SUPER_TIE_BREAK_INDEX: 2, // 0-based index of the 3rd set
 };
 
+export const resolvePointsPerWin = (
+  vertente?: Pick<Vertente, 'pointsPerWin'>,
+): number => vertente?.pointsPerWin ?? PTS_PER_WIN;
+
+export const resolveMatchFormat = (
+  vertente?: Pick<Vertente, 'matchFormat'>,
+) => ({
+  MAX_SETS: vertente?.matchFormat?.maxSets ?? MATCH_FORMAT.MAX_SETS,
+  SETS_TO_WIN: vertente?.matchFormat?.setsToWin ?? MATCH_FORMAT.SETS_TO_WIN,
+  SUPER_TIE_BREAK_INDEX: vertente?.matchFormat?.superTieBreakIndex ?? MATCH_FORMAT.SUPER_TIE_BREAK_INDEX,
+});
+
 export interface TeamStats {
   wins: number;
   losses: number;
@@ -18,7 +31,7 @@ export interface TeamStats {
   gamesLost: number;
 }
 
-export const calcStats = (teamId: string, games: Game[]): TeamStats => {
+export const calcStats = (teamId: string, games: Game[], pointsPerWin: number = PTS_PER_WIN): TeamStats => {
   const relevant = games.filter(
     g => (g.team1.id === teamId || g.team2.id === teamId) &&
          (g.status === 'finished' || g.status === 'walkover'),
@@ -36,5 +49,5 @@ export const calcStats = (teamId: string, games: Game[]): TeamStats => {
       });
     }
   });
-  return { wins, losses, played: wins + losses, pts: wins * PTS_PER_WIN, gamesWon, gamesLost };
+  return { wins, losses, played: wins + losses, pts: wins * pointsPerWin, gamesWon, gamesLost };
 };

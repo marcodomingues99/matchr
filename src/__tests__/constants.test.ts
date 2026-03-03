@@ -55,20 +55,12 @@ describe('parseDatePt', () => {
     expect(parseDatePt('5 Mar xxxx')).toBeNull();
   });
 
-  // BUG: day "0" or negative days are not validated — new Date(2026, 2, 0)
-  // actually gives Feb 28 (last day of previous month), which is silently wrong.
-  it('BUG: day 0 is not rejected — returns last day of previous month', () => {
-    const d = parseDatePt('0 Mar 2026');
-    // parseDatePt does not validate that day > 0, so it returns a Date object
-    expect(d).not.toBeNull();          // documents the current (no-validation) behaviour
-    expect(d!.getMonth()).toBe(1);     // Feb — day 0 of March rolls back to Feb 28
+  it('rejects day 0', () => {
+    expect(parseDatePt('0 Mar 2026')).toBeNull();
   });
 
-  // BUG: an out-of-range day like 32 is not rejected — JavaScript rolls it over.
-  it('BUG: day 32 is not rejected — rolls over into the next month', () => {
-    const d = parseDatePt('32 Mar 2026');
-    expect(d).not.toBeNull();
-    expect(d!.getMonth()).toBe(3);     // April (March 32 → April 1)
+  it('rejects out-of-range day 32', () => {
+    expect(parseDatePt('32 Mar 2026')).toBeNull();
   });
 });
 

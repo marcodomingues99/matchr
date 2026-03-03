@@ -63,7 +63,7 @@ export const GroupsTableScreen = () => {
   }, [vertente.teams]);
 
   const qualifiers = vertente.qualifiersPerGroup ?? 2;
-  const mockStats = (teamId: string) => calcStats(teamId, mockGames);
+  const mockStats = (teamId: string) => calcStats(teamId, mockGames, vertente.pointsPerWin);
 
   // Set of team IDs that belong to this vertente (used to scope game filtering)
   const vertenteTeamIds = useMemo(

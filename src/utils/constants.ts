@@ -1,4 +1,5 @@
 import { Colors } from '../theme';
+import type { Vertente } from '../types';
 
 /** Sentinel used when a tournament is being created and has no real ID yet */
 export const NEW_TOURNAMENT_ID = 'new' as const;
@@ -35,12 +36,29 @@ export const PT_MONTHS = Object.keys(MONTHS);
 /** Parse a Portuguese date string "5 Abr 2026" → Date, or null on failure */
 export const parseDatePt = (s: string): Date | null => {
   const parts = s.trim().split(/\s+/);
-  if (parts.length < 3) return null;
+  if (parts.length !== 3) return null;
   const day = parseInt(parts[0]);
   const month = MONTHS[parts[1]];
   const year = parseInt(parts[2]);
-  if (isNaN(day) || month === undefined || isNaN(year)) return null;
-  return new Date(year, month, day);
+  if (isNaN(day) || month === undefined || isNaN(year) || day < 1) return null;
+
+  const parsed = new Date(year, month, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsed;
+};
+
+export const getMinTeamsToStart = (
+  vertente?: Pick<Vertente, 'maxTeams' | 'minTeamsToStart'>,
+): number => {
+  if (!vertente) return MIN_TEAMS_TO_START;
+  return Math.max(2, Math.min(vertente.maxTeams, vertente.minTeamsToStart ?? MIN_TEAMS_TO_START));
 };
 
 /** Accent color per vertente lifecycle status */

@@ -8,6 +8,7 @@ import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { parseDatePt } from '../utils/constants';
 import { popTo } from '../utils/navigation';
+import { calcStats } from '../utils/scoring';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
@@ -41,7 +42,7 @@ export const ConfirmCloseTournamentScreen = () => {
     // Games for this vertente's teams
     const vertenteTeamIds = new Set(vertente.teams.map(t => t.id));
     const games = mockGames.filter(
-        g => vertenteTeamIds.has(g.team1.id) || vertenteTeamIds.has(g.team2.id),
+        g => vertenteTeamIds.has(g.team1.id) && vertenteTeamIds.has(g.team2.id),
     );
     const totalGames = games.length;
     const totalTeams = vertente.teams.length;
@@ -53,13 +54,47 @@ export const ConfirmCloseTournamentScreen = () => {
         ? Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86_400_000) + 1)
         : 1;
 
-    // Top 3 teams: take first 3 from vertente (mock ranking order)
-    const top3 = vertente.teams.slice(0, 3);
+    // Top 3 from final/3rd-place results, with stats fallback
+    const finishedBracketGames = games.filter(g =>
+        g.phase !== 'groups' &&
+        (g.status === 'finished' || g.status === 'walkover') &&
+        !!g.winnerId,
+    );
+    const finalGame = [...finishedBracketGames].reverse().find(g => g.phase === 'final');
+    const thirdPlaceGame = [...finishedBracketGames].reverse().find(g => g.phase === '3rd');
 
-    // Last finished game for score summary
-    const lastFinished = [...games].reverse().find(g => g.status === 'finished');
-    const finalScore = lastFinished?.sets
-        ? lastFinished.sets.map(s => `${s.team1}–${s.team2}`).join(' / ')
+    const winner = finalGame
+        ? (finalGame.winnerId === finalGame.team1.id ? finalGame.team1 : finalGame.team2)
+        : undefined;
+    const runnerUp = finalGame
+        ? (finalGame.winnerId === finalGame.team1.id ? finalGame.team2 : finalGame.team1)
+        : undefined;
+    const third = thirdPlaceGame
+        ? (thirdPlaceGame.winnerId === thirdPlaceGame.team1.id ? thirdPlaceGame.team1 : thirdPlaceGame.team2)
+        : undefined;
+
+    const fallbackByStats = vertente.teams
+        .filter(t => !t.withdrawn)
+        .map(team => ({
+            team,
+            stats: calcStats(team.id, games, vertente.pointsPerWin),
+        }))
+        .sort((a, b) => {
+            if (b.stats.pts !== a.stats.pts) return b.stats.pts - a.stats.pts;
+            return (b.stats.gamesWon - b.stats.gamesLost) - (a.stats.gamesWon - a.stats.gamesLost);
+        })
+        .map(x => x.team);
+
+    const top3 = [winner, runnerUp, third].filter(Boolean) as typeof vertente.teams;
+    fallbackByStats.forEach(team => {
+        if (top3.length < 3 && !top3.some(t => t.id === team.id)) {
+            top3.push(team);
+        }
+    });
+
+    // Final score summary
+    const finalScore = finalGame?.sets
+        ? finalGame.sets.map(s => `${s.team1}–${s.team2}`).join(' / ')
         : '—';
 
     return (

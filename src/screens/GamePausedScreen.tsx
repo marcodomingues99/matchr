@@ -10,7 +10,7 @@ import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
-import { MATCH_FORMAT } from '../utils/scoring';
+import { resolveMatchFormat } from '../utils/scoring';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GamePaused'>;
@@ -22,6 +22,8 @@ export const GamePausedScreen = () => {
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
   if (!tournament || !vertente || !game) return null;
+
+  const matchFormat = resolveMatchFormat(vertente);
 
   return (
     <View style={s.container}>
@@ -57,7 +59,7 @@ export const GamePausedScreen = () => {
             <Text style={s.setsLabel}>Resultados guardados</Text>
             {game.sets.map((set, i) => (
               <View key={i} style={s.setRow}>
-                <Text style={s.setNum}>{i === MATCH_FORMAT.SUPER_TIE_BREAK_INDEX ? 'STB' : `Set ${i + 1}`}</Text>
+                <Text style={s.setNum}>{i === matchFormat.SUPER_TIE_BREAK_INDEX ? 'STB' : `Set ${i + 1}`}</Text>
                 <Text style={s.setScore}>{set.team1} – {set.team2}</Text>
               </View>
             ))}

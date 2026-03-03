@@ -38,6 +38,13 @@ export interface Vertente {
   courts: number;
   status: 'config' | 'groups' | 'bracket' | 'finished';
   qualifiersPerGroup?: number; // how many teams advance from each group (default 2)
+  minTeamsToStart?: number;
+  pointsPerWin?: number;
+  matchFormat?: {
+    maxSets?: number;
+    setsToWin?: number;
+    superTieBreakIndex?: number;
+  };
 }
 
 export interface SetScore {

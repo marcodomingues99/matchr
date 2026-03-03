@@ -42,7 +42,7 @@ export const PodiumScreen = () => {
     return vertente.teams
       .filter(t => !t.withdrawn)
       .map(team => {
-        const stats = calcStats(team.id, mockGames);
+        const stats = calcStats(team.id, mockGames, vertente.pointsPerWin);
         return {
           pos: 0,
           name: team.name,

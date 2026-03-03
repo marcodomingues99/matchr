@@ -10,7 +10,7 @@ import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL, MIN_TEAMS_TO_START } from '../utils/constants';
+import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL, getMinTeamsToStart } from '../utils/constants';
 import { LiveDot } from '../components/LiveDot';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -45,9 +45,11 @@ export const VertenteHubScreen = () => {
     setTimeout(() => setRefreshing(false), 600);
   }, []);
 
+  const minTeamsToStart = getMinTeamsToStart(vertente);
+
   const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
     const teamIds = new Set(vertente.teams.map(t => t.id));
-    const all = mockGames.filter(g => teamIds.has(g.team1.id) || teamIds.has(g.team2.id));
+    const all = mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id));
     const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     const live = all.filter(g => g.status === GAME_STATUS.LIVE);
     const bracket = all.filter(g => g.phase !== 'groups');
@@ -96,7 +98,7 @@ export const VertenteHubScreen = () => {
         vertenteGames.length > 0 ? 'GroupsTable' : 'GroupsEmpty',
         { tournamentId: tournament.id, vertenteId: vertente.id },
       ),
-      enabled: vertente.status !== VERTENTE_STATUS.CONFIG && vertente.teams.filter(t => !t.withdrawn).length >= MIN_TEAMS_TO_START,
+      enabled: vertente.status !== VERTENTE_STATUS.CONFIG && vertente.teams.filter(t => !t.withdrawn).length >= minTeamsToStart,
     },
     {
       icon: '🏆', title: 'Bracket Eliminatória',
@@ -251,7 +253,7 @@ export const VertenteHubScreen = () => {
         ))}
 
         {/* ═══ PHASE ACTIONS ═══ */}
-        {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= MIN_TEAMS_TO_START && (
+        {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= minTeamsToStart && (
           <TouchableOpacity
             style={s.phaseBtn}
             activeOpacity={0.85}

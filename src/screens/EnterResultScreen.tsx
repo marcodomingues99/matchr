@@ -12,7 +12,7 @@ import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Button } from '../components/Button';
 import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
-import { MATCH_FORMAT } from '../utils/scoring';
+import { resolveMatchFormat } from '../utils/scoring';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'EnterResult'>;
@@ -26,6 +26,8 @@ export const EnterResultScreen = () => {
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
   if (!tournament || !vertente || !game) return null;
+
+  const matchFormat = resolveMatchFormat(vertente);
 
   const isEditing = game.status === 'finished' && !!game.sets?.length;
 
@@ -58,7 +60,7 @@ export const EnterResultScreen = () => {
       i === currentSetIdx ? { ...s, saved: true } : s,
     );
     const allSaved = newSets.every(s => s.saved);
-    if (allSaved && newSets.length < MATCH_FORMAT.MAX_SETS) {
+    if (allSaved && newSets.length < matchFormat.MAX_SETS) {
       // Count sets won by each team
       let t1Wins = 0, t2Wins = 0;
       newSets.forEach(s => {
@@ -67,7 +69,7 @@ export const EnterResultScreen = () => {
         if (s1 > s2) t1Wins++; else if (s2 > s1) t2Wins++;
       });
       // Only add next set if no team has won enough sets yet (i.e. 1-1 for super tie-break)
-      if (t1Wins < MATCH_FORMAT.SETS_TO_WIN && t2Wins < MATCH_FORMAT.SETS_TO_WIN) {
+      if (t1Wins < matchFormat.SETS_TO_WIN && t2Wins < matchFormat.SETS_TO_WIN) {
         newSets.push({ team1: '', team2: '', saved: false });
       }
     }
@@ -103,7 +105,7 @@ export const EnterResultScreen = () => {
 
         {sets.map((set, idx) => {
           const isCurrent = !set.saved && idx === currentSetIdx;
-          const setLabel = idx === MATCH_FORMAT.SUPER_TIE_BREAK_INDEX ? 'Super Tie-Break' : `Set ${idx + 1}`;
+          const setLabel = idx === matchFormat.SUPER_TIE_BREAK_INDEX ? 'Super Tie-Break' : `Set ${idx + 1}`;
           return (
             <View key={idx} style={[styles.setCard, set.saved && styles.setCardSaved, isCurrent && styles.setCardActive]}>
               <View style={styles.setHeader}>
@@ -167,7 +169,7 @@ export const EnterResultScreen = () => {
           </TouchableOpacity>
         )}
 
-        {sets.every(s => s.saved) && sets.length >= MATCH_FORMAT.SETS_TO_WIN && (
+        {sets.every(s => s.saved) && sets.length >= matchFormat.SETS_TO_WIN && (
           <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
         )}
 
