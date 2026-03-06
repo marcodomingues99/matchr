@@ -35,7 +35,7 @@ const SECTIONS: Section[] = [
     title: 'Exportar esta categoria',
     items: [
       { id: 'pdf_results', icon: '📊', iconBg: Colors.greenBgSoft, title: 'Resultados em PDF', sub: 'Tabelas e resultados completos', btnLabel: '↓ PDF', btnColors: [Colors.green, Colors.greenDark] },
-      { id: 'pdf_bracket', icon: '🏆', iconBg: Colors.blueBg, title: 'Bracket / Quadro', sub: 'Fases finais e eliminação', btnLabel: '↓ PDF', btnColors: [Colors.blue, Colors.teal] },
+      { id: 'pdf_bracket', icon: '🏆', iconBg: Colors.blueBg, title: 'Eliminatórias', sub: 'Fases finais e eliminação', btnLabel: '↓ PDF', btnColors: [Colors.blue, Colors.teal] },
       { id: 'pdf_teams', icon: '👥', iconBg: Colors.purpleBgSoft, title: 'Lista de duplas', sub: 'Todas as equipas inscritas', btnLabel: '↓ PDF', btnColors: [Colors.purple, Colors.purpleDeep] },
     ],
   },

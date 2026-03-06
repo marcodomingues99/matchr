@@ -16,7 +16,7 @@ import { BRACKET_ROUND_LABEL, BRACKET_ROUND_ORDER, GAME_STATUS } from '../utils/
 import { propagateBracket, isPlaceholderTeam } from '../utils/bracketPropagation';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'Bracket'>;
+type Route = RouteProp<RootStackParamList, 'Knockout'>;
 
 interface BracketRound {
   label: string;
@@ -25,7 +25,7 @@ interface BracketRound {
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
-export const BracketScreen = () => {
+export const KnockoutScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
@@ -82,7 +82,7 @@ export const BracketScreen = () => {
         <LinearGradient colors={Gradients.header} style={s.header}>
           <SafeAreaView edges={['top']}>
             <HeaderNav backLabel="Voltar" onBack={() => navigation.goBack()} />
-            <Text style={s.title}>Bracket / Eliminação 🏆</Text>
+            <Text style={s.title}>Eliminatórias 🏆</Text>
           </SafeAreaView>
         </LinearGradient>
         <View style={s.emptyWrap}>
@@ -103,14 +103,14 @@ export const BracketScreen = () => {
             onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>Bracket / Eliminação 🏆</Text>
+          <Text style={s.title}>Eliminatórias 🏆</Text>
         </SafeAreaView>
       </LinearGradient>
 
       {rounds.length === 0 ? (
         <View style={s.emptyWrap}>
           <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>🏆</Text>
-          <Text style={s.emptyTitle}>Bracket ainda não disponível</Text>
+          <Text style={s.emptyTitle}>Eliminatórias ainda não disponíveis</Text>
           <Text style={s.emptyBody}>
             Os jogos de eliminação aparecerão aqui quando a fase de grupos terminar.
           </Text>

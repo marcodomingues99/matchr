@@ -82,7 +82,7 @@ export const GAME_STATUS_COLOR = {
 export const STATUS_LABEL: Record<string, string> = {
   config: 'A configurar',
   groups: 'Fase de grupos',
-  bracket: 'Bracket',
+  bracket: 'Eliminatórias',
   finished: 'Concluído',
 };
 

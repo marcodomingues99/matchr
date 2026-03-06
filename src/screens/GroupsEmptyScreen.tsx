@@ -254,7 +254,7 @@ export const GroupsEmptyScreen = () => {
                     <TouchableOpacity
                         style={s.addBtn}
                         activeOpacity={0.7}
-                        onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                        onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
                     >
                         <Text style={s.addBtnTxt}>+ Adicionar dupla</Text>
                     </TouchableOpacity>

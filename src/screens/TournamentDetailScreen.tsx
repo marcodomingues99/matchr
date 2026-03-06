@@ -23,7 +23,7 @@ const phaseInfo = (v: Vertente): { label: string; pct: number; statusKey: Status
     pct: v.teams.length / v.maxTeams,
     statusKey: v.teams.length > 0 ? 'live' : 'wait',
   };
-  if (v.status === 'bracket') return { label: `${v.teams.length} duplas · Bracket`, pct: 0.75, statusKey: 'live' };
+  if (v.status === 'bracket') return { label: `${v.teams.length} duplas · Eliminatórias`, pct: 0.75, statusKey: 'live' };
   return { label: `${v.teams.length} duplas · Concluído`, pct: 1, statusKey: 'done' };
 };
 

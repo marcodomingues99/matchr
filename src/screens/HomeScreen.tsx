@@ -69,7 +69,7 @@ export const HomeScreen = () => {
             </View>
             <Text style={styles.emptyTitle}>Ainda sem torneios</Text>
             <Text style={styles.emptySubtitle}>
-              Cria o teu primeiro torneio e começa a gerir{'\n'}grupos, brackets
+              Cria o teu primeiro torneio e começa a gerir{'\n'}grupos, eliminatórias
               e resultados.
             </Text>
             <TouchableOpacity

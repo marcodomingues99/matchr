@@ -101,10 +101,10 @@ export const VertenteHubScreen = () => {
       enabled: vertente.status !== VERTENTE_STATUS.CONFIG && vertente.teams.filter(t => !t.withdrawn).length >= minTeamsToStart,
     },
     {
-      icon: '🏆', title: 'Bracket Eliminatória',
+      icon: '🏆', title: 'Eliminatórias',
       sub: 'Fases finais e quadro eliminatório',
       progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : vertente.status === VERTENTE_STATUS.BRACKET ? bracketPct : 0,
-      onPress: () => navigation.navigate('Bracket', { tournamentId: tournament.id, vertenteId: vertente.id }),
+      onPress: () => navigation.navigate('Knockout', { tournamentId: tournament.id, vertenteId: vertente.id }),
       enabled: vertente.status === VERTENTE_STATUS.BRACKET || vertente.status === VERTENTE_STATUS.FINISHED,
     },
     {
@@ -196,7 +196,7 @@ export const VertenteHubScreen = () => {
         {vertente.status === VERTENTE_STATUS.CONFIG && (
           <TouchableOpacity
             style={s.addTeamBtn}
-            onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
             activeOpacity={0.85}
           >
             <LinearGradient colors={Gradients.primary} style={s.addTeamGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>

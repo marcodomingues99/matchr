@@ -76,9 +76,9 @@ describe('GroupsTableScreen filteredGames — cross-vertente bug', () => {
   });
 });
 
-// ─── duplicate-name check skipped in edit mode (AddTeamScreen) ───────────────
+// ─── duplicate-name check skipped in edit mode (ManageTeamScreen) ────────────
 
-describe('AddTeamScreen — duplicate name check during edit', () => {
+describe('ManageTeamScreen — duplicate name check during edit', () => {
   /**
    * Current logic:
    *   const isDuplicateName = !isEditing && vertente.teams.some(...)

@@ -15,9 +15,9 @@ import { getInitials } from '../utils/teamUtils';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'AddTeam'>;
+type Route = RouteProp<RootStackParamList, 'ManageTeam'>;
 
-export const AddTeamScreen = () => {
+export const ManageTeamScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);

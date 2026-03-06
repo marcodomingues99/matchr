@@ -83,7 +83,7 @@ export const TeamListScreen = () => {
             <View style={s.sectionRow} accessibilityRole="header">
               <Text style={s.sectionTitle}>Duplas — {vertente.level}</Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
                 accessibilityRole="button"
                 accessibilityLabel="Adicionar nova dupla"
               >
@@ -104,7 +104,7 @@ export const TeamListScreen = () => {
             <Text style={s.emptySub}>Adiciona a primeira equipa</Text>
             <TouchableOpacity
               style={s.addFirstBtn}
-              onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
               accessibilityRole="button"
               accessibilityLabel="Adicionar primeira dupla"
             >
@@ -156,7 +156,7 @@ export const TeamListScreen = () => {
                   ) : (
                     <View style={s.actions}>
                       <TouchableOpacity
-                        onPress={() => navigation.navigate('AddTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                        onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
                         accessibilityRole="button"
                         accessibilityLabel={`Editar ${team.name}`}
                       >

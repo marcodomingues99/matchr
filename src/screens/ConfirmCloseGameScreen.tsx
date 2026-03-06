@@ -13,9 +13,9 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'ConfirmClose'>;
+type Route = RouteProp<RootStackParamList, 'ConfirmCloseGame'>;
 
-export const ConfirmCloseScreen = () => {
+export const ConfirmCloseGameScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);

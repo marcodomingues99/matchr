@@ -170,7 +170,7 @@ export const EnterResultScreen = () => {
         )}
 
         {sets.every(s => s.saved) && sets.length >= matchFormat.SETS_TO_WIN && (
-          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmClose', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
+          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmCloseGame', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
         )}
 
         <View style={{ height: 32 }} />
