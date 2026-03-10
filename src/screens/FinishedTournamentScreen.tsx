@@ -17,13 +17,14 @@ export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
     const t = mockTournaments.find(x => x.id === route.params.tournamentId);
-    if (!t) return null;
 
-    const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
+    const totalTeams = t?.vertentes.reduce((sum, v) => sum + v.teams.length, 0) ?? 0;
     const totalGames = React.useMemo(() => {
-        const teamIds = new Set(t.vertentes.flatMap(v => v.teams.map(team => team.id)));
+        const teamIds = new Set(t?.vertentes.flatMap(v => v.teams.map(team => team.id)) ?? []);
         return mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id)).length;
     }, [t]);
+
+    if (!t) return null;
 
     return (
         <View className="flex-1 bg-gbg">

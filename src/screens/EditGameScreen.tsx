@@ -21,9 +21,7 @@ export const EditGameScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  if (!tournament) return null;
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!vertente) return null;
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
 
   const gameData = game ?? {
@@ -39,8 +37,8 @@ export const EditGameScreen = () => {
   const [date, setDate] = useState(gameData.date);
 
   const tournamentDays = useMemo(() => {
-    const start = parseDatePt(tournament.startDate);
-    const end = parseDatePt(tournament.endDate);
+    const start = parseDatePt(tournament?.startDate ?? '');
+    const end = parseDatePt(tournament?.endDate ?? '');
     if (!start || !end) return [];
     const days: string[] = [];
     const cur = new Date(start);
@@ -52,11 +50,11 @@ export const EditGameScreen = () => {
       cur.setDate(cur.getDate() + 1);
     }
     return days;
-  }, [tournament.startDate, tournament.endDate]);
+  }, [tournament?.startDate, tournament?.endDate]);
 
   const courts = useMemo(
-    () => Array.from({ length: vertente.courts }, (_, i) => `C${i + 1}`),
-    [vertente.courts],
+    () => Array.from({ length: vertente?.courts ?? 0 }, (_, i) => `C${i + 1}`),
+    [vertente?.courts],
   );
 
   const persistScheduling = () => {
@@ -82,6 +80,8 @@ export const EditGameScreen = () => {
     game.sets = [];
     navigation.goBack();
   };
+
+  if (!tournament || !vertente) return null;
 
   return (
     <View className="flex-1 bg-gbg">

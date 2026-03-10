@@ -12,7 +12,7 @@ import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
 import { Colors, Gradients } from '../theme';
 import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
-import { calcStats } from '../utils/scoring';
+import { calcStats, PTS_PER_WIN } from '../utils/scoring';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { STATUS_LABEL } from '../utils/constants';
@@ -25,11 +25,6 @@ export const TeamListScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!tournament || !vertente) return null;
-
-  const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
-  const isConfig = vertente.status === 'config';
-  const statusLabel = STATUS_LABEL[vertente.status] ?? 'Em preparação';
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,16 +34,22 @@ export const TeamListScreen = () => {
   }, []);
 
   const { sortedGroups, groupRankMap } = useMemo(() => {
-    const sg = [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort();
+    const sg = [...new Set((vertente?.teams ?? []).map(t => t.group).filter(Boolean) as string[])].sort();
     const map: Record<string, number> = {};
     sg.forEach(g => {
-      const members = vertente.teams
+      const members = (vertente?.teams ?? [])
         .filter(t => t.group === g)
-        .sort((a, b) => calcStats(b.id, mockGames, vertente.pointsPerWin).pts - calcStats(a.id, mockGames, vertente.pointsPerWin).pts);
+        .sort((a, b) => calcStats(b.id, mockGames, vertente?.pointsPerWin ?? PTS_PER_WIN).pts - calcStats(a.id, mockGames, vertente?.pointsPerWin ?? PTS_PER_WIN).pts);
       members.forEach((t, i) => { map[t.id] = i + 1; });
     });
     return { sortedGroups: sg, groupRankMap: map };
-  }, [vertente.teams, mockGames]);
+  }, [vertente?.teams, mockGames]);
+
+  if (!tournament || !vertente) return null;
+
+  const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
+  const isConfig = vertente.status === 'config';
+  const statusLabel = STATUS_LABEL[vertente.status] ?? 'Em preparação';
 
   const getChipStyle = (group: string) =>
     GROUP_CHIP_POOL[sortedGroups.indexOf(group) % GROUP_CHIP_POOL.length];

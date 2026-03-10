@@ -26,11 +26,10 @@ export const EditTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  if (!tournament) return null;
 
-  const [name, setName] = useState(tournament.name);
-  const [location, setLocation] = useState(tournament.location);
-  const [vertentes, setVertentes] = useState(tournament.vertentes);
+  const [name, setName] = useState(tournament?.name ?? '');
+  const [location, setLocation] = useState(tournament?.location ?? '');
+  const [vertentes, setVertentes] = useState(tournament?.vertentes ?? []);
 
   const handleRemoveVertente = (vertenteId: string) => {
     Alert.alert(
@@ -65,9 +64,9 @@ export const EditTournamentScreen = () => {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-  const [photo, setPhoto] = useState(tournament.photo ?? '');
+  const [photo, setPhoto] = useState(tournament?.photo ?? '');
   const [regulamento, setRegulamento] = useState<{ uri: string; name: string; size?: number } | null>(
-    tournament.regulamento ? { uri: tournament.regulamento, name: tournament.regulamento.split('/').pop() ?? 'regulamento.pdf' } : null
+    tournament?.regulamento ? { uri: tournament.regulamento, name: tournament.regulamento.split('/').pop() ?? 'regulamento.pdf' } : null
   );
 
   const pickPhoto = async () => {
@@ -87,6 +86,8 @@ export const EditTournamentScreen = () => {
       setRegulamento({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined });
     }
   };
+
+  if (!tournament) return null;
 
   return (
     <View className="flex-1 bg-gbg">

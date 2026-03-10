@@ -39,7 +39,6 @@ export const VertenteHubScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!tournament || !vertente) return null;
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -50,7 +49,7 @@ export const VertenteHubScreen = () => {
   const minTeamsToStart = getMinTeamsToStart(vertente);
 
   const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
-    const teamIds = new Set(vertente.teams.map(t => t.id));
+    const teamIds = new Set((vertente?.teams ?? []).map(t => t.id));
     const all = mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id));
     const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     const live = all.filter(g => g.status === GAME_STATUS.LIVE);
@@ -63,13 +62,15 @@ export const VertenteHubScreen = () => {
       allGamesFinished: all.length > 0 && all.every(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER),
       bracketPct: bracket.length > 0 ? Math.round(bracketDone.length / bracket.length * 100) : 0,
     };
-  }, [vertente.teams]);
+  }, [vertente?.teams]);
 
-  const confirmedTeams = vertente.teams.filter(t => !t.withdrawn);
-  const teamFillPct = Math.round(confirmedTeams.length / vertente.maxTeams * 100);
+  const confirmedTeams = (vertente?.teams ?? []).filter(t => !t.withdrawn);
+  const teamFillPct = Math.round(confirmedTeams.length / (vertente?.maxTeams ?? 1) * 100);
   const gamesPct = vertenteGames.length > 0 ? Math.round(finishedGames.length / vertenteGames.length * 100) : 0;
 
-  const isLive = vertente.status === VERTENTE_STATUS.GROUPS || vertente.status === VERTENTE_STATUS.BRACKET;
+  const isLive = vertente?.status === VERTENTE_STATUS.GROUPS || vertente?.status === VERTENTE_STATUS.BRACKET;
+
+  if (!tournament || !vertente) return null;
 
   interface MenuItem {
     icon: string;
