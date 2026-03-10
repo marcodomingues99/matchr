@@ -1,8 +1,8 @@
 # Matchr
 
-App mobile para gestão de torneios de voleibol de praia — criação de torneios, vertentes (M/F/MX), grupos, resultados set a set e brackets eliminatórios.
+App para gestão de torneios de padel — criação de torneios, vertentes (M/F/MX), grupos, resultados set a set e brackets eliminatórios. Funciona em **mobile** (iOS/Android) e **web**, com layout responsivo.
 
-Construída com **React Native**, **Expo SDK 54** e **TypeScript**.
+Construída com **React Native**, **Expo SDK 54**, **TypeScript** e **NativeWind** (Tailwind CSS).
 
 ## Pré-requisitos
 
@@ -24,8 +24,9 @@ Aparece um QR code no terminal:
 
 - **iOS** — abre a câmara e aponta para o QR code
 - **Android** — abre o Expo Go e faz scan do QR code
+- **Web** — pressiona `w` no terminal para abrir no browser
 
-A app carrega diretamente no telemóvel. Qualquer mudança no código atualiza automaticamente (hot reload).
+A app carrega diretamente no telemóvel/browser. Qualquer mudança no código atualiza automaticamente (hot reload).
 
 ## Testes
 
@@ -97,6 +98,7 @@ src/
 │   ├── Breadcrumb       Navegação breadcrumb
 │   ├── Button           Botão com gradiente
 │   ├── GameCard         Card de jogo com resultado
+│   ├── Layout           Container, Grid e GridItem responsivos
 │   ├── LiveDot          Indicador de jogo a decorrer
 │   ├── SubBadge         Badge de vertente (M/F/MX)
 │   └── TeamGamesSheet   Bottom sheet com jogos de uma equipa
@@ -109,23 +111,23 @@ src/
 │   ├── VertenteHubScreen          Hub de uma vertente
 │   ├── ConfigureVertenteScreen    Configurar vertente
 │   ├── TeamListScreen             Lista de equipas
-│   ├── AddTeamScreen              Adicionar equipa
+│   ├── ManageTeamScreen            Adicionar/editar equipa
 │   ├── GroupsTableScreen          Tabela classificativa
 │   ├── GroupsGamesScreen          Lista de jogos do grupo
 │   ├── GroupsEmptyScreen          Placeholder sem grupos
 │   ├── EnterResultScreen          Introduzir resultado set a set
 │   ├── EditGameScreen             Editar jogo
 │   ├── GamePausedScreen           Jogo pausado
-│   ├── BracketScreen              Bracket eliminatório
+│   ├── KnockoutScreen             Bracket eliminatório
 │   ├── PodiumScreen               Pódio final
 │   ├── FinishedTournamentScreen   Torneio terminado
-│   ├── ConfirmCloseScreen         Confirmar fecho de vertente
+│   ├── ConfirmCloseGameScreen      Confirmar fecho de jogo
 │   ├── ConfirmCloseTournamentScreen  Confirmar fecho de torneio
 │   ├── WithdrawConfirmScreen      Confirmar desistência
 │   └── ExportScreen               Exportar dados
 │
 ├── navigation/     Stack navigator (React Navigation)
-├── theme/          Cores, tipografia, espaçamentos, gradientes
+├── theme/          Cores e gradientes (usado por NativeWind/Tailwind)
 ├── types/          TypeScript types (Tournament, Team, Game, etc.)
 ├── utils/          Lógica de negócio e helpers
 │   ├── scoring          Cálculo de classificações
@@ -142,9 +144,10 @@ src/
 
 | Tecnologia | Utilização |
 |---|---|
-| React Native 0.81 | Framework mobile |
+| React Native 0.81 | Framework mobile + web |
 | Expo SDK 54 | Toolchain e builds |
 | TypeScript 5 | Tipagem estática |
+| NativeWind 4 | Tailwind CSS para React Native (styling responsivo) |
 | React Navigation 7 | Navegação stack |
 | expo-linear-gradient | Gradientes nos botões e headers |
 | Jest + ts-jest | Testes unitários |
@@ -155,3 +158,5 @@ src/
 - Todos os dados são **mock** (sem backend) — ver `src/mock/data.ts`
 - A navegação usa **route params** para passar IDs entre ecrãs (tournamentId → vertenteId → gameId)
 - Vertentes suportadas: **Masculino (M)**, **Feminino (F)** e **Misto (MX)**, cada uma com níveis de 1 a 6
+- O styling usa **NativeWind** (Tailwind CSS) com classes responsivas (`md:`, `lg:`) — config em `tailwind.config.ts`
+- Layout responsivo via componentes `Container`, `Grid` e `GridItem` em `src/components/Layout.tsx`

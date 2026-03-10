@@ -1,17 +1,19 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import clsx from 'clsx';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL, getMinTeamsToStart } from '../utils/constants';
 import { LiveDot } from '../components/LiveDot';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'VertenteHub'>;
@@ -37,7 +39,6 @@ export const VertenteHubScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!tournament || !vertente) return null;
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -45,10 +46,8 @@ export const VertenteHubScreen = () => {
     setTimeout(() => setRefreshing(false), 600);
   }, []);
 
-  const minTeamsToStart = getMinTeamsToStart(vertente);
-
   const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
-    const teamIds = new Set(vertente.teams.map(t => t.id));
+    const teamIds = new Set(vertente?.teams.map(t => t.id) ?? []);
     const all = mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id));
     const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
     const live = all.filter(g => g.status === GAME_STATUS.LIVE);
@@ -61,7 +60,11 @@ export const VertenteHubScreen = () => {
       allGamesFinished: all.length > 0 && all.every(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER),
       bracketPct: bracket.length > 0 ? Math.round(bracketDone.length / bracket.length * 100) : 0,
     };
-  }, [vertente.teams]);
+  }, [vertente?.teams]);
+
+  if (!tournament || !vertente) return null;
+
+  const minTeamsToStart = getMinTeamsToStart(vertente);
 
   const confirmedTeams = vertente.teams.filter(t => !t.withdrawn);
   const teamFillPct = Math.round(confirmedTeams.length / vertente.maxTeams * 100);
@@ -90,7 +93,7 @@ export const VertenteHubScreen = () => {
     {
       icon: '📊', title: 'Fase de Grupos',
       sub: vertenteGames.length > 0
-        ? `${finishedGames.length}/${vertenteGames.length} jogos concluídos`
+        ? `${finishedGames.length}/${vertenteGames.length} jogos concluidos`
         : 'Gerir fase de grupos',
       progress: gamesPct,
       live: liveGames.length,
@@ -116,7 +119,7 @@ export const VertenteHubScreen = () => {
     },
     {
       icon: '📥', title: 'Exportar',
-      sub: 'Jogos, duplas, classificações',
+      sub: 'Jogos, duplas, classificacoes',
       progress: -1, // no progress bar
       onPress: () => navigation.navigate('Export', { tournamentId: tournament.id, vertenteId: vertente.id }),
       enabled: true,
@@ -125,34 +128,34 @@ export const VertenteHubScreen = () => {
 
 
   return (
-    <View style={s.container}>
-      {/* ═══ HEADER ═══ */}
+    <View className="flex-1 bg-gbg">
+      {/* HEADER */}
       <LinearGradient
         colors={VERTENTE_CONFIG[vertente.type].gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={s.header}
+        className="px-lg pb-[22px] relative overflow-hidden"
       >
         {/* Decorative circle overlay */}
-        <View style={s.headerCircle} />
+        <View className="absolute w-[150px] h-[150px] rounded-[75px] bg-white/5 -bottom-[48px] -right-[28px]" />
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={tournament.name}
             onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>
+          <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[10px]">
             {VERTENTE_CONFIG[vertente.type].label} {vertente.level}
           </Text>
-          <View style={s.statusRow}>
-            <View style={s.statusChip}>
-              <View style={[s.statusDot, { backgroundColor: STATUS_COLOR[vertente.status] }]} />
-              <Text style={s.statusChipTxt}>{STATUS_LABEL[vertente.status]}</Text>
+          <View className="flex-row items-center gap-sm mt-[10px]">
+            <View className="flex-row items-center gap-[6px] bg-white/20 rounded-[20px] px-[10px] py-[4px]">
+              <View className="w-[7px] h-[7px] rounded-[4px]" style={{ backgroundColor: STATUS_COLOR[vertente.status] }} />
+              <Text className="text-white/90 text-sm font-nunito">{STATUS_LABEL[vertente.status]}</Text>
             </View>
             {isLive && liveGames.length > 0 && (
-              <View style={s.liveChip}>
+              <View className="flex-row items-center gap-[5px]">
                 <LiveDot />
-                <Text style={s.liveTxt}>Ao vivo</Text>
+                <Text className="text-white/80 text-sm font-nunito-bold">Ao vivo</Text>
               </View>
             )}
           </View>
@@ -160,214 +163,140 @@ export const VertenteHubScreen = () => {
       </LinearGradient>
 
       <ScrollView
-        style={s.scroll}
-        contentContainerStyle={s.scrollContent}
+        className="flex-1"
+        contentContainerClassName="px-md pt-md pb-sm"
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} colors={[Colors.blue]} />
         }
       >
-        {/* ═══ CONFIGURAÇÃO ═══ */}
-        <View style={s.sectionHeader}>
-          <Text style={s.sectionTitle}>Configuração</Text>
+        <Container>
+          {/* CONFIGURAÇÃO */}
+          <View className="flex-row justify-between items-center mb-[10px]">
+            <Text className="text-base font-nunito text-navy">Configuração</Text>
+            {vertente.status === VERTENTE_STATUS.CONFIG && (
+              <TouchableOpacity onPress={() => navigation.navigate('EditTournament', { tournamentId: tournament.id })}>
+                <Text className="text-sm font-nunito-bold text-blue">✏️ Editar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View className="flex-row gap-sm mb-[10px]">
+            <View className="flex-1 bg-white rounded-lg p-md items-center shadow-card">
+              <Text className="text-3xl font-nunito-black text-blue">{confirmedTeams.length}</Text>
+              <Text className="text-xs font-nunito-bold text-muted mt-[2px]">duplas</Text>
+            </View>
+            <View className="flex-1 bg-white rounded-lg p-md items-center shadow-card">
+              <Text className="text-3xl font-nunito-black text-orange">{vertente.courts}</Text>
+              <Text className="text-xs font-nunito-bold text-muted mt-[2px]">courts</Text>
+            </View>
+          </View>
+
+          {/* ESTADO ACTUAL */}
+          <View className="flex-row justify-between items-center mb-[10px] mt-[18px]">
+            <Text className="text-base font-nunito text-navy">Estado actual</Text>
+          </View>
+
+          {/* Add team CTA */}
           {vertente.status === VERTENTE_STATUS.CONFIG && (
-            <TouchableOpacity onPress={() => navigation.navigate('EditTournament', { tournamentId: tournament.id })}>
-              <Text style={s.sectionAction}>✏️ Editar</Text>
+            <TouchableOpacity
+              className="rounded-lg overflow-hidden mb-[10px]"
+              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              activeOpacity={0.85}
+            >
+              <LinearGradient colors={Gradients.primary} className="flex-row items-center justify-center p-md gap-xs" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Text className="text-[16px]">👥</Text>
+                <Text className="text-white text-lg font-nunito">+ Adicionar Dupla</Text>
+              </LinearGradient>
             </TouchableOpacity>
           )}
-        </View>
 
-        <View style={s.statsRow}>
-          <View style={s.statCard}>
-            <Text style={[s.statNum, { color: Colors.blue }]}>{confirmedTeams.length}</Text>
-            <Text style={s.statLbl}>duplas</Text>
-          </View>
-          <View style={s.statCard}>
-            <Text style={[s.statNum, { color: Colors.orange }]}>{vertente.courts}</Text>
-            <Text style={s.statLbl}>courts</Text>
-          </View>
-        </View>
-
-        {/* ═══ ESTADO ACTUAL ═══ */}
-        <View style={[s.sectionHeader, { marginTop: 18 }]}>
-          <Text style={s.sectionTitle}>Estado actual</Text>
-        </View>
-
-        {/* Add team CTA */}
-        {vertente.status === VERTENTE_STATUS.CONFIG && (
-          <TouchableOpacity
-            style={s.addTeamBtn}
-            onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
-            activeOpacity={0.85}
-          >
-            <LinearGradient colors={Gradients.primary} style={s.addTeamGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.addTeamIcon}>👥</Text>
-              <Text style={s.addTeamTxt}>+ Adicionar Dupla</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-
-        {/* Navigation cards */}
-        {menuItems.map((item, idx) => (
-          <TouchableOpacity
-            key={item.title}
-            style={[s.navCard, !item.enabled && s.navCardDisabled]}
-            onPress={item.onPress}
-            disabled={!item.enabled}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.title}, ${item.sub}${item.live ? `, ${item.live} ao vivo` : ''}`}
-            accessibilityState={{ disabled: !item.enabled }}
-            accessibilityHint={item.enabled ? `Abrir ${item.title}` : 'Bloqueado'}
-          >
-            {/* Icon box */}
-            <View style={[s.iconBox, { backgroundColor: item.enabled ? ICON_BG[item.icon] : Colors.gl }]}>
-              <Text style={s.iconEmoji}>{item.icon}</Text>
-              {!item.enabled && <View style={s.iconLock}><Text style={s.iconLockTxt}>🔒</Text></View>}
-            </View>
-            {/* Content */}
-            <View style={s.navCardContent}>
-              <Text style={[s.navCardTitle, !item.enabled && s.navCardTitleDisabled]}>{item.title}</Text>
-              {item.progress >= 0 && item.enabled && (
-                <View style={s.miniProgress}>
-                  <LinearGradient
-                    colors={PROGRESS_GRAD[item.icon]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={[s.miniProgressFill, { width: `${Math.max(item.progress, 2)}%` as `${number}%` }]}
-                  />
-                </View>
+          {/* Navigation cards */}
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.title}
+              className={clsx(
+                'bg-white rounded-lg p-md flex-row items-center gap-md mb-[8px] shadow-card',
+                !item.enabled && 'opacity-40',
               )}
-              <View style={s.navCardSubRow}>
-                <Text style={s.navCardSub} numberOfLines={1}>{item.sub}</Text>
-                {item.live != null && item.live > 0 && (
-                  <View style={s.liveIndicator}>
-                    <LiveDot />
-                    <Text style={s.liveCountTxt}>{item.live} ao vivo</Text>
+              onPress={item.onPress}
+              disabled={!item.enabled}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${item.title}, ${item.sub}${item.live ? `, ${item.live} ao vivo` : ''}`}
+              accessibilityState={{ disabled: !item.enabled }}
+              accessibilityHint={item.enabled ? `Abrir ${item.title}` : 'Bloqueado'}
+            >
+              {/* Icon box */}
+              <View
+                className="w-[40px] h-[40px] rounded-[11px] items-center justify-center shrink-0"
+                style={{ backgroundColor: item.enabled ? ICON_BG[item.icon] : Colors.gl }}
+              >
+                <Text className="text-[18px]">{item.icon}</Text>
+                {!item.enabled && (
+                  <View className="absolute w-[40px] h-[40px] rounded-[11px] bg-white/55 items-center justify-center">
+                    <Text className="text-[12px]">🔒</Text>
                   </View>
                 )}
               </View>
-            </View>
-            {/* Chevron */}
-            <Text style={[s.chevron, !item.enabled && s.chevronDisabled]}>›</Text>
-          </TouchableOpacity>
-        ))}
+              {/* Content */}
+              <View className="flex-1">
+                <Text className={clsx('text-base font-nunito', item.enabled ? 'text-navy' : 'text-muted')}>{item.title}</Text>
+                {item.progress >= 0 && item.enabled && (
+                  <View className="h-[4px] bg-gl rounded-[2px] mt-[5px]">
+                    <LinearGradient
+                      colors={PROGRESS_GRAD[item.icon]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      className="h-[4px] rounded-[2px]"
+                      style={{ width: `${Math.max(item.progress, 2)}%` as `${number}%` }}
+                    />
+                  </View>
+                )}
+                <View className="flex-row items-center gap-[6px] mt-[3px]">
+                  <Text className="text-xs font-nunito-semibold text-muted shrink" numberOfLines={1}>{item.sub}</Text>
+                  {item.live != null && item.live > 0 && (
+                    <View className="flex-row items-center gap-[4px]">
+                      <LiveDot />
+                      <Text className="text-xs font-nunito text-red">{item.live} ao vivo</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              {/* Chevron */}
+              <Text className={clsx('text-3xl font-nunito-regular', item.enabled ? 'text-gray' : 'text-gl')}>›</Text>
+            </TouchableOpacity>
+          ))}
 
-        {/* ═══ PHASE ACTIONS ═══ */}
-        {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= minTeamsToStart && (
-          <TouchableOpacity
-            style={s.phaseBtn}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('GroupsEmpty', { tournamentId: tournament.id, vertenteId: vertente.id })}
-          >
-            <LinearGradient colors={Gradients.green} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.phaseIcon}>🚀</Text>
-              <Text style={s.phaseTxt}>Iniciar Fase de Grupos</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
-        {vertente.status === VERTENTE_STATUS.GROUPS && allGamesFinished && (
-          <TouchableOpacity
-            style={s.phaseBtn}
-            activeOpacity={0.85}
-            onPress={() => navigation.navigate('ConfirmCloseTournament', { tournamentId: tournament.id, vertenteId: vertente.id })}
-          >
-            <LinearGradient colors={Gradients.green} style={s.phaseGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-              <Text style={s.phaseIcon}>🏁</Text>
-              <Text style={s.phaseTxt}>Fechar Categoria</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        )}
+          {/* PHASE ACTIONS */}
+          {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= minTeamsToStart && (
+            <TouchableOpacity
+              className="rounded-lg overflow-hidden mt-[10px] mb-[6px]"
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('GroupsEmpty', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            >
+              <LinearGradient colors={Gradients.green} className="flex-row items-center justify-center p-[15px] gap-sm" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Text className="text-[16px]">🚀</Text>
+                <Text className="text-white text-lg font-nunito-black">Iniciar Fase de Grupos</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
+          {vertente.status === VERTENTE_STATUS.GROUPS && allGamesFinished && (
+            <TouchableOpacity
+              className="rounded-lg overflow-hidden mt-[10px] mb-[6px]"
+              activeOpacity={0.85}
+              onPress={() => navigation.navigate('ConfirmCloseTournament', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            >
+              <LinearGradient colors={Gradients.green} className="flex-row items-center justify-center p-[15px] gap-sm" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+                <Text className="text-[16px]">🏁</Text>
+                <Text className="text-white text-lg font-nunito-black">Fechar Categoria</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
-        <View style={{ height: 36 }} />
+          <View className="h-[36px]" />
+        </Container>
       </ScrollView>
       <HomeFAB onPress={() => navigation.goBack()} />
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-
-  /* ── Header ── */
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: 22, position: 'relative', overflow: 'hidden' },
-  headerCircle: {
-    position: 'absolute', width: 150, height: 150, borderRadius: 75,
-    backgroundColor: 'rgba(255,255,255,0.05)', bottom: -48, right: -28,
-  },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 10 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 },
-  statusChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20,
-    paddingHorizontal: 10, paddingVertical: 4,
-  },
-  statusDot: { width: 7, height: 7, borderRadius: 4 },
-  statusChipTxt: { color: 'rgba(255,255,255,0.9)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily },
-  liveChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-  },
-  liveTxt: { color: 'rgba(255,255,255,0.8)', fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold },
-
-  /* ── Scroll ── */
-  scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: Spacing.md, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-
-  /* ── Section headers ── */
-  sectionHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
-  sectionAction: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.blue },
-
-  /* ── Stat cards ── */
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  statCard: {
-    flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
-    alignItems: 'center', ...Shadows.card,
-  },
-  statNum: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack },
-  statLbl: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginTop: 2 },
-
-
-  /* ── Add team CTA ── */
-  addTeamBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: 10 },
-  addTeamGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: Spacing.md, gap: Spacing.xs },
-  addTeamIcon: { fontSize: 16 },
-  addTeamTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
-
-  /* ── Navigation cards ── */
-  navCard: {
-    backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md,
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
-    marginBottom: 8, ...Shadows.card,
-  },
-  navCardDisabled: { opacity: 0.4 },
-  iconBox: {
-    width: 40, height: 40, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  iconEmoji: { fontSize: 18 },
-  iconLock: {
-    position: 'absolute', width: 40, height: 40, borderRadius: 11,
-    backgroundColor: 'rgba(255,255,255,0.55)', alignItems: 'center', justifyContent: 'center',
-  },
-  iconLockTxt: { fontSize: 12 },
-  navCardContent: { flex: 1 },
-  navCardTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
-  navCardTitleDisabled: { color: Colors.muted },
-  miniProgress: { height: 4, backgroundColor: Colors.gl, borderRadius: 2, marginTop: 5 },
-  miniProgressFill: { height: 4, borderRadius: 2 },
-  navCardSubRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 },
-  navCardSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, flexShrink: 1 },
-  liveIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  liveCountTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.red },
-  chevron: { fontSize: Typography.fontSize.xxxl, color: Colors.gray, fontFamily: Typography.fontFamilyRegular },
-  chevronDisabled: { color: Colors.gl },
-
-  /* ── Phase buttons ── */
-  phaseBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginTop: 10, marginBottom: 6 },
-  phaseGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, gap: 8 },
-  phaseIcon: { fontSize: 16 },
-  phaseTxt: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack },
-});

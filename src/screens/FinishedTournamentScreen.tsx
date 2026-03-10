@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
-import { Colors, Typography, Radii, Shadows } from '../theme';
+import { Colors } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList, 'FinishedTournament'>;
 type Route = RouteProp<RootStackParamList, 'FinishedTournament'>;
@@ -16,233 +17,151 @@ export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
     const t = mockTournaments.find(x => x.id === route.params.tournamentId);
-    if (!t) return null;
 
-    const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
+    const totalTeams = t?.vertentes.reduce((sum, v) => sum + v.teams.length, 0) ?? 0;
     const totalGames = React.useMemo(() => {
-        const teamIds = new Set(t.vertentes.flatMap(v => v.teams.map(team => team.id)));
+        const teamIds = new Set(t?.vertentes.flatMap(v => v.teams.map(team => team.id)) ?? []);
         return mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id)).length;
     }, [t]);
 
+    if (!t) return null;
+
     return (
-        <View style={s.root}>
+        <View className="flex-1 bg-gbg">
             {/* ═══ HEADER ═══ */}
             <LinearGradient
                 colors={[Colors.navy, Colors.blue, Colors.green]}
-                style={s.header}
+                className="px-[18px] pb-[20px] overflow-hidden"
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
             >
-                <View style={s.deco1} />
-                <View style={s.deco2} />
+                <View className="absolute w-[200px] h-[200px] rounded-full bg-white/[0.06] -bottom-[70px] -right-[50px]" />
+                <View className="absolute w-[120px] h-[120px] rounded-full bg-white/5 top-[10px] -left-[40px]" />
                 <SafeAreaView edges={['top']}>
-                    <View style={s.topBar}>
+                    <View className="flex-row items-center justify-between pt-[6px] pb-[4px]">
                         <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                            <Text style={s.backTxt}>← Início</Text>
+                            <Text className="text-white/70 text-base font-nunito-bold">← Início</Text>
                         </TouchableOpacity>
-                        <View style={s.donePill}>
-                            <Text style={s.donePillTxt}>✅ Concluído</Text>
+                        <View className="bg-white/[0.18] rounded-full px-[10px] py-[4px]">
+                            <Text className="text-white text-xs font-nunito">✅ Concluído</Text>
                         </View>
                     </View>
 
-                    <View style={s.heroRow}>
-                        <View style={s.trophyGlow}>
-                            <Text style={s.trophyEmoji}>🏆</Text>
+                    <View className="items-center mt-[4px] mb-[6px]">
+                        <View className="w-[72px] h-[72px] rounded-full items-center justify-center border-2" style={{ backgroundColor: 'rgba(255,214,0,0.15)', borderColor: 'rgba(255,214,0,0.2)' }}>
+                            <Text className="text-[34px]">🏆</Text>
                         </View>
                     </View>
-                    <Text style={s.heroTitle}>{t.name}</Text>
-                    <Text style={s.heroSub}>📍 {t.location} · {t.startDate}–{t.endDate}</Text>
+                    <Text className="text-white text-[20px] md:text-[26px] font-nunito-black text-center">{t.name}</Text>
+                    <Text className="text-white/[0.55] text-md font-nunito-semibold mt-[3px] text-center">📍 {t.location} · {t.startDate}–{t.endDate}</Text>
 
                     {/* Stats */}
-                    <View style={s.statRow}>
-                        <View style={s.statItem}>
-                            <Text style={s.statNum}>{t.vertentes.length}</Text>
-                            <Text style={s.statLbl}>Categorias</Text>
+                    <View className="flex-row items-center bg-white/[0.12] rounded-lg mt-[14px] py-[10px] px-[6px]">
+                        <View className="flex-1 items-center">
+                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{t.vertentes.length}</Text>
+                            <Text className="text-xxs font-nunito-bold text-white/[0.55] mt-[1px]">Categorias</Text>
                         </View>
-                        <View style={s.statSep} />
-                        <View style={s.statItem}>
-                            <Text style={s.statNum}>{totalTeams}</Text>
-                            <Text style={s.statLbl}>Duplas</Text>
+                        <View className="w-[1px] h-[24px] bg-white/[0.15]" />
+                        <View className="flex-1 items-center">
+                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{totalTeams}</Text>
+                            <Text className="text-xxs font-nunito-bold text-white/[0.55] mt-[1px]">Duplas</Text>
                         </View>
-                        <View style={s.statSep} />
-                        <View style={s.statItem}>
-                            <Text style={s.statNum}>{totalGames}</Text>
-                            <Text style={s.statLbl}>Jogos</Text>
+                        <View className="w-[1px] h-[24px] bg-white/[0.15]" />
+                        <View className="flex-1 items-center">
+                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{totalGames}</Text>
+                            <Text className="text-xxs font-nunito-bold text-white/[0.55] mt-[1px]">Jogos</Text>
                         </View>
                     </View>
                 </SafeAreaView>
             </LinearGradient>
 
             {/* ═══ BODY ═══ */}
-            <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
-                {t.vertentes.map((v) => {
-                    const cfg = VERTENTE_CONFIG[v.type];
-                    const winner = v.teams[0];
-                    const runnerUp = v.teams[1];
-                    const third = v.teams[2];
+            <ScrollView className="flex-1" contentContainerClassName="p-[14px] pb-[36px]" showsVerticalScrollIndicator={false}>
+                <Container>
+                    {t.vertentes.map((v) => {
+                        const cfg = VERTENTE_CONFIG[v.type];
+                        const winner = v.teams[0];
+                        const runnerUp = v.teams[1];
+                        const third = v.teams[2];
 
-                    return (
-                        <TouchableOpacity
-                            key={v.id}
-                            activeOpacity={0.85}
-                            style={[s.card, { backgroundColor: cfg.barBg }]}
-                            onPress={() => navigation.navigate('Podium', { tournamentId: t.id, vertenteId: v.id })}
-                        >
-                            {/* Colored top bar */}
-                            <LinearGradient colors={cfg.gradient} style={s.cardAccent} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                        return (
+                            <TouchableOpacity
+                                key={v.id}
+                                activeOpacity={0.85}
+                                className="rounded-xl mb-[14px] overflow-hidden shadow-card"
+                                style={{ backgroundColor: cfg.barBg }}
+                                onPress={() => navigation.navigate('Podium', { tournamentId: t.id, vertenteId: v.id })}
+                            >
+                                {/* Colored top bar */}
+                                <LinearGradient colors={cfg.gradient} className="h-[4px]" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
 
-                            {/* Header */}
-                            <View style={s.cardHeader}>
-                                <LinearGradient colors={cfg.gradient} style={s.catBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-                                    <Text style={s.catBadgeTxt}>{cfg.emoji}</Text>
-                                </LinearGradient>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={s.catTitle}>{cfg.label} {v.level}</Text>
-                                    <Text style={s.catSub}>{v.teams.length} duplas · {v.courts} campos</Text>
+                                {/* Header */}
+                                <View className="flex-row items-center gap-[10px] px-[14px] pt-[14px] pb-[6px]">
+                                    <LinearGradient colors={cfg.gradient} className="w-[40px] h-[40px] rounded-md items-center justify-center" start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+                                        <Text className="text-[18px]">{cfg.emoji}</Text>
+                                    </LinearGradient>
+                                    <View className="flex-1">
+                                        <Text className="text-lg font-nunito text-navy">{cfg.label} {v.level}</Text>
+                                        <Text className="text-xs font-nunito-semibold text-muted mt-[1px]">{v.teams.length} duplas · {v.courts} campos</Text>
+                                    </View>
+                                    <Text className="text-[24px] text-gray">›</Text>
                                 </View>
-                                <Text style={s.chevron}>›</Text>
-                            </View>
 
-                            {/* ── Podium bars ── */}
-                            <View style={s.podWrap}>
-                                {/* 2nd */}
-                                {runnerUp && (
-                                    <View style={[s.podCol, { marginTop: 16 }]}>
-                                        <Text style={s.podMedal}>🥈</Text>
-                                        <View style={[s.podBar, { height: 44, backgroundColor: cfg.chipBg }]}>
-                                            <Text style={[s.podRank, { color: cfg.color }]}>2</Text>
+                                {/* ── Podium bars ── */}
+                                <View className="flex-row items-end justify-center gap-sm px-[14px] pt-[6px] pb-lg">
+                                    {/* 2nd */}
+                                    {runnerUp && (
+                                        <View className="flex-1 items-center mt-lg">
+                                            <Text className="text-[18px] mb-[4px]">🥈</Text>
+                                            <View className="w-full rounded-sm items-center justify-end pb-[4px]" style={{ height: 44, backgroundColor: cfg.chipBg }}>
+                                                <Text className="text-md font-nunito-black opacity-[0.35]" style={{ color: cfg.color }}>2</Text>
+                                            </View>
+                                            <Text className="text-xs font-nunito text-navy text-center mt-[5px]" numberOfLines={1}>{runnerUp.name}</Text>
+                                            <Text className="text-[8px] font-nunito-semibold text-muted text-center mt-[1px]" numberOfLines={1}>
+                                                {runnerUp.players.map(p => p.name.split(' ')[0]).join(' & ')}
+                                            </Text>
                                         </View>
-                                        <Text style={s.podName} numberOfLines={1}>{runnerUp.name}</Text>
-                                        <Text style={s.podPlayers} numberOfLines={1}>
-                                            {runnerUp.players.map(p => p.name.split(' ')[0]).join(' & ')}
-                                        </Text>
-                                    </View>
-                                )}
-                                {/* 1st */}
-                                {winner && (
-                                    <View style={s.podCol}>
-                                        <Text style={s.podMedalGold}>🥇</Text>
-                                        <LinearGradient
-                                            colors={cfg.gradient}
-                                            style={[s.podBar, { height: 60 }]}
-                                            start={{ x: 0, y: 0 }}
-                                            end={{ x: 0, y: 1 }}
-                                        >
-                                            <Text style={s.podRankGold}>1</Text>
-                                        </LinearGradient>
-                                        <Text style={[s.podName, { color: cfg.color, fontFamily: Typography.fontFamilyBlack }]} numberOfLines={1}>
-                                            {winner.name}
-                                        </Text>
-                                        <Text style={s.podPlayers} numberOfLines={1}>
-                                            {winner.players.map(p => p.name.split(' ')[0]).join(' & ')}
-                                        </Text>
-                                    </View>
-                                )}
-                                {/* 3rd */}
-                                {third && (
-                                    <View style={[s.podCol, { marginTop: 24 }]}>
-                                        <Text style={s.podMedal}>🥉</Text>
-                                        <View style={[s.podBar, { height: 34, backgroundColor: cfg.barBg }]}>
-                                            <Text style={[s.podRank, { color: cfg.color }]}>3</Text>
+                                    )}
+                                    {/* 1st */}
+                                    {winner && (
+                                        <View className="flex-1 items-center">
+                                            <Text className="text-[24px] mb-[4px]">🥇</Text>
+                                            <LinearGradient
+                                                colors={cfg.gradient}
+                                                className="w-full rounded-sm items-center justify-end pb-[4px]"
+                                                style={{ height: 60 }}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 0, y: 1 }}
+                                            >
+                                                <Text className="text-xl font-nunito-black text-white opacity-70">1</Text>
+                                            </LinearGradient>
+                                            <Text className="text-xs font-nunito-black text-center mt-[5px]" style={{ color: cfg.color }} numberOfLines={1}>
+                                                {winner.name}
+                                            </Text>
+                                            <Text className="text-[8px] font-nunito-semibold text-muted text-center mt-[1px]" numberOfLines={1}>
+                                                {winner.players.map(p => p.name.split(' ')[0]).join(' & ')}
+                                            </Text>
                                         </View>
-                                        <Text style={s.podName} numberOfLines={1}>{third.name}</Text>
-                                        <Text style={s.podPlayers} numberOfLines={1}>
-                                            {third.players.map(p => p.name.split(' ')[0]).join(' & ')}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                        </TouchableOpacity>
-                    );
-                })}
+                                    )}
+                                    {/* 3rd */}
+                                    {third && (
+                                        <View className="flex-1 items-center mt-xl">
+                                            <Text className="text-[18px] mb-[4px]">🥉</Text>
+                                            <View className="w-full rounded-sm items-center justify-end pb-[4px]" style={{ height: 34, backgroundColor: cfg.barBg }}>
+                                                <Text className="text-md font-nunito-black opacity-[0.35]" style={{ color: cfg.color }}>3</Text>
+                                            </View>
+                                            <Text className="text-xs font-nunito text-navy text-center mt-[5px]" numberOfLines={1}>{third.name}</Text>
+                                            <Text className="text-[8px] font-nunito-semibold text-muted text-center mt-[1px]" numberOfLines={1}>
+                                                {third.players.map(p => p.name.split(' ')[0]).join(' & ')}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </Container>
             </ScrollView>
         </View>
     );
 };
-
-const s = StyleSheet.create({
-    root: { flex: 1, backgroundColor: Colors.gbg },
-
-    /* ── Header ── */
-    header: { paddingHorizontal: 18, paddingBottom: 20, overflow: 'hidden' },
-    deco1: {
-        position: 'absolute', width: 200, height: 200, borderRadius: 100,
-        backgroundColor: 'rgba(255,255,255,0.06)', bottom: -70, right: -50,
-    },
-    deco2: {
-        position: 'absolute', width: 120, height: 120, borderRadius: 60,
-        backgroundColor: 'rgba(255,255,255,0.05)', top: 10, left: -40,
-    },
-    topBar: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingTop: 6, paddingBottom: 4,
-    },
-    backTxt: { color: 'rgba(255,255,255,0.7)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold },
-    donePill: {
-        backgroundColor: 'rgba(255,255,255,0.18)', borderRadius: 20,
-        paddingHorizontal: 10, paddingVertical: 4,
-    },
-    donePillTxt: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
-
-    heroRow: { alignItems: 'center', marginTop: 4, marginBottom: 6 },
-    trophyGlow: {
-        width: 72, height: 72, borderRadius: 36,
-        backgroundColor: 'rgba(255,214,0,0.15)',
-        alignItems: 'center', justifyContent: 'center',
-        borderWidth: 2, borderColor: 'rgba(255,214,0,0.2)',
-    },
-    trophyEmoji: { fontSize: 34 },
-    heroTitle: { color: Colors.white, fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack, textAlign: 'center' },
-    heroSub: { color: 'rgba(255,255,255,0.55)', fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilySemiBold, marginTop: 3, textAlign: 'center' },
-
-    statRow: {
-        flexDirection: 'row', alignItems: 'center',
-        backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radii.lg,
-        marginTop: 14, paddingVertical: 10, paddingHorizontal: 6,
-    },
-    statItem: { flex: 1, alignItems: 'center' },
-    statNum: { fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
-    statLbl: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamilyBold, color: 'rgba(255,255,255,0.55)', marginTop: 1 },
-    statSep: { width: 1, height: 24, backgroundColor: 'rgba(255,255,255,0.15)' },
-
-    /* ── Scroll ── */
-    scroll: { flex: 1 },
-    scrollContent: { padding: 14, paddingBottom: 36 },
-
-    /* ── Card ── */
-    card: {
-        borderRadius: Radii.xl, marginBottom: 14, overflow: 'hidden',
-        ...Shadows.card,
-    },
-    cardAccent: { height: 4 },
-    cardHeader: {
-        flexDirection: 'row', alignItems: 'center', gap: 10,
-        paddingHorizontal: 14, paddingTop: 14, paddingBottom: 6,
-    },
-    catBadge: {
-        width: 40, height: 40, borderRadius: 12,
-        alignItems: 'center', justifyContent: 'center',
-    },
-    catBadgeTxt: { fontSize: 18 },
-    catTitle: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.navy },
-    catSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
-    chevron: { fontSize: 24, color: Colors.gray },
-
-    /* ── Podium ── */
-    podWrap: {
-        flexDirection: 'row', alignItems: 'flex-end',
-        justifyContent: 'center', gap: 8, paddingHorizontal: 14,
-        paddingTop: 6, paddingBottom: 16,
-    },
-    podCol: { flex: 1, alignItems: 'center' },
-    podMedal: { fontSize: 18, marginBottom: 4 },
-    podMedalGold: { fontSize: 24, marginBottom: 4 },
-    podBar: {
-        width: '100%', borderRadius: Radii.sm, alignItems: 'center',
-        justifyContent: 'flex-end', paddingBottom: 4,
-    },
-    podRank: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack, opacity: 0.35 },
-    podRankGold: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.white, opacity: 0.7 },
-    podName: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.navy, textAlign: 'center', marginTop: 5 },
-    podPlayers: { fontSize: 8, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', marginTop: 1 },
-});

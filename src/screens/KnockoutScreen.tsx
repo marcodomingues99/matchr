@@ -1,16 +1,17 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import clsx from 'clsx';
 import { RootStackParamList, Game, Team } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { GameCard } from '../components/GameCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
-import { Colors, Gradients, Typography, Spacing } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { BRACKET_ROUND_LABEL, BRACKET_ROUND_ORDER, GAME_STATUS } from '../utils/constants';
 import { propagateBracket, isPlaceholderTeam } from '../utils/bracketPropagation';
@@ -24,7 +25,7 @@ interface BracketRound {
   games: Game[];
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// --- Screen ---
 export const KnockoutScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
@@ -49,7 +50,6 @@ export const KnockoutScreen = () => {
       g => (teamIds.has(g.team1.id) || teamIds.has(g.team2.id)) && g.phase !== 'groups',
     );
 
-    // Propagate winners/losers to subsequent rounds
     const bracketGames = propagateBracket(rawBracketGames);
 
     const byPhase: Record<string, Game[]> = {};
@@ -58,7 +58,6 @@ export const KnockoutScreen = () => {
       byPhase[g.phase].push(g);
     });
 
-    // Merge '3rd' place games into 'final' round
     if (byPhase['3rd']) {
       if (!byPhase['final']) byPhase['final'] = [];
       byPhase['final'].push(...byPhase['3rd']);
@@ -78,15 +77,15 @@ export const KnockoutScreen = () => {
 
   if (!tournament || !vertente) {
     return (
-      <View style={s.container}>
-        <LinearGradient colors={Gradients.header} style={s.header}>
+      <View className="flex-1 bg-gbg">
+        <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
           <SafeAreaView edges={['top']}>
             <HeaderNav backLabel="Voltar" onBack={() => navigation.goBack()} />
-            <Text style={s.title}>Eliminatórias 🏆</Text>
+            <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">Eliminatórias {'\u{1F3C6}'}</Text>
           </SafeAreaView>
         </LinearGradient>
-        <View style={s.emptyWrap}>
-          <Text style={s.emptyTxt}>Torneio ou categoria não encontrado.</Text>
+        <View className="flex-1 items-center justify-center p-lg">
+          <Text className="text-lg font-nunito text-muted text-center">Torneio ou categoria não encontrado.</Text>
         </View>
       </View>
     );
@@ -95,45 +94,48 @@ export const KnockoutScreen = () => {
   const currentRound = rounds[activeRound];
 
   return (
-    <View style={s.container}>
-      <LinearGradient colors={Gradients.header} style={s.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
             onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>Eliminatórias 🏆</Text>
+          <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">Eliminatórias {'\u{1F3C6}'}</Text>
         </SafeAreaView>
       </LinearGradient>
 
       {rounds.length === 0 ? (
-        <View style={s.emptyWrap}>
-          <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>🏆</Text>
-          <Text style={s.emptyTitle}>Eliminatórias ainda não disponíveis</Text>
-          <Text style={s.emptyBody}>
+        <View className="flex-1 items-center justify-center p-lg">
+          <Text className="text-[40px] mb-md">{'\u{1F3C6}'}</Text>
+          <Text className="text-lg font-nunito text-navy text-center mb-xs">Eliminatórias ainda não disponíveis</Text>
+          <Text className="text-md font-nunito-semibold text-muted text-center">
             Os jogos de eliminação aparecerão aqui quando a fase de grupos terminar.
           </Text>
         </View>
       ) : (
         <>
           {/* Round selector tabs */}
-          <View style={s.tabs} accessibilityRole="tablist">
+          <View className="flex-row bg-white border-b-[1.5px] border-b-gl" accessibilityRole="tablist">
             {rounds.map((round, i) => {
               const hasLive = round.games.some(g => g.status === GAME_STATUS.LIVE);
               const isActive = i === activeRound;
               return (
                 <TouchableOpacity
                   key={round.key}
-                  style={[s.tab, isActive && s.tabActive]}
+                  className={clsx(
+                    'flex-1 items-center py-[10px] px-xs border-b-[3px] relative',
+                    isActive ? 'border-b-blue' : 'border-b-transparent',
+                  )}
                   onPress={() => setActiveRound(i)}
                   accessibilityRole="tab"
                   accessibilityState={{ selected: isActive }}
                   accessibilityLabel={`${round.label}, ${round.games.length} jogos${hasLive ? ', ao vivo' : ''}`}
                 >
-                  {hasLive && <View style={s.tabDot} />}
-                  <Text style={[s.tabLabel, isActive && s.tabLabelActive]}>{round.label}</Text>
-                  <Text style={[s.tabCount, isActive && s.tabCountActive]}>
+                  {hasLive && <View className="absolute top-[6px] right-sm w-[6px] h-[6px] rounded-full bg-red" />}
+                  <Text className={clsx('text-xs font-nunito', isActive ? 'text-blue' : 'text-muted')}>{round.label}</Text>
+                  <Text className={clsx('text-xxs font-nunito-semibold mt-[1px]', isActive ? 'text-blue' : 'text-muted')}>
                     {round.games.length} {round.games.length === 1 ? 'jogo' : 'jogos'}
                   </Text>
                 </TouchableOpacity>
@@ -144,7 +146,7 @@ export const KnockoutScreen = () => {
           <FlatList
             data={currentRound?.games ?? []}
             keyExtractor={g => g.id}
-            contentContainerStyle={{ padding: Spacing.md, paddingBottom: 32 }}
+            contentContainerClassName="p-md pb-2xl max-w-content w-full self-center"
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
             }
@@ -153,17 +155,17 @@ export const KnockoutScreen = () => {
                 if (game.status !== GAME_STATUS.FINISHED || !game.winnerId) return undefined;
                 const winnerName = game.winnerId === game.team1.id ? game.team1.name : game.team2.name;
                 return activeRound + 1 < rounds.length
-                  ? `${winnerName} → ${rounds[activeRound + 1].label}`
+                  ? `${winnerName} \u2192 ${rounds[activeRound + 1].label}`
                   : undefined;
               })();
 
               return (
                 <View>
                   {game.phase === '3rd' && (
-                    <View style={s.separator} accessibilityRole="header">
-                      <View style={s.sepLine} />
-                      <Text style={s.sepTxt}>🥉 3º vs 4º Lugar</Text>
-                      <View style={s.sepLine} />
+                    <View className="flex-row items-center gap-sm my-xs mb-sm" accessibilityRole="header">
+                      <View className="flex-1 h-[1px] bg-gl" />
+                      <Text className="text-sm font-nunito text-orange">{'\u{1F949}'} 3º vs 4º Lugar</Text>
+                      <View className="flex-1 h-[1px] bg-gl" />
                     </View>
                   )}
                   <GameCard
@@ -200,33 +202,3 @@ export const KnockoutScreen = () => {
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-
-  /* Empty state */
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.lg },
-  emptyTxt: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.muted, textAlign: 'center' },
-  emptyTitle: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.navy, textAlign: 'center', marginBottom: Spacing.xs },
-  emptyBody: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center' },
-
-  /* Tabs */
-  tabs: { flexDirection: 'row', backgroundColor: Colors.white, borderBottomWidth: 1.5, borderBottomColor: Colors.gl },
-  tab: {
-    flex: 1, alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4,
-    borderBottomWidth: 3, borderBottomColor: 'transparent', position: 'relative',
-  },
-  tabActive: { borderBottomColor: Colors.blue },
-  tabDot: { position: 'absolute', top: 6, right: 8, width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.red },
-  tabLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.muted },
-  tabLabelActive: { color: Colors.blue },
-  tabCount: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 1 },
-  tabCountActive: { color: Colors.blue },
-
-  /* 3rd place separator */
-  separator: { flexDirection: 'row', alignItems: 'center', gap: 8, marginVertical: 4, marginBottom: 8 },
-  sepLine: { flex: 1, height: 1, backgroundColor: Colors.gl },
-  sepTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.orange },
-});

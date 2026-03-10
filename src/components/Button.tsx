@@ -1,7 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Radii, Spacing, Typography } from '../theme';
+import { Colors } from '../theme';
+import clsx from 'clsx';
 
 type Variant = 'primary' | 'secondary' | 'green' | 'red' | 'ghost';
 
@@ -22,9 +23,18 @@ interface ButtonProps {
 export const Button: React.FC<ButtonProps> = React.memo(({ label, onPress, variant = 'primary', style, disabled }) => {
   if (variant === 'primary' || variant === 'green' || variant === 'red') {
     return (
-      <TouchableOpacity onPress={onPress} disabled={disabled} style={[styles.base, disabled && styles.disabled, style]} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }}>
-        <LinearGradient colors={GRADIENT_COLORS[variant]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-          <Text style={styles.primaryText}>{label}</Text>
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={disabled}
+        className={clsx('rounded-lg overflow-hidden mb-sm', disabled && 'opacity-50')}
+        style={style}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled }}
+      >
+        <LinearGradient colors={GRADIENT_COLORS[variant]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} className="py-md items-center">
+          <Text className="text-white text-lg font-nunito">{label}</Text>
         </LinearGradient>
       </TouchableOpacity>
     );
@@ -33,30 +43,27 @@ export const Button: React.FC<ButtonProps> = React.memo(({ label, onPress, varia
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled}
-      style={[styles.base, styles.secondary, variant === 'ghost' && styles.ghost, disabled && styles.disabled, style]}
+      className={clsx(
+        'rounded-lg overflow-hidden mb-sm',
+        variant === 'ghost'
+          ? 'border-transparent bg-transparent'
+          : 'bg-white border-2 border-gl',
+        disabled && 'opacity-50',
+      )}
+      style={[variant !== 'ghost' ? { paddingVertical: 13 } : undefined, style]}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled }}
     >
-      <Text style={[styles.secondaryText, variant === 'ghost' && styles.ghostText]}>{label}</Text>
+      <Text
+        className={clsx(
+          'text-lg font-nunito self-center',
+          variant === 'ghost' ? 'text-muted' : 'text-navy',
+        )}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
-});
-
-const styles = StyleSheet.create({
-  base: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: 8 },
-  gradient: { paddingVertical: Spacing.md, alignItems: 'center' },
-  primaryText: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
-  secondary: {
-    backgroundColor: Colors.white,
-    borderWidth: 2,
-    borderColor: Colors.gl,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  secondaryText: { color: Colors.navy, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
-  ghost: { borderColor: 'transparent', backgroundColor: 'transparent' },
-  ghostText: { color: Colors.muted },
-  disabled: { opacity: 0.5 },
 });

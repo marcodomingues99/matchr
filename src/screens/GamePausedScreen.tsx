@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -9,8 +9,9 @@ import { mockTournaments, mockGames } from '../mock/data';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { resolveMatchFormat } from '../utils/scoring';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GamePaused'>;
@@ -21,97 +22,76 @@ export const GamePausedScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
+
+  // No hooks after this point — safe to guard
   if (!tournament || !vertente || !game) return null;
 
   const matchFormat = resolveMatchFormat(vertente);
 
   return (
-    <View style={s.container}>
-      <LinearGradient colors={[Colors.brownDeep, Colors.brownLight]} style={s.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={[Colors.brownDeep, Colors.brownLight]} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Jogos"
             onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>⏸ Jogo Pausado</Text>
-          <Text style={s.subtitle}>{game.time} · {game.court}</Text>
+          <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">⏸ Jogo Pausado</Text>
+          <Text className="text-white/75 text-base font-nunito-semibold mt-[4px]">{game.time} · {game.court}</Text>
         </SafeAreaView>
       </LinearGradient>
 
-      <View style={s.body}>
-        <View style={s.teamsCard}>
-          <Text style={s.teamName}>{game.team1.name}</Text>
-          <Text style={s.vs}>vs</Text>
-          <Text style={s.teamName}>{game.team2.name}</Text>
-        </View>
-
-        <View style={s.pausedInfo}>
-          <Text style={s.pausedIcon}>⏸</Text>
-          <Text style={s.pausedTitle}>Jogo em pausa</Text>
-          <Text style={s.pausedSub}>
-            {game.sets?.length ?? 0} set{(game.sets?.length ?? 0) !== 1 ? 's' : ''} guardados.{'\n'}Podes retomar quando quiseres.
-          </Text>
-        </View>
-
-        {game.sets && game.sets.length > 0 && (
-          <View style={s.setsCard}>
-            <Text style={s.setsLabel}>Resultados guardados</Text>
-            {game.sets.map((set, i) => (
-              <View key={i} style={s.setRow}>
-                <Text style={s.setNum}>{i === matchFormat.SUPER_TIE_BREAK_INDEX ? 'STB' : `Set ${i + 1}`}</Text>
-                <Text style={s.setScore}>{set.team1} – {set.team2}</Text>
-              </View>
-            ))}
+      <View className="flex-1 p-lg">
+        <Container>
+          <View className="bg-white rounded-lg p-md items-center mb-md shadow-card">
+            <Text className="text-[15px] font-nunito-black text-navy">{game.team1.name}</Text>
+            <Text className="text-sm font-nunito-bold text-muted my-[4px]">vs</Text>
+            <Text className="text-[15px] font-nunito-black text-navy">{game.team2.name}</Text>
           </View>
-        )}
 
-        <TouchableOpacity
-          style={s.resumeBtn}
-          onPress={() => navigation.navigate('EnterResult', {
-            tournamentId: route.params.tournamentId,
-            vertenteId: route.params.vertenteId,
-            gameId: route.params.gameId,
-          })}
-        >
-          <LinearGradient colors={Gradients.primary} style={s.resumeGrad}>
-            <Text style={s.resumeTxt}>▶ Retomar Jogo</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          <View className="bg-yellow-bg-warm rounded-lg p-xl items-center mb-md border-[1.5px] border-yellow">
+            <Text className="text-[48px] mb-md">⏸</Text>
+            <Text className="text-[18px] font-nunito-black text-navy mb-sm">Jogo em pausa</Text>
+            <Text className="text-base font-nunito-semibold text-muted text-center leading-[20px]">
+              {game.sets?.length ?? 0} set{(game.sets?.length ?? 0) !== 1 ? 's' : ''} guardados.{'\n'}Podes retomar quando quiseres.
+            </Text>
+          </View>
 
-        <TouchableOpacity
-          style={s.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={s.backBtnTxt}>← Voltar aos jogos</Text>
-        </TouchableOpacity>
+          {game.sets && game.sets.length > 0 && (
+            <View className="bg-white rounded-md p-md mb-md shadow-card">
+              <Text className="text-xxs font-nunito-bold text-muted uppercase tracking-[1px] mb-sm">Resultados guardados</Text>
+              {game.sets.map((set, i) => (
+                <View key={i} className="flex-row justify-between py-[6px] border-b border-gl">
+                  <Text className="text-base font-nunito-bold text-muted">{i === matchFormat.SUPER_TIE_BREAK_INDEX ? 'STB' : `Set ${i + 1}`}</Text>
+                  <Text className="text-lg font-nunito-black text-navy">{set.team1} – {set.team2}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <TouchableOpacity
+            className="rounded-lg overflow-hidden mb-sm"
+            onPress={() => navigation.navigate('EnterResult', {
+              tournamentId: route.params.tournamentId,
+              vertenteId: route.params.vertenteId,
+              gameId: route.params.gameId,
+            })}
+          >
+            <LinearGradient colors={Gradients.primary} className="p-[15px] items-center">
+              <Text className="text-white text-[15px] font-nunito">▶ Retomar Jogo</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            className="items-center p-md"
+            onPress={() => navigation.goBack()}
+          >
+            <Text className="text-blue text-lg font-nunito-bold">← Voltar aos jogos</Text>
+          </TouchableOpacity>
+        </Container>
       </View>
       <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
-  body: { flex: 1, padding: Spacing.lg },
-  teamsCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
-  teamName: { fontSize: 15, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
-  vs: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginVertical: 4 },
-  pausedInfo: { backgroundColor: Colors.yellowBgWarm, borderRadius: Radii.lg, padding: 24, alignItems: 'center', marginBottom: Spacing.md, borderWidth: 1.5, borderColor: Colors.yellow },
-  pausedIcon: { fontSize: 48, marginBottom: 12 },
-  pausedTitle: { fontSize: 18, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, marginBottom: 8 },
-  pausedSub: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, textAlign: 'center', lineHeight: 20 },
-  setsCard: { backgroundColor: Colors.white, borderRadius: Radii.md, padding: Spacing.md, marginBottom: Spacing.md, ...Shadows.card },
-  setsLabel: { ...TextStyles.sectionLabel, marginBottom: 8 },
-  setRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: Colors.gl },
-  setNum: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
-  setScore: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
-  resumeBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: Spacing.sm },
-  resumeGrad: { padding: 15, alignItems: 'center' },
-  resumeTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
-  backBtn: { alignItems: 'center', padding: 12 },
-  backBtnTxt: { color: Colors.blue, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold },
-});

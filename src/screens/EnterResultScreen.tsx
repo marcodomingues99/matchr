@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import clsx from 'clsx';
 import { RootStackParamList } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Button } from '../components/Button';
-import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { Gradients } from '../theme';
 import { resolveMatchFormat } from '../utils/scoring';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'EnterResult'>;
@@ -25,33 +27,31 @@ export const EnterResultScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
-  if (!tournament || !vertente || !game) return null;
 
-  const matchFormat = resolveMatchFormat(vertente);
+  const matchFormat = resolveMatchFormat(vertente!);
 
-  const isEditing = game.status === 'finished' && !!game.sets?.length;
+  const isEditing = game?.status === 'finished' && !!game?.sets?.length;
 
   const buildInitialSets = (): SetState[] => {
-    // Finished games: pre-fill all sets as saved (for editing)
-    if (game.status === 'finished' && game.sets && game.sets.length > 0) {
+    if (game?.status === 'finished' && game.sets && game.sets.length > 0) {
       return game.sets.map(s => ({
         team1: String(s.team1),
         team2: String(s.team2),
         saved: true,
       }));
     }
-    // Live/paused games: pre-fill existing sets as saved, then add empty unsaved set to continue
-    if ((game.status === 'live' || game.status === 'paused') && game.sets && game.sets.length > 0) {
+    if ((game?.status === 'live' || game?.status === 'paused') && game?.sets && game.sets.length > 0) {
       return [
         ...game.sets.map(s => ({ team1: String(s.team1), team2: String(s.team2), saved: true })),
         { team1: '', team2: '', saved: false },
       ];
     }
-    // New game: single empty unsaved set
     return [{ team1: '', team2: '', saved: false }];
   };
 
   const [sets, setSets] = useState<SetState[]>(buildInitialSets);
+
+  if (!tournament || !vertente || !game) return null;
   const currentSetIdx = sets.findIndex(s => !s.saved);
 
   const saveSet = () => {
@@ -61,14 +61,12 @@ export const EnterResultScreen = () => {
     );
     const allSaved = newSets.every(s => s.saved);
     if (allSaved && newSets.length < matchFormat.MAX_SETS) {
-      // Count sets won by each team
       let t1Wins = 0, t2Wins = 0;
       newSets.forEach(s => {
         const s1 = parseInt(s.team1) || 0;
         const s2 = parseInt(s.team2) || 0;
         if (s1 > s2) t1Wins++; else if (s2 > s1) t2Wins++;
       });
-      // Only add next set if no team has won enough sets yet (i.e. 1-1 for super tie-break)
       if (t1Wins < matchFormat.SETS_TO_WIN && t2Wins < matchFormat.SETS_TO_WIN) {
         newSets.push({ team1: '', team2: '', saved: false });
       }
@@ -81,133 +79,125 @@ export const EnterResultScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <LinearGradient colors={Gradients.header} style={styles.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Jogos"
             onBack={() => navigation.goBack()}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={styles.title}>{isEditing ? 'Editar Resultado' : 'Introduzir Resultado'}</Text>
-          <Text style={styles.subtitle}>{game.time} · {game.court}</Text>
+          <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">{isEditing ? 'Editar Resultado' : 'Introduzir Resultado'}</Text>
+          <Text className="text-white/75 text-base font-nunito-semibold mt-xs">{game.time} {'·'} {game.court}</Text>
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={{ padding: Spacing.lg }}>
-        <View style={styles.teamsCard}>
-          <Text style={styles.teamName} numberOfLines={2}>{game.team1.name}</Text>
-          <View style={styles.vsBadge}>
-            <Text style={styles.vsText}>VS</Text>
-          </View>
-          <Text style={styles.teamName} numberOfLines={2}>{game.team2.name}</Text>
-        </View>
-
-        {sets.map((set, idx) => {
-          const isCurrent = !set.saved && idx === currentSetIdx;
-          const setLabel = idx === matchFormat.SUPER_TIE_BREAK_INDEX ? 'Super Tie-Break' : `Set ${idx + 1}`;
-          return (
-            <View key={idx} style={[styles.setCard, set.saved && styles.setCardSaved, isCurrent && styles.setCardActive]}>
-              <View style={styles.setHeader}>
-                <Text style={styles.setLabel}>{setLabel}</Text>
-                {set.saved && <View style={styles.savedChip}><Text style={styles.savedText}>✓ Guardado</Text></View>}
-              </View>
-              <View style={styles.setInputRow}>
-                <View style={styles.setInputGroup}>
-                  <Text style={styles.inputLabel}>{game.team1.name}</Text>
-                  <TextInput
-                    style={[styles.setInput, !isCurrent && styles.setInputDisabled]}
-                    value={set.team1}
-                    onChangeText={v => updateSet(idx, 'team1', v)}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    editable={isCurrent}
-                    placeholder="0"
-                  />
-                </View>
-                <Text style={styles.setSep}>–</Text>
-                <View style={styles.setInputGroup}>
-                  <Text style={styles.inputLabel}>{game.team2.name}</Text>
-                  <TextInput
-                    style={[styles.setInput, !isCurrent && styles.setInputDisabled]}
-                    value={set.team2}
-                    onChangeText={v => updateSet(idx, 'team2', v)}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    editable={isCurrent}
-                    placeholder="0"
-                  />
-                </View>
-              </View>
-              {isCurrent && (
-                <TouchableOpacity
-                  style={styles.saveSetBtn}
-                  onPress={saveSet}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Guardar ${setLabel}`}
-                >
-                  <Text style={styles.saveSetText}>Guardar Set →</Text>
-                </TouchableOpacity>
-              )}
+      <ScrollView className="flex-1" contentContainerClassName="p-lg">
+        <Container>
+          <View className="bg-white rounded-lg p-lg flex-row items-center mb-md shadow-card">
+            <Text className="flex-1 text-[15px] font-nunito-black text-navy text-center" numberOfLines={2}>{game.team1.name}</Text>
+            <View className="w-[32px] h-[32px] rounded-full bg-gbg items-center justify-center mx-sm">
+              <Text className="text-xs font-nunito-black text-muted">VS</Text>
             </View>
-          );
-        })}
+            <Text className="flex-1 text-[15px] font-nunito-black text-navy text-center" numberOfLines={2}>{game.team2.name}</Text>
+          </View>
 
-        {!isEditing && (
-          <TouchableOpacity style={styles.pauseBtn} onPress={() => navigation.navigate('GamePaused', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: game.id })}>
-            <Text style={styles.pauseText}>⏸ Pausar jogo</Text>
-            <Text style={styles.pauseSub}>{sets.filter(s => s.saved).length} sets guardados · podes retomar mais tarde</Text>
-          </TouchableOpacity>
-        )}
+          {sets.map((set, idx) => {
+            const isCurrent = !set.saved && idx === currentSetIdx;
+            const setLabel = idx === matchFormat.SUPER_TIE_BREAK_INDEX ? 'Super Tie-Break' : `Set ${idx + 1}`;
+            return (
+              <View
+                key={idx}
+                className={clsx(
+                  'bg-white rounded-lg p-md mb-sm border-2 shadow-card',
+                  set.saved ? 'border-green' : isCurrent ? 'border-yellow' : 'border-transparent',
+                )}
+              >
+                <View className="flex-row justify-between items-center mb-sm">
+                  <Text className="text-base font-nunito text-navy">{setLabel}</Text>
+                  {set.saved && (
+                    <View className="bg-green-bg-light rounded-full px-[10px] py-[3px]">
+                      <Text className="text-sm font-nunito-bold text-green">{'✓'} Guardado</Text>
+                    </View>
+                  )}
+                </View>
+                <View className="flex-row items-center justify-center gap-md">
+                  <View className="items-center flex-1">
+                    <Text className="text-xs font-nunito-bold text-muted mb-xs text-center">{game.team1.name}</Text>
+                    <TextInput
+                      className={clsx(
+                        'border-2 rounded-md p-sm text-[28px] font-nunito-black text-navy text-center w-[72px] h-[64px]',
+                        !isCurrent ? 'border-gl bg-gbg text-muted' : 'border-gl',
+                      )}
+                      value={set.team1}
+                      onChangeText={v => updateSet(idx, 'team1', v)}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      editable={isCurrent}
+                      placeholder="0"
+                    />
+                  </View>
+                  <Text className="text-3xl font-nunito-black text-gray">{'\u2013'}</Text>
+                  <View className="items-center flex-1">
+                    <Text className="text-xs font-nunito-bold text-muted mb-xs text-center">{game.team2.name}</Text>
+                    <TextInput
+                      className={clsx(
+                        'border-2 rounded-md p-sm text-[28px] font-nunito-black text-navy text-center w-[72px] h-[64px]',
+                        !isCurrent ? 'border-gl bg-gbg text-muted' : 'border-gl',
+                      )}
+                      value={set.team2}
+                      onChangeText={v => updateSet(idx, 'team2', v)}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                      editable={isCurrent}
+                      placeholder="0"
+                    />
+                  </View>
+                </View>
+                {isCurrent && (
+                  <TouchableOpacity
+                    className="mt-md bg-blue rounded-md p-[11px] items-center"
+                    onPress={saveSet}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Guardar ${setLabel}`}
+                  >
+                    <Text className="text-white text-base font-nunito">Guardar Set {'\u2192'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
 
-        {isEditing && (
-          <TouchableOpacity style={styles.editAgainBtn} onPress={() => {
-            const newSets = sets.map(s => ({ ...s, saved: false }));
-            setSets(newSets);
-          }}>
-            <Text style={styles.editAgainText}>✏️ Editar resultados</Text>
-          </TouchableOpacity>
-        )}
+          {!isEditing && (
+            <TouchableOpacity
+              className="bg-yellow-bg-warm border-[1.5px] border-yellow rounded-lg p-md mb-md items-center"
+              onPress={() => navigation.navigate('GamePaused', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: game.id })}
+            >
+              <Text className="text-base font-nunito text-navy">{'\u23F8'} Pausar jogo</Text>
+              <Text className="text-sm font-nunito-semibold text-muted mt-[3px]">{sets.filter(s => s.saved).length} sets guardados {'·'} podes retomar mais tarde</Text>
+            </TouchableOpacity>
+          )}
 
-        {sets.every(s => s.saved) && sets.length >= matchFormat.SETS_TO_WIN && (
-          <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmCloseGame', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
-        )}
+          {isEditing && (
+            <TouchableOpacity
+              className="bg-white border-[1.5px] border-gl rounded-lg p-md mb-md items-center"
+              onPress={() => {
+                const newSets = sets.map(s => ({ ...s, saved: false }));
+                setSets(newSets);
+              }}
+            >
+              <Text className="text-base font-nunito text-blue">{'\u270F\uFE0F'} Editar resultados</Text>
+            </TouchableOpacity>
+          )}
 
-        <View style={{ height: 32 }} />
+          {sets.every(s => s.saved) && sets.length >= matchFormat.SETS_TO_WIN && (
+            <Button label={isEditing ? '✓ Guardar alterações' : '✓ Confirmar resultado final'} onPress={() => navigation.navigate('ConfirmCloseGame', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId, gameId: route.params.gameId })} variant="green" />
+          )}
+
+          <View className="h-2xl" />
+        </Container>
       </ScrollView>
       <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-  subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
-  scroll: { flex: 1 },
-  teamsCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, ...Shadows.card },
-  teamName: { flex: 1, fontSize: 15, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, textAlign: 'center' },
-  vsBadge: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.gbg, alignItems: 'center', justifyContent: 'center', marginHorizontal: Spacing.sm },
-  vsText: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBlack, color: Colors.muted },
-  setCard: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.sm, borderWidth: 2, borderColor: 'transparent', ...Shadows.card },
-  setCardSaved: { borderColor: Colors.green },
-  setCardActive: { borderColor: Colors.yellow },
-  setHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  setLabel: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
-  savedChip: { backgroundColor: Colors.greenBgLight, borderRadius: Radii.full, paddingHorizontal: 10, paddingVertical: 3 },
-  savedText: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold, color: Colors.green },
-  setInputRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
-  setInputGroup: { alignItems: 'center', flex: 1 },
-  inputLabel: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilyBold, color: Colors.muted, marginBottom: 4, textAlign: 'center' },
-  setInput: { borderWidth: 2, borderColor: Colors.gl, borderRadius: Radii.md, padding: Spacing.sm, fontSize: 28, fontFamily: Typography.fontFamilyBlack, color: Colors.navy, textAlign: 'center', width: 72, height: 64 },
-  setInputDisabled: { borderColor: Colors.gl, backgroundColor: Colors.gbg, color: Colors.muted },
-  setSep: { fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, color: Colors.gray },
-  saveSetBtn: { marginTop: Spacing.md, backgroundColor: Colors.blue, borderRadius: Radii.md, padding: 11, alignItems: 'center' },
-  saveSetText: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
-  pauseBtn: { backgroundColor: Colors.yellowBgWarm, borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
-  pauseText: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
-  pauseSub: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 3 },
-  editAgainBtn: { backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, alignItems: 'center' },
-  editAgainText: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.blue },
-});
