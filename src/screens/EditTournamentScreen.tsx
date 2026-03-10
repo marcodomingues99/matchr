@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Image, Platform, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Platform, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -7,13 +7,15 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
+import clsx from 'clsx';
 import { RootStackParamList } from '../types';
 import { mockTournaments } from '../mock/data';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { PT_MONTHS } from '../utils/constants';
 import { popTo } from '../utils/navigation';
+import { Container } from '../components/Layout';
 
 const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
@@ -48,7 +50,7 @@ export const EditTournamentScreen = () => {
   const handleDeleteTournament = () => {
     Alert.alert(
       'Eliminar torneio',
-      'Esta ação é irreversível. Tens a certeza que queres eliminar este torneio?',
+      'Esta acao e irreversivel. Tens a certeza que queres eliminar este torneio?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -87,183 +89,153 @@ export const EditTournamentScreen = () => {
   };
 
   return (
-    <View style={s.container}>
-      <LinearGradient colors={Gradients.header} style={s.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel="Torneio"
             onBack={() => navigation.goBack()}
           />
-          <Text style={s.title}>Editar Torneio</Text>
+          <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[4px]">Editar Torneio</Text>
         </SafeAreaView>
       </LinearGradient>
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg }}>
-        <Text style={s.sectionLabel}>Informação Geral</Text>
-        <View style={s.card}>
-          <Text style={s.fieldLabel}>Nome do torneio</Text>
-          <TextInput style={s.input} value={name} onChangeText={setName} placeholderTextColor={Colors.gray} />
+      <ScrollView className="flex-1" contentContainerClassName="p-lg">
+        <Container>
+          <Text className="text-muted text-md font-nunito uppercase tracking-[0.5px] mb-[10px]">Informação Geral</Text>
+          <View className="bg-white rounded-lg p-md mb-lg shadow-card">
+            <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Nome do torneio</Text>
+            <TextInput
+              className="border-[1.5px] border-gl rounded-sm p-sm text-lg font-nunito-bold text-navy bg-gbg"
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor={Colors.gray}
+            />
 
-          <Text style={s.fieldLabel}>Foto / Banner</Text>
-          <TouchableOpacity style={s.photoBanner} onPress={pickPhoto} activeOpacity={0.8}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={s.photoBannerImg} />
-            ) : null}
-            <View style={s.photoBannerOverlay}>
-              <Text style={s.photoBannerIcon}>📷</Text>
-              <Text style={s.photoBannerTxt}>{photo ? 'Alterar foto' : 'Adicionar foto'}</Text>
-            </View>
-          </TouchableOpacity>
-
-          <Text style={s.fieldLabel}>Localização</Text>
-          <TextInput style={s.input} value={location} onChangeText={setLocation} placeholderTextColor={Colors.gray} />
-          <View style={s.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={s.fieldLabel}>Data início</Text>
-              <TouchableOpacity style={s.dateBtn} onPress={() => setShowStartPicker(true)} activeOpacity={0.7}>
-                <Text style={[s.dateTxt, !startDate && s.datePlaceholder]}>
-                  {startDate ? formatDate(startDate) : tournament.startDate}
-                </Text>
-                <Text style={{ fontSize: 14 }}>📅</Text>
-              </TouchableOpacity>
-              {showStartPicker && (
-                <DateTimePicker
-                  value={startDate || new Date()}
-                  mode="date"
-                  onChange={(_, date) => {
-                    setShowStartPicker(Platform.OS === 'ios');
-                    if (date) setStartDate(date);
-                  }}
-                />
-              )}
-            </View>
-            <View style={{ width: 12 }} />
-            <View style={{ flex: 1 }}>
-              <Text style={s.fieldLabel}>Data fim</Text>
-              <TouchableOpacity style={s.dateBtn} onPress={() => setShowEndPicker(true)} activeOpacity={0.7}>
-                <Text style={[s.dateTxt, !endDate && s.datePlaceholder]}>
-                  {endDate ? formatDate(endDate) : tournament.endDate}
-                </Text>
-                <Text style={{ fontSize: 14 }}>📅</Text>
-              </TouchableOpacity>
-              {showEndPicker && (
-                <DateTimePicker
-                  value={endDate || startDate || new Date()}
-                  mode="date"
-                  minimumDate={startDate || undefined}
-                  onChange={(_, date) => {
-                    setShowEndPicker(Platform.OS === 'ios');
-                    if (date) setEndDate(date);
-                  }}
-                />
-              )}
-            </View>
-          </View>
-
-          <Text style={s.fieldLabel}>Regulamento</Text>
-          {regulamento ? (
-            <View style={s.regulamentoRow}>
-              <View style={s.regulamentoIcon}>
-                <Text style={{ fontSize: 18 }}>📄</Text>
+            <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Foto / Banner</Text>
+            <TouchableOpacity className="h-[80px] rounded-md overflow-hidden bg-navy mb-[4px]" onPress={pickPhoto} activeOpacity={0.8}>
+              {photo ? (
+                <Image source={{ uri: photo }} className="absolute" style={{ width: '100%', height: '100%' }} />
+              ) : null}
+              <View className="flex-1 bg-black/30 flex-row items-center justify-center gap-sm">
+                <Text className="text-[18px]">📷</Text>
+                <Text className="text-base font-nunito text-white">{photo ? 'Alterar foto' : 'Adicionar foto'}</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.regulamentoName} numberOfLines={1}>{regulamento.name}</Text>
-                <Text style={s.regulamentoSub}>Regulamento carregado</Text>
-              </View>
-              <TouchableOpacity onPress={() => setRegulamento(null)}>
-                <Text style={s.regulamentoRemove}>✕</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={s.regulamentoAdd} onPress={pickRegulamento}>
-              <Text style={s.regulamentoAddIcon}>📎</Text>
-              <Text style={s.regulamentoAddTxt}>Anexar regulamento (PDF)</Text>
             </TouchableOpacity>
-          )}
-        </View>
 
-        <Text style={s.sectionLabel}>Categorias</Text>
-        {vertentes.map((v, i) => (
-          <View key={v.id} style={s.vertCard}>
-            <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}
-              onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: tournament.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([{ type: v.type, level: v.level }]) })}
-            >
-              <View style={[s.vertDot, { backgroundColor: VERTENTE_CONFIG[v.type].color }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={s.vertTitle}>{VERTENTE_CONFIG[v.type].label} · {v.level}</Text>
-                <Text style={s.vertSub}>{v.teams.length}/{v.maxTeams} duplas · {v.courts} courts</Text>
+            <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Localizacao</Text>
+            <TextInput
+              className="border-[1.5px] border-gl rounded-sm p-sm text-lg font-nunito-bold text-navy bg-gbg"
+              value={location}
+              onChangeText={setLocation}
+              placeholderTextColor={Colors.gray}
+            />
+            <View className="flex-row mt-[4px]">
+              <View className="flex-1">
+                <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Data inicio</Text>
+                <TouchableOpacity className="border-[1.5px] border-gl rounded-sm px-sm py-[10px] bg-gbg flex-row items-center justify-between" onPress={() => setShowStartPicker(true)} activeOpacity={0.7}>
+                  <Text className={clsx('text-lg font-nunito-bold', startDate ? 'text-navy' : 'text-gray')}>
+                    {startDate ? formatDate(startDate) : tournament.startDate}
+                  </Text>
+                  <Text className="text-[14px]">📅</Text>
+                </TouchableOpacity>
+                {showStartPicker && (
+                  <DateTimePicker
+                    value={startDate || new Date()}
+                    mode="date"
+                    onChange={(_, date) => {
+                      setShowStartPicker(Platform.OS === 'ios');
+                      if (date) setStartDate(date);
+                    }}
+                  />
+                )}
               </View>
-              <Text style={s.vertArrow}>✏️</Text>
-            </TouchableOpacity>
-            {v.status === 'config' && (
-              <TouchableOpacity onPress={() => handleRemoveVertente(v.id)} style={s.vertDelete}>
-                <Text style={s.vertDeleteTxt}>🗑️</Text>
+              <View className="w-[12px]" />
+              <View className="flex-1">
+                <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Data fim</Text>
+                <TouchableOpacity className="border-[1.5px] border-gl rounded-sm px-sm py-[10px] bg-gbg flex-row items-center justify-between" onPress={() => setShowEndPicker(true)} activeOpacity={0.7}>
+                  <Text className={clsx('text-lg font-nunito-bold', endDate ? 'text-navy' : 'text-gray')}>
+                    {endDate ? formatDate(endDate) : tournament.endDate}
+                  </Text>
+                  <Text className="text-[14px]">📅</Text>
+                </TouchableOpacity>
+                {showEndPicker && (
+                  <DateTimePicker
+                    value={endDate || startDate || new Date()}
+                    mode="date"
+                    minimumDate={startDate || undefined}
+                    onChange={(_, date) => {
+                      setShowEndPicker(Platform.OS === 'ios');
+                      if (date) setEndDate(date);
+                    }}
+                  />
+                )}
+              </View>
+            </View>
+
+            <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Regulamento</Text>
+            {regulamento ? (
+              <View className="flex-row items-center gap-[11px] bg-gbg rounded-sm p-[12px]">
+                <View className="w-[38px] h-[38px] bg-white rounded-[9px] items-center justify-center shadow-card shrink-0">
+                  <Text className="text-[18px]">📄</Text>
+                </View>
+                <View className="flex-1">
+                  <Text className="text-md font-nunito text-navy" numberOfLines={1}>{regulamento.name}</Text>
+                  <Text className="text-xs font-nunito-semibold text-muted mt-[2px]">Regulamento carregado</Text>
+                </View>
+                <TouchableOpacity onPress={() => setRegulamento(null)}>
+                  <Text className="text-lg font-nunito text-red px-[4px]">✕</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity className="flex-row items-center gap-sm border-[1.5px] border-gl rounded-sm border-dashed p-[12px] bg-gbg" onPress={pickRegulamento}>
+                <Text className="text-[16px]">📎</Text>
+                <Text className="text-base font-nunito-bold text-muted">Anexar regulamento (PDF)</Text>
               </TouchableOpacity>
             )}
           </View>
-        ))}
 
-        <View style={{ height: 24 }} />
+          <Text className="text-muted text-md font-nunito uppercase tracking-[0.5px] mb-[10px]">Categorias</Text>
+          {vertentes.map((v, i) => (
+            <View key={v.id} className="bg-white rounded-md p-md flex-row items-center gap-[10px] mb-sm shadow-card overflow-hidden">
+              <TouchableOpacity
+                className="flex-row items-center flex-1 gap-[10px]"
+                onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: tournament.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([{ type: v.type, level: v.level }]) })}
+              >
+                <View className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: VERTENTE_CONFIG[v.type].color }} />
+                <View className="flex-1">
+                  <Text className="text-base font-nunito text-navy">{VERTENTE_CONFIG[v.type].label} · {v.level}</Text>
+                  <Text className="text-sm font-nunito-semibold text-muted">{v.teams.length}/{v.maxTeams} duplas · {v.courts} courts</Text>
+                </View>
+                <Text className="text-[14px]">✏️</Text>
+              </TouchableOpacity>
+              {v.status === 'config' && (
+                <TouchableOpacity onPress={() => handleRemoveVertente(v.id)} className="px-[10px] py-[4px] border-l border-l-red-border ml-sm">
+                  <Text className="text-[16px]">🗑️</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
 
-        <TouchableOpacity style={s.saveBtn} onPress={() => navigation.goBack()}>
-          <LinearGradient colors={Gradients.primary} style={s.saveGrad}>
-            <Text style={s.saveTxt}>✓ Guardar alterações</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          <View className="h-xl" />
 
-        {/* Danger zone */}
-        <View style={s.dangerCard}>
-          <Text style={s.dangerTitle}>⚠️ Zona de risco</Text>
-          <TouchableOpacity style={s.dangerBtn} onPress={handleDeleteTournament}>
-            <Text style={s.dangerBtnTxt}>🗑️ Eliminar torneio</Text>
+          <TouchableOpacity className="rounded-lg overflow-hidden mb-xl" onPress={() => navigation.goBack()}>
+            <LinearGradient colors={Gradients.primary} className="p-[15px] items-center">
+              <Text className="text-white text-[15px] font-nunito">✓ Guardar alterações</Text>
+            </LinearGradient>
           </TouchableOpacity>
-        </View>
-        <View style={{ height: 32 }} />
+
+          {/* Danger zone */}
+          <View className="bg-red-bg-soft rounded-lg p-md border border-red-border">
+            <Text className="text-md font-nunito text-red mb-[10px]">⚠️ Zona de risco</Text>
+            <TouchableOpacity className="bg-red-bg rounded-md p-[12px] items-center" onPress={handleDeleteTournament}>
+              <Text className="text-base font-nunito text-red">🗑️ Eliminar torneio</Text>
+            </TouchableOpacity>
+          </View>
+          <View className="h-2xl" />
+        </Container>
       </ScrollView>
       <HomeFAB onPress={() => navigation.dispatch(popTo('Home'))} />
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 4 },
-  scroll: { flex: 1 },
-  sectionLabel: { ...TextStyles.sectionLabel, fontSize: Typography.fontSize.md, marginBottom: 10 },
-  card: { backgroundColor: Colors.white, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.lg, ...Shadows.card },
-  fieldLabel: { ...TextStyles.sectionLabel, marginBottom: 6, marginTop: 8 },
-  input: { borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.sm, padding: Spacing.sm, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold, color: Colors.navy, backgroundColor: Colors.gbg },
-  row: { flexDirection: 'row', marginTop: 4 },
-  dateBtn: { borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.sm, paddingHorizontal: Spacing.sm, paddingVertical: 10, backgroundColor: Colors.gbg, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  dateTxt: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamilyBold, color: Colors.navy },
-  datePlaceholder: { color: Colors.gray },
-  photoBanner: { height: 80, borderRadius: Radii.md, overflow: 'hidden', backgroundColor: Colors.navy, marginBottom: 4 },
-  photoBannerImg: { position: 'absolute', width: '100%', height: '100%' },
-  photoBannerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.30)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  photoBannerIcon: { fontSize: 18 },
-  photoBannerTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.white },
-  regulamentoRow: { flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: Colors.gbg, borderRadius: Radii.sm, padding: 12 },
-  regulamentoIcon: { width: 38, height: 38, backgroundColor: Colors.white, borderRadius: 9, alignItems: 'center', justifyContent: 'center', ...Shadows.card, flexShrink: 0 },
-  regulamentoName: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
-  regulamentoSub: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted, marginTop: 2 },
-  regulamentoRemove: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.red, paddingHorizontal: 4 },
-  regulamentoAdd: { flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1.5, borderColor: Colors.gl, borderRadius: Radii.sm, borderStyle: 'dashed', padding: 12, backgroundColor: Colors.gbg },
-  regulamentoAddIcon: { fontSize: 16 },
-  regulamentoAddTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
-  vertCard: { backgroundColor: Colors.white, borderRadius: Radii.md, padding: Spacing.md, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: Spacing.sm, ...Shadows.card, overflow: 'hidden' },
-  vertDelete: { paddingHorizontal: 10, paddingVertical: 4, borderLeftWidth: 1, borderLeftColor: Colors.redBorder, marginLeft: 8 },
-  vertDeleteTxt: { fontSize: 16 },
-  vertDot: { width: 10, height: 10, borderRadius: 5 },
-  vertTitle: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.navy },
-  vertSub: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted },
-  vertArrow: { fontSize: 14 },
-  saveBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: Spacing.xl },
-  saveGrad: { padding: 15, alignItems: 'center' },
-  saveTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
-  dangerCard: { backgroundColor: Colors.redBgSoft, borderRadius: Radii.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.redBorder },
-  dangerTitle: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.red, marginBottom: 10 },
-  dangerBtn: { backgroundColor: Colors.redBg, borderRadius: Radii.md, padding: 12, alignItems: 'center' },
-  dangerBtnTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily, color: Colors.red },
-});

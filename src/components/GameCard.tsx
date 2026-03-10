@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Game, SetScore, Team } from '../types';
-import { Colors, Spacing, Radii, Shadows, Gradients, Typography } from '../theme';
+import { Gradients } from '../theme';
 import { GAME_STATUS, GAME_STATUS_COLOR } from '../utils/constants';
+import clsx from 'clsx';
 
 interface GameCardProps {
   game: Game;
@@ -28,16 +29,27 @@ const ScoreBox = ({
 }) => {
   if (variant === 'live') {
     return (
-      <LinearGradient colors={Gradients.live} style={gc.box}>
-        <Text style={[gc.boxTxt, { color: Colors.white, fontSize: 8 }]}>●</Text>
+      <LinearGradient colors={Gradients.live} style={{ width: 24, height: 24, borderRadius: 6, alignItems: 'center', justifyContent: 'center' }}>
+        <Text className="font-nunito-black text-white" style={{ fontSize: 8 }}>●</Text>
       </LinearGradient>
     );
   }
-  const boxStyle = variant === 'win' ? gc.boxWin : variant === 'lose' ? gc.boxLose : gc.boxPending;
-  const txtStyle = variant === 'win' ? gc.boxTxtWin : variant === 'lose' ? gc.boxTxtLose : gc.boxTxtPending;
   return (
-    <View style={[gc.box, boxStyle]}>
-      <Text style={[gc.boxTxt, txtStyle]}>{value}</Text>
+    <View
+      className={clsx(
+        'items-center justify-center rounded-[6px]',
+        variant === 'win' ? 'bg-blue-bg' : 'bg-gbg',
+      )}
+      style={{ width: 24, height: 24 }}
+    >
+      <Text
+        className={clsx(
+          'text-sm font-nunito-black',
+          variant === 'win' ? 'text-blue' : variant === 'lose' ? 'text-muted' : 'text-gray',
+        )}
+      >
+        {value}
+      </Text>
     </View>
   );
 };
@@ -62,7 +74,7 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
   const renderFinishedScores = () => {
     if (!game.sets?.length) return null;
     return (
-      <View style={gc.scores}>
+      <View className="flex-row gap-[3px]">
         {game.sets.map((set: SetScore, i: number) => {
           const winScore = winnerIs1 ? set.team1 : set.team2;
           const loseScore = winnerIs1 ? set.team2 : set.team1;
@@ -83,7 +95,7 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
       return <ScoreBox value="–" variant="pending" />;
     }
     return (
-      <View style={gc.scores}>
+      <View className="flex-row gap-[3px]">
         {game.sets.map((set: SetScore, i: number) => {
           const myScore = forTeam === 1 ? set.team1 : set.team2;
           const oppScore = forTeam === 1 ? set.team2 : set.team1;
@@ -97,32 +109,42 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
 
   return (
     <TouchableOpacity
-      style={[gc.card, isLive && gc.cardLive, isPaused && gc.cardPaused]}
+      className={clsx(
+        'bg-white rounded-lg p-md mb-sm shadow-card',
+        isLive && 'border-2 border-red',
+        isPaused && 'border-2 border-orange',
+      )}
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
       accessibilityLabel={`${game.team1.name} vs ${game.team2.name}, ${game.time}, ${game.court}${isLive ? ', ao vivo' : isFinished ? ', concluído' : isPaused ? ', pausado' : ', agendado'}`}
     >
       {/* Meta header */}
-      <View style={gc.metaRow}>
-        <Text style={[gc.meta, isLive && gc.metaLive, isPaused && gc.metaPaused]}>
+      <View className="flex-row justify-between items-center mb-sm">
+        <Text
+          className={clsx(
+            'text-xxs font-nunito uppercase',
+            isLive ? 'text-red' : isPaused ? 'text-orange' : 'text-muted',
+          )}
+          style={isLive ? { color: GAME_STATUS_COLOR.live } : isPaused ? { color: GAME_STATUS_COLOR.paused } : undefined}
+        >
           {isLive ? '●' : isFinished ? '✅' : isPaused ? '⏸' : '🕒'}{' '}
           {game.time} · {game.court}
           {isLive ? ' · Ao vivo' : isFinished && !showDoneBadge ? ' · Concluído' : isPaused ? ' · Pausado' : isScheduled ? ' · Agendado' : ''}
         </Text>
         {isScheduled && onEdit && (
-          <TouchableOpacity style={gc.editBtn} onPress={onEdit}>
-            <Text style={gc.editBtnTxt}>✏️ Editar</Text>
+          <TouchableOpacity className="bg-gbg rounded-sm px-[9px] py-[3px]" onPress={onEdit}>
+            <Text className="text-xs font-nunito text-navy">✏️ Editar</Text>
           </TouchableOpacity>
         )}
         {isFinished && showDoneBadge && (
-          <View style={gc.doneBadge}>
-            <Text style={gc.doneBadgeTxt}>Concluído</Text>
+          <View className="bg-green-bg-light rounded-xl px-sm py-[2px]">
+            <Text className="text-xxs font-nunito text-green">Concluído</Text>
           </View>
         )}
         {isPaused && (
-          <View style={gc.pausedBadge}>
-            <Text style={gc.pausedBadgeTxt}>⏸ Pausado</Text>
+          <View className="bg-orange-bg rounded-xl px-sm py-[2px]">
+            <Text className="text-xxs font-nunito text-orange">⏸ Pausado</Text>
           </View>
         )}
       </View>
@@ -130,35 +152,35 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
       {/* ── FINISHED: condensed single row ── */}
       {isFinished && winner && loser ? (
         <>
-          <View style={gc.finishedRow}>
-            <View style={gc.finishedNames}>
+          <View className="flex-row items-center py-sm gap-sm">
+            <View className="flex-1 min-w-0">
               {onTeamPress ? (
                 <TouchableOpacity onPress={() => onTeamPress(winner)} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                  <Text style={gc.winnerName}>{winner.name}</Text>
+                  <Text className="text-sm font-nunito text-blue">{winner.name}</Text>
                 </TouchableOpacity>
               ) : (
-                <Text style={gc.winnerName}>{winner.name}</Text>
+                <Text className="text-sm font-nunito text-blue">{winner.name}</Text>
               )}
               {onTeamPress ? (
                 <TouchableOpacity onPress={() => onTeamPress(loser)} hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                  <Text style={gc.vsLoser}>vs {loser.name}</Text>
+                  <Text className="text-xxs text-muted mt-[2px]">vs {loser.name}</Text>
                 </TouchableOpacity>
               ) : (
-                <Text style={gc.vsLoser}>vs {loser.name}</Text>
+                <Text className="text-xxs text-muted mt-[2px]">vs {loser.name}</Text>
               )}
             </View>
             {renderFinishedScores()}
           </View>
 
           {/* Bottom actions */}
-          <View style={gc.finishedFooter}>
+          <View className="flex-row items-center justify-between mt-sm">
             {onEnterResult && (
-            <TouchableOpacity style={gc.editResultBtn} onPress={onEnterResult}>
-              <Text style={gc.editResultTxt}>✏️ Editar resultado</Text>
+            <TouchableOpacity className="border-[1.5px] border-gl rounded-[10px] py-[6px] px-md items-center" onPress={onEnterResult}>
+              <Text className="text-sm font-nunito-bold text-navy">✏️ Editar resultado</Text>
             </TouchableOpacity>
             )}
             {advanceText ? (
-              <Text style={gc.advanceText}>{advanceText} ›</Text>
+              <Text className="text-xs font-nunito text-green">{advanceText} ›</Text>
             ) : null}
           </View>
         </>
@@ -167,112 +189,43 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
           {/* ── LIVE / SCHEDULED: two team rows ── */}
           {/* Team 1 */}
           <TouchableOpacity
-            style={[gc.teamRow, gc.teamRowBorder]}
+            className="flex-row items-center py-[7px] gap-[6px] border-b border-gl"
             onPress={() => onTeamPress?.(game.team1)}
             disabled={!onTeamPress}
             activeOpacity={onTeamPress ? 0.6 : 1}
           >
-            <Text style={gc.teamName}>{game.team1.name}</Text>
+            <Text className="flex-1 text-md font-nunito text-navy">{game.team1.name}</Text>
             {renderScores(1)}
           </TouchableOpacity>
 
           {/* Team 2 */}
           <TouchableOpacity
-            style={gc.teamRow}
+            className="flex-row items-center py-[7px] gap-[6px]"
             onPress={() => onTeamPress?.(game.team2)}
             disabled={!onTeamPress}
             activeOpacity={onTeamPress ? 0.6 : 1}
           >
-            <Text style={gc.teamName}>{game.team2.name}</Text>
+            <Text className="flex-1 text-md font-nunito text-navy">{game.team2.name}</Text>
             {renderScores(2)}
           </TouchableOpacity>
 
           {/* Live CTA */}
           {isLive && onEnterResult && (
-            <TouchableOpacity style={gc.resultWrap} onPress={onEnterResult}>
-              <LinearGradient colors={Gradients.primary} style={gc.resultGrad}>
-                <Text style={gc.resultTxt}>Introduzir resultado →</Text>
+            <TouchableOpacity className="rounded-[10px] overflow-hidden mt-sm" onPress={onEnterResult}>
+              <LinearGradient colors={Gradients.primary} className="p-[10px] items-center">
+                <Text className="text-md font-nunito text-white">Introduzir resultado →</Text>
               </LinearGradient>
             </TouchableOpacity>
           )}
 
           {/* Paused CTA */}
           {isPaused && onEnterResult && (
-            <TouchableOpacity style={gc.resumeWrap} onPress={onEnterResult}>
-              <Text style={gc.resumeTxt}>▶ Retomar jogo</Text>
+            <TouchableOpacity className="border-[1.5px] border-orange rounded-[10px] p-[9px] mt-sm items-center" onPress={onEnterResult}>
+              <Text className="text-md font-nunito text-orange">▶ Retomar jogo</Text>
             </TouchableOpacity>
           )}
         </>
       )}
     </TouchableOpacity>
   );
-});
-
-const gc = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.white,
-    borderRadius: Radii.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    ...Shadows.card,
-  },
-  cardLive: {
-    borderWidth: 2,
-    borderColor: Colors.red,
-  },
-  cardPaused: {
-    borderWidth: 2,
-    borderColor: Colors.orange,
-  },
-
-  /* Meta row */
-  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
-  meta: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.muted, textTransform: 'uppercase' },
-  metaLive: { color: GAME_STATUS_COLOR.live },
-  metaPaused: { color: GAME_STATUS_COLOR.paused },
-  editBtn: { backgroundColor: Colors.gbg, borderRadius: Radii.sm, paddingHorizontal: 9, paddingVertical: 3 },
-  editBtnTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.navy },
-  doneBadge: { backgroundColor: Colors.greenBgLight, borderRadius: Radii.xl, paddingHorizontal: 8, paddingVertical: 2 },
-  doneBadgeTxt: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.green },
-  pausedBadge: { backgroundColor: Colors.orangeBg, borderRadius: Radii.xl, paddingHorizontal: 8, paddingVertical: 2 },
-  pausedBadgeTxt: { fontSize: Typography.fontSize.xxs, fontFamily: Typography.fontFamily, color: Colors.orange },
-
-  /* ── Finished condensed row ── */
-  finishedRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 8 },
-  finishedNames: { flex: 1, minWidth: 0 },
-  winnerName: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily, color: Colors.blue },
-  vsLoser: { fontSize: Typography.fontSize.xxs, color: Colors.muted, marginTop: 2 },
-  finishedFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  advanceText: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.green },
-
-  /* ── Live / Scheduled team rows ── */
-  teamRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, gap: 6 },
-  teamRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.gl },
-  teamName: { flex: 1, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.navy },
-
-  /* Score boxes */
-  scores: { flexDirection: 'row', gap: 3 },
-  box: {
-    width: 24, height: 24, borderRadius: 6,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  boxWin: { backgroundColor: Colors.blueBg },
-  boxLose: { backgroundColor: Colors.gbg },
-  boxPending: { backgroundColor: Colors.gbg },
-  boxTxt: { fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBlack },
-  boxTxtWin: { color: Colors.blue },
-  boxTxtLose: { color: Colors.muted },
-  boxTxtPending: { color: Colors.gray },
-
-  resumeWrap: { borderWidth: 1.5, borderColor: Colors.orange, borderRadius: 10, padding: 9, marginTop: 8, alignItems: 'center' },
-  resumeTxt: { color: Colors.orange, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily },
-  /* Buttons */
-  resultWrap: { borderRadius: 10, overflow: 'hidden', marginTop: 8 },
-  resultGrad: { padding: 10, alignItems: 'center' },
-  resultTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily },
-  editResultBtn: {
-    borderWidth: 1.5, borderColor: Colors.gl,
-    borderRadius: 10, paddingVertical: 6, paddingHorizontal: Spacing.md, alignItems: 'center',
-  },
-  editResultTxt: { color: Colors.navy, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilyBold },
 });

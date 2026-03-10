@@ -6,15 +6,15 @@ import {
     Image,
     ScrollView,
     TouchableOpacity,
-    StyleSheet,
     useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Team, Vertente, Game } from '../types';
-import { Colors, Gradients, Spacing, Radii, Shadows, Typography } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { MONTHS, GAME_STATUS } from '../utils/constants';
 import { getInitials } from '../utils/teamUtils';
+import clsx from 'clsx';
 
 interface Props {
     visible: boolean;
@@ -52,12 +52,10 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
 
     if (!team || !vertente) return null;
 
-    // Filter games for this team (by id first; bracket may use name-based teams)
     const teamGames = games.filter(
         g => g.team1.id === team.id || g.team2.id === team.id,
     );
 
-    // Sort by date + time chronologically
     const currentYear = new Date().getFullYear();
     const parseDateTime = (g: Game): number => {
         const [day, mon] = g.date.split(' ');
@@ -66,7 +64,6 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
     };
     const sorted = [...teamGames].sort((a, b) => parseDateTime(a) - parseDateTime(b));
 
-    // Group phase progress
     const groupGames = teamGames.filter(g => g.phase === 'groups');
     const groupPlayed = groupGames.filter(
         g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER,
@@ -83,96 +80,101 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
             animationType="slide"
             onRequestClose={onClose}
         >
-            {/* Dark overlay – tappable to dismiss */}
             <TouchableOpacity
-                style={s.overlay}
+                className="absolute inset-0 bg-overlay-dark"
                 activeOpacity={1}
                 onPress={onClose}
             />
 
-            {/* Bottom sheet */}
-            <View style={[s.sheet, { paddingBottom: insets.bottom + 8, maxHeight: screenH * 0.82 }]}>
+            <View
+                className="absolute bottom-0 left-0 right-0 bg-white rounded-t-[22px]"
+                style={{
+                    paddingBottom: insets.bottom + 8,
+                    maxHeight: screenH * 0.82,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: -8 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 20,
+                    elevation: 20,
+                }}
+            >
                 {/* Pull handle */}
-                <View style={s.handleWrap}>
-                    <View style={s.handle} />
+                <View className="pt-[10px] items-center">
+                    <View className="w-[40px] h-[4px] rounded-[2px] bg-handle-gray" />
                 </View>
 
                 {/* Team gradient banner */}
-                <View style={s.headerPad}>
+                <View className="px-[18px] pt-[14px]">
                     <LinearGradient
                         colors={Gradients.header}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={s.teamBanner}
+                        className="rounded-lg p-[14px] flex-row items-center gap-[13px]"
                     >
-                        {/* Avatar */}
-                        <View style={s.avatar}>
+                        <View className="w-[50px] h-[50px] rounded-[14px] bg-[rgba(255,255,255,0.2)] items-center justify-center shrink-0 overflow-hidden">
                             {team.photo ? (
                                 <Image
                                     source={{ uri: team.photo }}
-                                    style={s.avatarImg}
+                                    style={{ width: 50, height: 50 }}
+                                    className="rounded-[14px]"
                                     resizeMode="cover"
                                 />
                             ) : (
-                                <Text style={s.avatarTxt}>{getInitials(team.name)}</Text>
+                                <Text className="font-nunito-black text-white" style={{ fontSize: 17 }}>{getInitials(team.name)}</Text>
                             )}
                         </View>
 
-                        {/* Info */}
-                        <View style={s.teamInfo}>
-                            <Text style={s.teamName} numberOfLines={1}>
+                        <View className="flex-1 min-w-0">
+                            <Text className="text-xl font-nunito-black text-white" numberOfLines={1}>
                                 {team.name}
                             </Text>
-                            <Text style={s.playersLine} numberOfLines={1}>
+                            <Text className="text-sm text-[rgba(255,255,255,0.7)] mt-[2px] font-nunito-semibold" numberOfLines={1}>
                                 {team.players
                                     .map(p => p.name)
                                     .filter(Boolean)
                                     .join(' · ') || '—'}
                             </Text>
-                            <View style={s.badges}>
+                            <View className="flex-row gap-[5px] mt-[6px]">
                                 {team.group ? (
-                                    <View style={s.badge}>
-                                        <Text style={s.badgeTxt}>Grupo {team.group}</Text>
+                                    <View className="bg-[rgba(255,255,255,0.2)] rounded-[6px] px-sm py-[2px]">
+                                        <Text className="text-xs font-nunito text-white">Grupo {team.group}</Text>
                                     </View>
                                 ) : null}
-                                <View style={s.badge}>
-                                    <Text style={s.badgeTxt}>{categoryLabel}</Text>
+                                <View className="bg-[rgba(255,255,255,0.2)] rounded-[6px] px-sm py-[2px]">
+                                    <Text className="text-xs font-nunito text-white">{categoryLabel}</Text>
                                 </View>
                             </View>
                         </View>
 
-                        {/* Close */}
-                        <TouchableOpacity style={s.closeBtn} onPress={onClose}>
-                            <Text style={s.closeTxt}>✕</Text>
+                        <TouchableOpacity className="self-start p-[4px]" onPress={onClose}>
+                            <Text className="text-[rgba(255,255,255,0.5)]" style={{ fontSize: 18 }}>✕</Text>
                         </TouchableOpacity>
                     </LinearGradient>
                 </View>
 
                 {/* Group progress bar */}
                 {groupTotal > 0 && (
-                    <View style={s.progressPad}>
-                        <View style={s.progressRow}>
-                            <Text style={s.progressLabel}>
+                    <View className="px-[18px] pt-md">
+                        <View className="flex-row justify-between items-center mb-[5px]">
+                            <Text className="text-xs font-nunito text-muted">
                                 Fase de Grupos{team.group ? ` — Grupo ${team.group}` : ''}
                             </Text>
-                            <Text style={s.progressCount}>
+                            <Text className="text-xs font-nunito text-navy">
                                 {groupPlayed}/{groupTotal} jogos
                             </Text>
                         </View>
-                        <View style={s.progressBg}>
+                        <View className="h-[4px] bg-gl rounded-[2px] overflow-hidden">
                             <LinearGradient
                                 colors={[Colors.green, Colors.teal]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
-                                style={[
-                                    s.progressFill,
-                                    {
-                                        width: `${groupTotal > 0
-                                            ? Math.round((groupPlayed / groupTotal) * 100)
-                                            : 0
-                                            }%`,
-                                    },
-                                ]}
+                                className="h-[4px] rounded-[2px]"
+                                style={{
+                                    width: `${groupTotal > 0
+                                        ? Math.round((groupPlayed / groupTotal) * 100)
+                                        : 0
+                                        }%`,
+                                }}
                             />
                         </View>
                     </View>
@@ -180,13 +182,13 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
 
                 {/* Games list */}
                 <ScrollView
-                    style={s.scroll}
+                    className="flex-1"
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={s.scrollContent}
+                    contentContainerClassName="px-[18px] pt-md pb-xl gap-[10px]"
                 >
                     {sorted.length === 0 ? (
-                        <View style={s.empty}>
-                            <Text style={s.emptyTxt}>Sem jogos registados</Text>
+                        <View className="items-center pt-[30px]">
+                            <Text className="text-base font-nunito-bold text-muted">Sem jogos registados</Text>
                         </View>
                     ) : (
                         sorted.map(game => {
@@ -235,42 +237,40 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
                                         : '';
 
                             return (
-                                <View key={game.id} style={s.gameCard}>
-                                    {/* Coloured header */}
+                                <View key={game.id} className="rounded-[14px] overflow-hidden shadow-card">
                                     <LinearGradient
                                         colors={headerColors}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
-                                        style={s.gameHeader}
+                                        className="py-sm px-[14px] flex-row items-center justify-between gap-[6px]"
                                     >
-                                        {isLive && <View style={s.liveDot} />}
-                                        <Text style={s.gameHeaderLabel}>{headerLabel}</Text>
-                                        <Text style={s.gameHeaderMeta}>
+                                        {isLive && <View className="w-[7px] h-[7px] rounded-[4px] bg-white shrink-0" />}
+                                        <Text className="text-xs font-nunito text-white flex-1">{headerLabel}</Text>
+                                        <Text className="text-xs font-nunito-bold text-[rgba(255,255,255,0.8)]">
                                             {game.date} · {game.time} · {game.court}
                                         </Text>
                                     </LinearGradient>
 
-                                    {/* White body */}
-                                    <View style={s.gameBody}>
+                                    <View className="bg-white p-sm px-[14px] flex-row items-center justify-between">
                                         <View>
-                                            <Text style={s.vsLabel}>vs</Text>
-                                            <Text style={s.opponentName}>{opponent.name}</Text>
+                                            <Text className="text-sm text-muted mb-[2px]">vs</Text>
+                                            <Text className="text-base font-nunito-black text-navy">{opponent.name}</Text>
                                         </View>
 
-                                        <View style={s.resultBlock}>
+                                        <View className="items-end">
                                             {isScheduled ? (
-                                                <Text style={s.resultMuted}>A jogar</Text>
+                                                <Text className="text-xs text-muted">A jogar</Text>
                                             ) : (
                                                 <>
                                                     {resultLabel ? (
-                                                        <Text style={s.resultLabel}>{resultLabel}</Text>
+                                                        <Text className="text-xs text-muted mb-[2px]">{resultLabel}</Text>
                                                     ) : null}
                                                     <Text
-                                                        style={[
-                                                            s.resultScore,
-                                                            isLive && s.resultScoreLive,
-                                                            isPaused && s.resultScorePaused,
-                                                        ]}
+                                                        className={clsx(
+                                                            'text-xl font-nunito-black text-blue',
+                                                            isLive && 'text-red',
+                                                            isPaused && 'text-orange',
+                                                        )}
                                                     >
                                                         {resultStr || '–'}
                                                     </Text>
@@ -286,179 +286,4 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
             </View>
         </Modal>
     );
-});
-
-const s = StyleSheet.create({
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-        backgroundColor: Colors.overlayDark,
-    },
-    sheet: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: Colors.white,
-        borderTopLeftRadius: 22,
-        borderTopRightRadius: 22,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -8 },
-        shadowOpacity: 0.3,
-        shadowRadius: 20,
-        elevation: 20,
-    },
-
-    /* Handle */
-    handleWrap: { paddingTop: 10, alignItems: 'center' },
-    handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.handleGray },
-
-    /* Team banner */
-    headerPad: { paddingHorizontal: 18, paddingTop: 14 },
-    teamBanner: {
-        borderRadius: Radii.lg,
-        padding: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 13,
-    },
-    avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 14,
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        overflow: 'hidden',
-    },
-    avatarImg: {
-        width: 50,
-        height: 50,
-        borderRadius: 14,
-    },
-    avatarTxt: {
-        fontSize: 17,
-        fontFamily: Typography.fontFamilyBlack,
-        color: Colors.white,
-    },
-    teamInfo: { flex: 1, minWidth: 0 },
-    teamName: { fontSize: Typography.fontSize.xl, fontFamily: Typography.fontFamilyBlack, color: Colors.white },
-    playersLine: {
-        fontSize: Typography.fontSize.sm,
-        color: 'rgba(255,255,255,0.7)',
-        marginTop: 2,
-        fontFamily: Typography.fontFamilySemiBold,
-    },
-    badges: { flexDirection: 'row', gap: 5, marginTop: 6 },
-    badge: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
-        borderRadius: 6,
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-    },
-    badgeTxt: {
-        fontSize: Typography.fontSize.xs,
-        fontFamily: Typography.fontFamily,
-        color: Colors.white,
-    },
-    closeBtn: { alignSelf: 'flex-start', padding: 4 },
-    closeTxt: { fontSize: 18, color: 'rgba(255,255,255,0.5)' },
-
-    /* Progress */
-    progressPad: { paddingHorizontal: 18, paddingTop: Spacing.md },
-    progressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 5,
-    },
-    progressLabel: {
-        fontSize: Typography.fontSize.xs,
-        fontFamily: Typography.fontFamily,
-        color: Colors.muted,
-    },
-    progressCount: {
-        fontSize: Typography.fontSize.xs,
-        fontFamily: Typography.fontFamily,
-        color: Colors.navy,
-    },
-    progressBg: {
-        height: 4,
-        backgroundColor: Colors.gl,
-        borderRadius: 2,
-        overflow: 'hidden',
-    },
-    progressFill: { height: 4, borderRadius: 2 },
-
-    /* Games list */
-    scroll: { flex: 1 },
-    scrollContent: {
-        paddingHorizontal: 18,
-        paddingTop: Spacing.md,
-        paddingBottom: Spacing.xl,
-        gap: 10,
-    },
-    empty: { alignItems: 'center', paddingTop: 30 },
-    emptyTxt: {
-        fontSize: Typography.fontSize.base,
-        fontFamily: Typography.fontFamilyBold,
-        color: Colors.muted,
-    },
-
-    /* Game card */
-    gameCard: {
-        borderRadius: 14,
-        overflow: 'hidden',
-        ...Shadows.card,
-    },
-    gameHeader: {
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 6,
-    },
-    liveDot: {
-        width: 7,
-        height: 7,
-        borderRadius: 4,
-        backgroundColor: Colors.white,
-        flexShrink: 0,
-    },
-    gameHeaderLabel: {
-        fontSize: Typography.fontSize.xs,
-        fontFamily: Typography.fontFamily,
-        color: Colors.white,
-        flex: 1,
-    },
-    gameHeaderMeta: {
-        fontSize: Typography.fontSize.xs,
-        fontFamily: Typography.fontFamilyBold,
-        color: 'rgba(255,255,255,0.8)',
-    },
-    gameBody: {
-        backgroundColor: Colors.white,
-        padding: Spacing.sm,
-        paddingHorizontal: 14,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    vsLabel: { fontSize: Typography.fontSize.sm, color: Colors.muted, marginBottom: 2 },
-    opponentName: {
-        fontSize: Typography.fontSize.base,
-        fontFamily: Typography.fontFamilyBlack,
-        color: Colors.navy,
-    },
-    resultBlock: { alignItems: 'flex-end' },
-    resultLabel: { fontSize: Typography.fontSize.xs, color: Colors.muted, marginBottom: 2 },
-    resultScore: {
-        fontSize: Typography.fontSize.xl,
-        fontFamily: Typography.fontFamilyBlack,
-        color: Colors.blue,
-    },
-    resultScoreLive: { color: Colors.red },
-    resultScorePaused: { color: Colors.orange },
-    resultMuted: { fontSize: Typography.fontSize.xs, color: Colors.muted },
 });

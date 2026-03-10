@@ -1,18 +1,20 @@
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import clsx from 'clsx';
 import { RootStackParamList, Team } from '../types';
 import { mockTournaments, mockGames } from '../mock/data';
 import { GameCard } from '../components/GameCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamGamesSheet } from '../components/TeamGamesSheet';
-import { Colors, Gradients, Typography, Spacing } from '../theme';
+import { Gradients } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { GAME_STATUS } from '../utils/constants';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'GroupsGames'>;
@@ -44,53 +46,61 @@ export const GroupsGamesScreen = () => {
   );
 
   return (
-    <View style={s.container}>
-      <LinearGradient colors={Gradients.header} style={s.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
             backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
             onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
           />
           <SubBadge type={vertente.type} level={vertente.level} />
-          <Text style={s.title}>Grupos – Jogos 🎾</Text>
+          <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">Grupos – Jogos 🎾</Text>
         </SafeAreaView>
       </LinearGradient>
 
       {/* Group selector tabs */}
       {groups.length > 0 && (
-        <View style={s.tabs}>
+        <View className="flex-row gap-xs px-md py-sm bg-white border-b-[1.5px] border-gl">
           {groups.map(g => (
             <TouchableOpacity
               key={g}
-              style={[s.tab, activeGroup === g && s.tabActive]}
+              className={clsx(
+                'flex-1 py-[7px] px-[3px] rounded-[9px] items-center bg-gbg border-2 border-transparent',
+                activeGroup === g && 'bg-navy',
+              )}
               onPress={() => setActiveGroup(g)}
             >
-              <Text style={[s.tabTxt, activeGroup === g && s.tabTxtActive]}>Grupo {g}</Text>
+              <Text className={clsx(
+                'text-xs font-nunito text-muted',
+                activeGroup === g && 'text-white',
+              )}>Grupo {g}</Text>
             </TouchableOpacity>
           ))}
         </View>
       )}
 
-      <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.md }}>
-        {filteredGames.length === 0 ? (
-          <View style={s.empty}>
-            <Text style={s.emptyTxt}>Sem jogos para o Grupo {activeGroup}</Text>
-          </View>
-        ) : (
-          filteredGames.map((g) => (
-            <GameCard
-              key={g.id}
-              game={g}
-              onTeamPress={setSheetTeam}
-              onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
-              onEnterResult={() => g.status === GAME_STATUS.PAUSED
-                ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
-                : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
-              }
-            />
-          ))
-        )}
-        <View style={{ height: 32 }} />
+      <ScrollView className="flex-1" contentContainerClassName="p-md">
+        <Container>
+          {filteredGames.length === 0 ? (
+            <View className="items-center mt-[40px]">
+              <Text className="text-base font-nunito-bold text-muted">Sem jogos para o Grupo {activeGroup}</Text>
+            </View>
+          ) : (
+            filteredGames.map((g) => (
+              <GameCard
+                key={g.id}
+                game={g}
+                onTeamPress={setSheetTeam}
+                onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
+                onEnterResult={() => g.status === GAME_STATUS.PAUSED
+                  ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                }
+              />
+            ))
+          )}
+          <View className="h-2xl" />
+        </Container>
       </ScrollView>
 
       <TeamGamesSheet
@@ -104,28 +114,3 @@ export const GroupsGamesScreen = () => {
     </View>
   );
 };
-
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.gbg },
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-
-  /* Group tabs */
-  tabs: {
-    flexDirection: 'row', gap: Spacing.xs, paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm,
-    backgroundColor: Colors.white, borderBottomWidth: 1.5, borderBottomColor: Colors.gl,
-  },
-  tab: {
-    flex: 1, paddingVertical: 7, paddingHorizontal: 3,
-    borderRadius: 9, alignItems: 'center',
-    backgroundColor: Colors.gbg, borderWidth: 2, borderColor: 'transparent',
-  },
-  tabActive: { backgroundColor: Colors.navy },
-  tabTxt: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily, color: Colors.muted },
-  tabTxtActive: { color: Colors.white },
-
-  scroll: { flex: 1 },
-  empty: { alignItems: 'center', marginTop: 40 },
-  emptyTxt: { fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBold, color: Colors.muted },
-
-});

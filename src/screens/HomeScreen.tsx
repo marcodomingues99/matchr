@@ -4,7 +4,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  StyleSheet,
   Image,
   ImageBackground,
   RefreshControl,
@@ -13,25 +12,36 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import clsx from 'clsx';
 import { RootStackParamList, Tournament, Vertente } from '../types';
 import { mockTournaments } from '../mock/data';
-import { Colors, Gradients, Typography, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients } from '../theme';
 import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
 import { LiveDot } from '../components/LiveDot';
+import { Container, Grid, GridItem } from '../components/Layout';
 import { parseDatePt, STATUS_LABEL, PHASE_WEIGHT, PHASE_ORDER } from '../utils/constants';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Home'>;
 
-/* ── Logo reference ──────────────────────────────────────── */
 const logo = require('../../assets/logo.png');
 
-/** Show level (M5, F4…) unless it's 'Sem', then just show type letter */
 const chipLabel = (v: Vertente) =>
   v.level === 'Sem' ? v.type : v.level;
 
-/* ═════════════════════════════════════════════════════════════
-   HomeScreen
-   ═════════════════════════════════════════════════════════════ */
+/* ── Shared header ── */
+const HomeHeader = ({ right }: { right?: React.ReactNode }) => (
+  <Container className="flex-row justify-between items-center pt-[8px]">
+    <View className="flex-row items-center gap-[10px]">
+      <Image source={logo} style={{ width: 34, height: 34 }} resizeMode="contain" />
+      <View>
+        <Text className="text-white text-[24px] md:text-[32px] font-nunito-black leading-[28px] md:leading-[36px]">Matchr</Text>
+        <Text className="text-white/70 text-md md:text-lg font-nunito-semibold mt-[1px]">Os teus torneios</Text>
+      </View>
+    </View>
+    {right}
+  </Container>
+);
+
 export const HomeScreen = () => {
   const navigation = useNavigation<Nav>();
   const tournaments = mockTournaments;
@@ -49,136 +59,129 @@ export const HomeScreen = () => {
   /* ── Empty state ── */
   if (tournaments.length === 0) {
     return (
-      <LinearGradient colors={Gradients.header} style={styles.flex1}>
-        <SafeAreaView style={styles.emptySafe}>
-          {/* Header row */}
-          <View style={styles.emptyHeaderRow}>
-            <View style={styles.headerLeft}>
-              <Image source={logo} style={styles.logoSmall} />
-              <View>
-                <Text style={styles.appName}>Matchr</Text>
-                <Text style={styles.headerSub}>Os teus torneios</Text>
-              </View>
-            </View>
+      <LinearGradient colors={Gradients.header} className="flex-1">
+        <SafeAreaView className="flex-1">
+          <View className="px-lg pt-sm">
+            <HomeHeader />
           </View>
-
-          {/* Center content */}
-          <View style={styles.emptyCenter}>
-            <View style={styles.emptyIconBox}>
-              <Image source={logo} style={styles.emptyLogo} />
+          <Container className="flex-1 items-center justify-center px-xl">
+            <View className="w-[96px] md:w-[120px] h-[96px] md:h-[120px] bg-white/15 rounded-2xl items-center justify-center mb-xl">
+              <Image source={logo} style={{ width: 56, height: 56 }} resizeMode="contain" />
             </View>
-            <Text style={styles.emptyTitle}>Ainda sem torneios</Text>
-            <Text style={styles.emptySubtitle}>
+            <Text className="text-white text-3xl md:text-[28px] font-nunito-black mb-[8px]">Ainda sem torneios</Text>
+            <Text className="text-white/75 text-lg md:text-xl font-nunito-semibold text-center leading-[22px] md:leading-[26px] mb-xl">
               Cria o teu primeiro torneio e começa a gerir{'\n'}grupos, eliminatórias
               e resultados.
             </Text>
             <TouchableOpacity
-              style={styles.emptyBtn}
+              className="bg-navy-dark rounded-lg px-[28px] md:px-[36px] py-[14px] md:py-lg"
               activeOpacity={0.85}
               onPress={() => navigation.navigate('CreateTournament')}
             >
-              <Text style={styles.emptyBtnText}>+ Criar primeiro torneio</Text>
+              <Text className="text-white text-lg md:text-xl font-nunito">+ Criar primeiro torneio</Text>
             </TouchableOpacity>
-          </View>
+          </Container>
         </SafeAreaView>
       </LinearGradient>
     );
   }
 
+  const newButton = (
+    <TouchableOpacity
+      className="bg-green rounded-md px-lg md:px-xl py-sm md:py-md min-h-[44px] md:min-h-[48px] justify-center"
+      activeOpacity={0.8}
+      onPress={() => navigation.navigate('CreateTournament')}
+    >
+      <Text className="text-white text-base md:text-lg font-nunito">+ Novo</Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style={styles.flex1}>
-      {/* ── Header ── */}
-      <LinearGradient colors={Gradients.header} style={styles.header}>
+    <View className="flex-1 bg-gbg">
+      <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <Image source={logo} style={styles.logoSmall} />
-              <View>
-                <Text style={styles.appName}>Matchr</Text>
-                <Text style={styles.headerSub}>Os teus torneios</Text>
-              </View>
-            </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity
-                style={styles.newBtn}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('CreateTournament')}
-              >
-                <Text style={styles.newBtnText}>+ Novo</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <HomeHeader right={newButton} />
         </SafeAreaView>
       </LinearGradient>
 
-      {/* ── Content ── */}
       <ScrollView
-        style={styles.flex1}
-        contentContainerStyle={styles.scrollContent}
+        className="flex-1"
+        contentContainerClassName="px-lg pt-md"
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} colors={[Colors.blue]} />
         }
       >
-        {/* Em Curso */}
-        {active.length > 0 && (
-          <>
-            <View style={styles.sectionRow} accessibilityRole="header">
-              <Text style={styles.sectionLabel}>Em Curso</Text>
-              <View style={styles.liveBadge} accessibilityLabel="Torneios ao vivo">
-                <LiveDot size={8} color={Colors.red} />
-                <Text style={styles.liveText}>Ao vivo</Text>
+        <Container>
+          {/* Em Curso */}
+          {active.length > 0 && (
+            <>
+              <View className="flex-row justify-between items-center mb-sm" accessibilityRole="header">
+                <Text className="text-lg md:text-xl font-nunito text-navy">Em Curso</Text>
+                <View className="flex-row items-center gap-xs" accessibilityLabel="Torneios ao vivo">
+                  <LiveDot size={8} color={Colors.red} />
+                  <Text className="text-md font-nunito text-blue">Ao vivo</Text>
+                </View>
               </View>
-            </View>
-            {active.map((t, i) => (
-              <ActiveCard key={t.id} t={t} nav={navigation} />
-            ))}
-          </>
-        )}
+              <Grid gap="md">
+                {active.map((t) => (
+                  <GridItem key={t.id} cols={{ sm: 1, md: 2 }}>
+                    <ActiveCard t={t} nav={navigation} />
+                  </GridItem>
+                ))}
+              </Grid>
+            </>
+          )}
 
-        {/* Próximos */}
-        {upcoming.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]} accessibilityRole="header">Próximos</Text>
-            {upcoming.map((t, i) => (
-              <CompactCard key={t.id} t={t} nav={navigation} />
-            ))}
-          </>
-        )}
+          {/* Próximos */}
+          {upcoming.length > 0 && (
+            <>
+              <Text className="text-lg md:text-xl font-nunito text-navy mb-sm mt-md" accessibilityRole="header">Próximos</Text>
+              <Grid gap="sm">
+                {upcoming.map((t) => (
+                  <GridItem key={t.id} cols={{ sm: 1, md: 2, lg: 3 }}>
+                    <CompactCard t={t} nav={navigation} />
+                  </GridItem>
+                ))}
+              </Grid>
+            </>
+          )}
 
-        {/* Concluídos */}
-        {finished.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: Spacing.sm }]} accessibilityRole="header">Concluídos</Text>
-            {finished.map((t, i) => (
-              <CompactCard key={t.id} t={t} nav={navigation} />
-            ))}
-          </>
-        )}
+          {/* Concluídos */}
+          {finished.length > 0 && (
+            <>
+              <Text className="text-lg md:text-xl font-nunito text-navy mb-sm mt-md" accessibilityRole="header">Concluídos</Text>
+              <Grid gap="sm">
+                {finished.map((t) => (
+                  <GridItem key={t.id} cols={{ sm: 1, md: 2, lg: 3 }}>
+                    <CompactCard t={t} nav={navigation} />
+                  </GridItem>
+                ))}
+              </Grid>
+            </>
+          )}
 
-        <View style={{ height: Spacing.xxl }} />
+          <View className="h-2xl" />
+        </Container>
       </ScrollView>
     </View>
   );
 };
 
 /* ═════════════════════════════════════════════════════════════
-   Active card  (gradient, progress bar)
+   Active card
    ═════════════════════════════════════════════════════════════ */
 const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
-  // Compute tournament day info
   const start = parseDatePt(t.startDate);
   const end = parseDatePt(t.endDate);
   const now = new Date();
   const totalDays = start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1) : 1;
   const currentDay = start ? Math.min(totalDays, Math.max(1, Math.round((now.getTime() - start.getTime()) / 86400000) + 1)) : 1;
 
-  // Compute progress from vertente statuses
   const progress = t.vertentes.length > 0
     ? t.vertentes.reduce((sum, v) => sum + (PHASE_WEIGHT[v.status] ?? 0), 0) / t.vertentes.length
     : 0;
 
-  // Most advanced phase label
   const maxPhase = t.vertentes.reduce<string>((best, v) => {
     const idx = PHASE_ORDER.indexOf(v.status);
     return idx > PHASE_ORDER.indexOf(best as typeof v.status) ? v.status : best;
@@ -188,17 +191,16 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      style={{ marginBottom: Spacing.lg }}
+      className="mb-lg"
       onPress={() => nav.navigate('TournamentDetail', { tournamentId: t.id })}
       accessibilityRole="button"
       accessibilityLabel={`Torneio ${t.name}, ${t.location}, ${roundLabel}, ${Math.round(progress * 100)}% concluído`}
       accessibilityHint="Toca para ver detalhes do torneio"
     >
-      <View style={styles.activeCardOuter}>
-        {/* Banner: photo or gradient */}
+      <View className="bg-white rounded-xl overflow-hidden shadow-card">
         <ImageBackground
           source={t.photo ? { uri: t.photo } : undefined}
-          style={styles.activeBanner}
+          className="h-[76px] md:h-[100px] flex-row items-center px-lg overflow-hidden"
           imageStyle={{ resizeMode: 'cover' }}
         >
           <LinearGradient
@@ -207,53 +209,52 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
               : [Colors.navy, Colors.blue, Colors.teal]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
+            className="absolute inset-0"
           />
-          <Text style={styles.activeBannerTitle}>{t.name}</Text>
-          <Text style={styles.activeBannerEmoji}>🏆</Text>
+          <Text className="text-white text-lg md:text-xl font-nunito-black flex-1 z-[1]">{t.name}</Text>
+          <Text className="absolute text-[50px] opacity-[0.08] right-[12px] bottom-[4px]">🏆</Text>
         </ImageBackground>
 
-        {/* White body */}
-        <View style={styles.activeCardBody}>
-          <Text style={styles.activeSub}>
+        <View className="p-md">
+          <Text className="text-muted text-sm font-nunito-semibold mb-[6px]">
             📍 {t.location} · {t.startDate}–{t.endDate}
           </Text>
 
-          {/* Chips */}
-          <View style={styles.chipsRow}>
+          <View className="flex-row flex-wrap gap-xs mb-md">
             {t.vertentes.map((v) => (
               <TouchableOpacity
                 key={v.id}
-                style={[styles.chip, { backgroundColor: VERTENTE_CONFIG[v.type].chipBg }]}
+                className="rounded-full px-sm py-[3px]"
+                style={{ backgroundColor: VERTENTE_CONFIG[v.type].chipBg }}
                 activeOpacity={0.7}
                 onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
               >
-                <Text style={[styles.chipText, { color: VERTENTE_CONFIG[v.type].chipText }]}>
+                <Text className="text-sm font-nunito" style={{ color: VERTENTE_CONFIG[v.type].chipText }}>
                   {chipLabel(v)}
                 </Text>
               </TouchableOpacity>
             ))}
-            <View style={[styles.chip, { backgroundColor: Colors.greenBgLight }]}>
-              <Text style={[styles.chipText, { color: Colors.greenDeep }]}>
+            <View className="rounded-full px-sm py-[3px] bg-green-bg-light">
+              <Text className="text-sm font-nunito text-green-deep">
                 Dia {currentDay}/{totalDays}
               </Text>
             </View>
           </View>
 
-          {/* Progress */}
-          <View style={styles.progressTrack}>
+          <View className="h-[4px] rounded-[2px] bg-gl overflow-hidden mt-[8px]">
             <LinearGradient
               colors={Gradients.primary}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.progressFill, { width: `${progress * 100}%` as `${number}%` }]}
+              className="h-full rounded-[2px]"
+              style={{ width: `${progress * 100}%` as `${number}%` }}
             />
           </View>
-          <View style={styles.progressRow}>
-            <Text style={styles.progressLabel}>
+          <View className="flex-row justify-between items-center mt-[3px]">
+            <Text className="text-muted text-xs font-nunito-semibold">
               {t.vertentes.length} categorias · {roundLabel}
             </Text>
-            <Text style={styles.progressPct}>{Math.round(progress * 100)}%</Text>
+            <Text className="text-blue text-xs font-nunito">{Math.round(progress * 100)}%</Text>
           </View>
         </View>
       </View>
@@ -262,7 +263,7 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
 });
 
 /* ═════════════════════════════════════════════════════════════
-   Compact card  (white, icon on left)
+   Compact card
    ═════════════════════════════════════════════════════════════ */
 const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
   const target = t.status === 'upcoming' ? 'UpcomingTournament' : t.status === 'finished' ? 'FinishedTournament' : 'TournamentDetail';
@@ -270,60 +271,63 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
 
   return (
     <TouchableOpacity
-      style={[styles.compactCard, isFinished && styles.compactCardFinished]}
+      className={clsx(
+        'flex-row items-center bg-white rounded-xl p-md mb-sm shadow-card',
+        isFinished && 'opacity-70',
+      )}
       activeOpacity={0.85}
       onPress={() => nav.navigate(target, { tournamentId: t.id })}
       accessibilityRole="button"
       accessibilityLabel={`Torneio ${t.name}, ${t.location}${isFinished ? ', concluído' : ''}`}
       accessibilityHint="Toca para ver detalhes do torneio"
     >
-      {/* Round icon */}
       {t.photo ? (
-        <View style={[styles.compactIcon, { overflow: 'hidden' }]}>
-          <Image source={{ uri: t.photo }} style={{ width: 46, height: 46, resizeMode: 'cover' }} />
+        <View className="w-[46px] h-[46px] rounded-[23px] items-center justify-center mr-[12px] overflow-hidden">
+          <Image source={{ uri: t.photo }} style={{ width: 46, height: 46 }} resizeMode="cover" />
         </View>
       ) : isFinished ? (
-        <View style={[styles.compactIcon, styles.compactIconFinished]}>
-          <Image source={logo} style={[styles.compactLogo, { opacity: 0.4 }]} />
+        <View className="w-[46px] h-[46px] rounded-[23px] items-center justify-center mr-[12px] bg-gl">
+          <Image source={logo} style={{ width: 26, height: 26, opacity: 0.4 }} resizeMode="contain" />
         </View>
       ) : (
         <LinearGradient
           colors={[Colors.orange, Colors.yellow]}
-          style={styles.compactIcon}
+          className="w-[46px] h-[46px] rounded-[23px] items-center justify-center mr-[12px]"
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <Image source={logo} style={styles.compactLogo} />
+          <Image source={logo} style={{ width: 26, height: 26 }} resizeMode="contain" />
         </LinearGradient>
       )}
 
-      {/* Info */}
-      <View style={styles.compactInfo}>
-        <Text style={[styles.compactName, isFinished && styles.compactNameFinished]}>
+      <View className="flex-1">
+        <Text className={clsx('text-lg md:text-xl font-nunito text-navy', isFinished && 'text-muted')}>
           {t.name}
         </Text>
-        <Text style={[styles.compactSub, isFinished && styles.compactSubFinished]}>
+        <Text className={clsx('text-sm font-nunito-semibold text-gray-slate mt-[2px]', isFinished && 'text-gray')}>
           📍 {t.location} · {t.startDate}
           {t.endDate !== t.startDate ? `–${t.endDate}` : ''}
         </Text>
-        <View style={styles.chipsRowSmall}>
+        <View className="flex-row flex-wrap gap-[4px] mt-[6px]">
           {t.vertentes.map((v) => isFinished ? (
             <View
               key={v.id}
-              style={[styles.chipSmall, { backgroundColor: Colors.gray }]}
+              className="rounded-full px-[8px] py-[2px]"
+              style={{ backgroundColor: Colors.gray }}
             >
-              <Text style={[styles.chipSmallText, { color: 'rgba(255,255,255,0.8)' }]}>
+              <Text className="text-white/80 text-xs font-nunito">
                 {chipLabel(v)}
               </Text>
             </View>
           ) : (
             <TouchableOpacity
               key={v.id}
-              style={[styles.chipSmall, { backgroundColor: VERTENTE_CONFIG[v.type].color }]}
+              className="rounded-full px-[8px] py-[2px]"
+              style={{ backgroundColor: VERTENTE_CONFIG[v.type].color }}
               activeOpacity={0.7}
               onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
             >
-              <Text style={styles.chipSmallText}>
+              <Text className="text-white text-xs font-nunito">
                 {chipLabel(v)}
               </Text>
             </TouchableOpacity>
@@ -331,223 +335,7 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
         </View>
       </View>
 
-      {/* Chevron */}
-      <Text style={[styles.compactChevron, isFinished && styles.compactChevronFinished]}>›</Text>
+      <Text className={clsx('text-3xl text-gray font-nunito-regular ml-[4px]', isFinished && 'text-gl')}>›</Text>
     </TouchableOpacity>
   );
-});
-
-/* ═════════════════════════════════════════════════════════════
-   Styles
-   ═════════════════════════════════════════════════════════════ */
-const styles = StyleSheet.create({
-  flex1: { flex: 1, backgroundColor: Colors.gbg },
-
-  /* ── Header ── */
-  header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 8,
-  },
-  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoSmall: { width: 34, height: 34, resizeMode: 'contain' },
-  appName: { color: Colors.white, fontSize: 24, fontFamily: Typography.fontFamilyBlack, lineHeight: 28 },
-  headerSub: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: Typography.fontSize.md,
-    fontFamily: Typography.fontFamilySemiBold,
-    marginTop: 1,
-  },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  newBtn: {
-    backgroundColor: Colors.green,
-    borderRadius: Radii.md,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  newBtnText: { color: Colors.white, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamily },
-
-  /* ── Scroll ── */
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md },
-
-  /* ── Section labels ── */
-  sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  sectionLabel: {
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamily,
-    color: Colors.navy,
-    marginBottom: Spacing.sm,
-  },
-  liveBadge: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs },
-  liveText: { fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.blue },
-
-  /* ── Active card ── */
-  activeCardOuter: {
-    backgroundColor: Colors.white,
-    borderRadius: Radii.xl,
-    overflow: 'hidden',
-    ...Shadows.card,
-  },
-  activeBanner: {
-    height: 76,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    overflow: 'hidden',
-  },
-  activeBannerTitle: {
-    color: Colors.white,
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamilyBlack,
-    flex: 1,
-    zIndex: 1,
-  },
-  activeBannerEmoji: {
-    position: 'absolute',
-    fontSize: 50,
-    opacity: 0.08,
-    right: 12,
-    bottom: 4,
-  },
-  activeCardBody: {
-    padding: Spacing.md,
-    paddingHorizontal: Spacing.md,
-  },
-  activeSub: {
-    color: Colors.muted,
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamilySemiBold,
-    marginBottom: 6,
-  },
-
-  /* ── Chips ── */
-  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.xs, marginBottom: Spacing.md },
-  chip: {
-    borderRadius: Radii.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-  },
-  chipText: { color: Colors.white, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamily },
-
-  chipsRowSmall: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 6 },
-  chipSmall: {
-    borderRadius: Radii.full,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  chipSmallText: { color: Colors.white, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
-
-  /* ── Progress ── */
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 3,
-  },
-  progressLabel: {
-    color: Colors.muted,
-    fontSize: Typography.fontSize.xs,
-    fontFamily: Typography.fontFamilySemiBold,
-  },
-  progressPct: { color: Colors.blue, fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamily },
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.gl,
-    overflow: 'hidden',
-    marginTop: 8,
-  },
-  progressFill: { height: '100%', borderRadius: 2 },
-
-  /* ── Compact card ── */
-  compactCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.white,
-    borderRadius: Radii.xl,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
-    ...Shadows.card,
-  },
-  compactIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  compactLogo: { width: 26, height: 26, resizeMode: 'contain' },
-  compactInfo: { flex: 1 },
-  compactName: { fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily, color: Colors.navy },
-  compactSub: {
-    fontSize: Typography.fontSize.sm,
-    fontFamily: Typography.fontFamilySemiBold,
-    color: Colors.graySlate,
-    marginTop: 2,
-  },
-
-  compactChevron: { fontSize: Typography.fontSize.xxxl, color: Colors.gray, fontFamily: Typography.fontFamilyRegular, marginLeft: 4 },
-  compactChevronFinished: { color: Colors.gl },
-
-  /* ── Compact card – finished (muted) ── */
-  compactCardFinished: { opacity: 0.7 },
-  compactIconFinished: { backgroundColor: Colors.gl },
-  compactNameFinished: { color: Colors.muted },
-  compactSubFinished: { color: Colors.gray },
-
-  /* ── Empty state ── */
-  emptySafe: { flex: 1 },
-  emptyHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-  },
-  emptyCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
-  },
-  emptyIconBox: {
-    width: 96,
-    height: 96,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: Radii.xxl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.xl,
-  },
-  emptyLogo: { width: 56, height: 56, resizeMode: 'contain' },
-  emptyTitle: {
-    color: Colors.white,
-    fontSize: Typography.fontSize.xxxl,
-    fontFamily: Typography.fontFamilyBlack,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: Typography.fontSize.lg,
-    fontFamily: Typography.fontFamilySemiBold,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: Spacing.xl,
-  },
-  emptyBtn: {
-    backgroundColor: Colors.navyDark,
-    borderRadius: Radii.lg,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
-  },
-  emptyBtnText: { color: Colors.white, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -11,7 +11,8 @@ import { popTo } from '../utils/navigation';
 import { calcStats } from '../utils/scoring';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { Colors, Gradients, Typography, TextStyles, Spacing, Radii, Shadows } from '../theme';
+import { Colors, Gradients } from '../theme';
+import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'ConfirmCloseTournament'>;
@@ -98,113 +99,86 @@ export const ConfirmCloseTournamentScreen = () => {
         : '—';
 
     return (
-        <View style={s.container}>
-            <LinearGradient colors={Gradients.header} style={s.header}>
+        <View className="flex-1 bg-gbg">
+            <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
                         backLabel="Resultado Final"
                         onBack={() => navigation.goBack()}
                     />
                     <SubBadge type={vertente.type} level={vertente.level} />
-                    <Text style={s.title}>Confirmar Fecho 🏁</Text>
-                    <Text style={s.subtitle}>Verifica antes de fechar a categoria</Text>
+                    <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">Confirmar Fecho 🏁</Text>
+                    <Text className="text-white/75 text-base font-nunito-semibold mt-[4px]">Verifica antes de fechar a categoria</Text>
                 </SafeAreaView>
             </LinearGradient>
 
-            <ScrollView style={s.scroll} contentContainerStyle={{ padding: Spacing.lg, backgroundColor: Colors.white }}>
-                {/* Resultado da Final */}
-                <Text style={s.sectionLabel}>Resultado da Final</Text>
-                <View style={s.card}>
-                    {top3.map((team, i) => (
-                        <View
-                            key={team.id}
-                            style={[s.teamRow, i < top3.length - 1 && s.teamRowBorder]}
-                        >
-                            <LinearGradient colors={AVATAR_COLORS[i]} style={s.avatar}>
-                                <Text style={s.avatarTxt}>{initials(team.name)}</Text>
-                            </LinearGradient>
-                            <Text style={s.teamName}>{team.name}</Text>
-                            <Text style={s.medal}>{MEDAL[i]}</Text>
-                        </View>
-                    ))}
-                    {finalScore !== '—' && (
-                        <Text style={s.finalScore}>Final: {finalScore}</Text>
-                    )}
-                </View>
+            <ScrollView className="flex-1 bg-white" contentContainerClassName="p-lg bg-white">
+                <Container>
+                    {/* Resultado da Final */}
+                    <Text className="text-xxs font-nunito-bold text-muted uppercase tracking-[1px] mb-[10px]">Resultado da Final</Text>
+                    <View className="bg-gbg rounded-lg p-md mb-md shadow-card">
+                        {top3.map((team, i) => (
+                            <View
+                                key={team.id}
+                                className={`flex-row items-center gap-[10px] py-[10px] ${i < top3.length - 1 ? 'border-b-[1.5px] border-gl' : ''}`}
+                            >
+                                <LinearGradient colors={AVATAR_COLORS[i]} className="w-[38px] h-[38px] rounded-full items-center justify-center">
+                                    <Text className="text-white text-md font-nunito-black">{initials(team.name)}</Text>
+                                </LinearGradient>
+                                <Text className="flex-1 text-base font-nunito-black text-navy">{team.name}</Text>
+                                <Text className="text-[20px]">{MEDAL[i]}</Text>
+                            </View>
+                        ))}
+                        {finalScore !== '—' && (
+                            <Text className="text-center mt-[10px] text-md font-nunito text-muted">Final: {finalScore}</Text>
+                        )}
+                    </View>
 
-                {/* Stats */}
-                <View style={s.statsRow}>
-                    {[
-                        { value: totalGames, label: 'jogos', color: Colors.blue },
-                        { value: totalTeams, label: 'duplas', color: Colors.green },
-                        { value: days, label: days === 1 ? 'dia' : 'dias', color: Colors.orange },
-                    ].map(({ value, label, color }) => (
-                        <View key={label} style={s.statBox}>
-                            <Text style={[s.statNum, { color }]}>{value}</Text>
-                            <Text style={s.statLbl}>{label}</Text>
-                        </View>
-                    ))}
-                </View>
+                    {/* Stats */}
+                    <View className="flex-row gap-sm mb-md">
+                        {[
+                            { value: totalGames, label: 'jogos', color: Colors.blue },
+                            { value: totalTeams, label: 'duplas', color: Colors.green },
+                            { value: days, label: days === 1 ? 'dia' : 'dias', color: Colors.orange },
+                        ].map(({ value, label, color }) => (
+                            <View key={label} className="flex-1 bg-white rounded-lg p-[11px] shadow-card items-center">
+                                <Text className="text-[20px] font-nunito-black" style={{ color }}>{value}</Text>
+                                <Text className="text-xs font-nunito-semibold text-muted">{label}</Text>
+                            </View>
+                        ))}
+                    </View>
 
-                {/* Warning */}
-                <View style={s.warning}>
-                    <Text style={s.warningIcon}>⚠️</Text>
-                    <Text style={s.warningTxt}>
-                        Após confirmar, os resultados ficam bloqueados. Ainda podes editar antes de fechar.
-                    </Text>
-                </View>
+                    {/* Warning */}
+                    <View className="bg-yellow-bg-warm border-[1.5px] border-yellow rounded-md p-[11px] mb-lg flex-row gap-[10px]">
+                        <Text className="text-[16px]">⚠️</Text>
+                        <Text className="flex-1 text-sm font-nunito-semibold text-navy leading-[18px]">
+                            Após confirmar, os resultados ficam bloqueados. Ainda podes editar antes de fechar.
+                        </Text>
+                    </View>
 
-                {/* CTA */}
-                <TouchableOpacity
-                    style={s.confirmBtn}
-                    onPress={() =>
-                        navigation.navigate('Podium', {
-                            tournamentId: route.params.tournamentId,
-                            vertenteId: route.params.vertenteId,
-                        })
-                    }
-                >
-                    <LinearGradient colors={Gradients.primary} style={s.confirmGrad}>
-                        <Text style={s.confirmTxt}>Confirmar e ver pódio 🏆</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
+                    {/* CTA */}
+                    <TouchableOpacity
+                        className="rounded-lg overflow-hidden mb-sm"
+                        onPress={() =>
+                            navigation.navigate('Podium', {
+                                tournamentId: route.params.tournamentId,
+                                vertenteId: route.params.vertenteId,
+                            })
+                        }
+                    >
+                        <LinearGradient colors={Gradients.primary} className="p-[15px] items-center">
+                            <Text className="text-white text-[15px] font-nunito">Confirmar e ver pódio 🏆</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
-                <TouchableOpacity style={s.backBtn} onPress={() => navigation.goBack()}>
-                    <Text style={s.backBtnTxt}>← Rever resultados</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity className="items-center p-md bg-white rounded-lg border-2 border-gl" onPress={() => navigation.goBack()}>
+                        <Text className="text-navy text-lg font-nunito">← Rever resultados</Text>
+                    </TouchableOpacity>
 
-                <View style={{ height: 32 }} />
+                    <View className="h-2xl" />
+                </Container>
             </ScrollView>
             <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
         </View>
     );
 };
-
-const s = StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.gbg },
-    header: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-    title: { color: Colors.white, fontSize: Typography.fontSize.xxxl, fontFamily: Typography.fontFamilyBlack, marginTop: 8 },
-    subtitle: { color: 'rgba(255,255,255,0.75)', fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilySemiBold, marginTop: 4 },
-    scroll: { flex: 1, backgroundColor: Colors.white },
-    sectionLabel: { ...TextStyles.sectionLabel, marginBottom: 10 },
-    card: { backgroundColor: Colors.gbg, borderRadius: Radii.lg, padding: Spacing.md, marginBottom: Spacing.md, ...Shadows.card },
-    teamRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
-    teamRowBorder: { borderBottomWidth: 1.5, borderBottomColor: Colors.gl },
-    avatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-    avatarTxt: { color: Colors.white, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamilyBlack },
-    teamName: { flex: 1, fontSize: Typography.fontSize.base, fontFamily: Typography.fontFamilyBlack, color: Colors.navy },
-    medal: { fontSize: 20 },
-    finalScore: { textAlign: 'center', marginTop: 10, fontSize: Typography.fontSize.md, fontFamily: Typography.fontFamily, color: Colors.muted },
-    statsRow: { flexDirection: 'row', gap: 8, marginBottom: Spacing.md },
-    statBox: { flex: 1, backgroundColor: Colors.white, borderRadius: Radii.lg, padding: 11, ...Shadows.card, alignItems: 'center' },
-    statNum: { fontSize: Typography.fontSize.xxl, fontFamily: Typography.fontFamilyBlack },
-    statLbl: { fontSize: Typography.fontSize.xs, fontFamily: Typography.fontFamilySemiBold, color: Colors.muted },
-    warning: { backgroundColor: Colors.yellowBgWarm, borderWidth: 1.5, borderColor: Colors.yellow, borderRadius: Radii.md, padding: 11, marginBottom: Spacing.lg, flexDirection: 'row', gap: 10 },
-    warningIcon: { fontSize: 16 },
-    warningTxt: { flex: 1, fontSize: Typography.fontSize.sm, fontFamily: Typography.fontFamilySemiBold, color: Colors.navy, lineHeight: 18 },
-    confirmBtn: { borderRadius: Radii.lg, overflow: 'hidden', marginBottom: Spacing.sm },
-    confirmGrad: { padding: 15, alignItems: 'center' },
-    confirmTxt: { color: Colors.white, fontSize: 15, fontFamily: Typography.fontFamily },
-    backBtn: { alignItems: 'center', padding: 12, backgroundColor: Colors.white, borderRadius: Radii.lg, borderWidth: 2, borderColor: Colors.gl },
-    backBtnTxt: { color: Colors.navy, fontSize: Typography.fontSize.lg, fontFamily: Typography.fontFamily },
-});
