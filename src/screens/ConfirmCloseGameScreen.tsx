@@ -68,7 +68,7 @@ export const ConfirmCloseGameScreen = () => {
           {/* Match result summary */}
           <View className="bg-white rounded-xl p-lg mb-md shadow-card">
             <View className="flex-row items-start mb-md">
-              <View className="flex-1" style={{ alignItems: 'flex-start' }}>
+              <View className="flex-1 items-start">
                 <Text className="text-lg font-nunito-black text-navy mb-[4px]">{winner.name}</Text>
                 <View className="bg-green-bg-light rounded-full px-sm py-[3px] self-start">
                   <Text className="text-xs font-nunito text-green">🏆 Vencedor</Text>
@@ -79,7 +79,7 @@ export const ConfirmCloseGameScreen = () => {
                 <Text className="text-[18px] font-nunito-bold text-gray">–</Text>
                 <Text className="text-[36px] font-nunito-black text-navy">{loserSets}</Text>
               </View>
-              <View className="flex-1" style={{ alignItems: 'flex-end' }}>
+              <View className="flex-1 items-end">
                 <Text className="text-lg font-nunito-black text-navy mb-[4px] text-right">{loser.name}</Text>
                 <Text className="text-xs font-nunito-semibold text-muted">Sets perdidos</Text>
               </View>

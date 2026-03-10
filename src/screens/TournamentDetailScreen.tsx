@@ -54,8 +54,7 @@ export const TournamentDetailScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const t = mockTournaments.find(x => x.id === route.params.tournamentId);
-  if (!t) return null;
-  const isUpcoming = t.status === 'upcoming';
+  const isUpcoming = t?.status === 'upcoming';
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -63,24 +62,22 @@ export const TournamentDetailScreen = () => {
     setTimeout(() => setRefreshing(false), 600);
   }, []);
 
-  const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
-  const days = getDays(t.startDate, t.endDate);
-
   // Countdown for upcoming
-  const [countdown, setCountdown] = useState(getCountdown(t.startDate));
+  const [countdown, setCountdown] = useState(getCountdown(t?.startDate ?? ''));
   useEffect(() => {
-    if (!isUpcoming) return;
+    if (!isUpcoming || !t) return;
     const timer = setInterval(() => setCountdown(getCountdown(t.startDate)), 60000);
     return () => clearInterval(timer);
-  }, [isUpcoming, t.startDate]);
+  }, [isUpcoming, t?.startDate]);
 
   // Unique vertente types for chips
   const vertenteTypes = useMemo(
-    () => [...new Set(t.vertentes.map(v => v.type))],
-    [t.vertentes],
+    () => [...new Set(t?.vertentes.map(v => v.type) ?? [])],
+    [t?.vertentes],
   );
 
   const quickExportVertenteId = useMemo(() => {
+    if (!t) return undefined;
     const liveVertente = t.vertentes.find(v => v.status === VERTENTE_STATUS.GROUPS || v.status === VERTENTE_STATUS.BRACKET);
     if (liveVertente) return liveVertente.id;
 
@@ -88,7 +85,12 @@ export const TournamentDetailScreen = () => {
     if (configuredVertente) return configuredVertente.id;
 
     return t.vertentes[0]?.id;
-  }, [t.vertentes]);
+  }, [t?.vertentes]);
+
+  if (!t) return null;
+
+  const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
+  const days = getDays(t.startDate, t.endDate);
 
   return (
     <View className="flex-1 bg-gbg">

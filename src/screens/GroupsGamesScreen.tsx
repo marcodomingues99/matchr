@@ -23,14 +23,12 @@ export const GroupsGamesScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  if (!tournament) return null;
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!vertente) return null;
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
 
   // Extract groups from this vertente's teams
-  const vertenteTeamIds = React.useMemo(() => new Set(vertente.teams.map(t => t.id)), [vertente.teams]);
+  const vertenteTeamIds = React.useMemo(() => new Set(vertente?.teams.map(t => t.id) ?? []), [vertente?.teams]);
   const groups = [...new Set(
-    vertente.teams.map(t => t.group).filter(Boolean) as string[]
+    (vertente?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? []
   )].sort();
   const [activeGroup, setActiveGroup] = React.useState<string>(groups[0] ?? '');
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
@@ -44,6 +42,8 @@ export const GroupsGamesScreen = () => {
     ),
     [activeGroup, vertenteTeamIds],
   );
+
+  if (!tournament || !vertente) return null;
 
   return (
     <View className="flex-1 bg-gbg">

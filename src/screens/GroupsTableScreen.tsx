@@ -28,7 +28,6 @@ export const GroupsTableScreen = () => {
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!tournament || !vertente) return null;
 
   const [activeTab, setActiveTab] = useState<TabKey>('table');
   const [sheetTeam, setSheetTeam] = useState<Team | null>(null);
@@ -41,8 +40,8 @@ export const GroupsTableScreen = () => {
 
   // Extract sorted group names
   const groups = useMemo(
-    () => [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort(),
-    [vertente.teams],
+    () => [...new Set((vertente?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? [])].sort(),
+    [vertente?.teams],
   );
   const [activeGroup, setActiveGroup] = useState<string>(groups[0] ?? '');
 
@@ -55,22 +54,23 @@ export const GroupsTableScreen = () => {
 
   // Group teams by group
   const grouped = useMemo(() => {
-    const result: Record<string, typeof vertente.teams> = {};
-    vertente.teams.forEach(t => {
+    const teams = vertente?.teams ?? [];
+    const result: Record<string, typeof teams> = {};
+    teams.forEach(t => {
       const g = t.group ?? '';
       if (!result[g]) result[g] = [];
       result[g].push(t);
     });
     return result;
-  }, [vertente.teams]);
+  }, [vertente?.teams]);
 
-  const qualifiers = vertente.qualifiersPerGroup ?? 2;
-  const mockStats = (teamId: string) => calcStats(teamId, mockGames, vertente.pointsPerWin);
+  const qualifiers = vertente?.qualifiersPerGroup ?? 2;
+  const mockStats = (teamId: string) => calcStats(teamId, mockGames, vertente?.pointsPerWin);
 
   // Set of team IDs that belong to this vertente (used to scope game filtering)
   const vertenteTeamIds = useMemo(
-    () => new Set(vertente.teams.map(t => t.id)),
-    [vertente.teams],
+    () => new Set(vertente?.teams.map(t => t.id) ?? []),
+    [vertente?.teams],
   );
 
   // Filter games by active group AND only include games whose teams belong to this vertente
@@ -83,6 +83,8 @@ export const GroupsTableScreen = () => {
     ),
     [activeGroup, vertenteTeamIds],
   );
+
+  if (!tournament || !vertente) return null;
 
   const showGroupSelector = activeTab !== 'table' && groups.length > 0;
 

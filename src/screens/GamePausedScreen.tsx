@@ -22,6 +22,8 @@ export const GamePausedScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
+
+  // No hooks after this point — safe to guard
   if (!tournament || !vertente || !game) return null;
 
   const matchFormat = resolveMatchFormat(vertente);

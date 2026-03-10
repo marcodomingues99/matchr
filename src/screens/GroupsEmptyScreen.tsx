@@ -26,6 +26,17 @@ export const GroupsEmptyScreen = () => {
     const route = useRoute<Route>();
     const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
     const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+
+    // Map each sorted group letter to its index for chip color lookup
+    const groupIndex = useMemo(() => {
+        const sorted = [...new Set(vertente?.teams.map(t => t.group).filter(Boolean) as string[] ?? [])].sort();
+        const map: Record<string, number> = {};
+        sorted.forEach((g, i) => { map[g] = i; });
+        return map;
+    }, [vertente?.teams]);
+
+    const [pickedFile, setPickedFile] = useState<string | null>(null);
+
     if (!tournament || !vertente) return null;
 
     const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
@@ -35,16 +46,6 @@ export const GroupsEmptyScreen = () => {
     const isPartial = teamsConfirmed >= minTeamsToStart && !isFull;
     const canImport = isFull || isPartial;
     const remaining = vertente.maxTeams - teamsConfirmed;
-
-    // Map each sorted group letter to its index for chip color lookup
-    const groupIndex = useMemo(() => {
-        const sorted = [...new Set(vertente.teams.map(t => t.group).filter(Boolean) as string[])].sort();
-        const map: Record<string, number> = {};
-        sorted.forEach((g, i) => { map[g] = i; });
-        return map;
-    }, [vertente.teams]);
-
-    const [pickedFile, setPickedFile] = useState<string | null>(null);
 
     const handlePickFile = async () => {
         try {

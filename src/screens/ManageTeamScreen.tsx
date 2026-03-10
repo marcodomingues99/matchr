@@ -23,12 +23,10 @@ export const ManageTeamScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  if (!tournament) return null;
-  const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
-  if (!vertente) return null;
+  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
 
   const editTeamId = route.params.teamId;
-  const existingTeam = editTeamId ? vertente.teams.find(t => t.id === editTeamId) : undefined;
+  const existingTeam = editTeamId ? vertente?.teams.find(t => t.id === editTeamId) : undefined;
   const isEditing = !!existingTeam;
 
   const [teamName, setTeamName] = useState(existingTeam?.name ?? '');
@@ -39,6 +37,8 @@ export const ManageTeamScreen = () => {
   const [p2Name, setP2Name] = useState(existingTeam?.players[1].name ?? '');
   const [p2Phone, setP2Phone] = useState(existingTeam?.players[1].phone ?? '');
   const [p2Email, setP2Email] = useState(existingTeam?.players[1].email ?? '');
+
+  if (!tournament || !vertente) return null;
 
   const isDuplicateName = vertente.teams.some(
     t => t.id !== editTeamId && t.name.trim().toLowerCase() === teamName.trim().toLowerCase(),

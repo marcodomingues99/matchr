@@ -26,11 +26,20 @@ export const EditTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  if (!tournament) return null;
 
-  const [name, setName] = useState(tournament.name);
-  const [location, setLocation] = useState(tournament.location);
-  const [vertentes, setVertentes] = useState(tournament.vertentes);
+  const [name, setName] = useState(tournament?.name ?? '');
+  const [location, setLocation] = useState(tournament?.location ?? '');
+  const [vertentes, setVertentes] = useState(tournament?.vertentes ?? []);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [photo, setPhoto] = useState(tournament?.photo ?? '');
+  const [regulamento, setRegulamento] = useState<{ uri: string; name: string; size?: number } | null>(
+    tournament?.regulamento ? { uri: tournament.regulamento, name: tournament.regulamento.split('/').pop() ?? 'regulamento.pdf' } : null
+  );
+
+  if (!tournament) return null;
 
   const handleRemoveVertente = (vertenteId: string) => {
     Alert.alert(
@@ -61,14 +70,6 @@ export const EditTournamentScreen = () => {
       ],
     );
   };
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-  const [photo, setPhoto] = useState(tournament.photo ?? '');
-  const [regulamento, setRegulamento] = useState<{ uri: string; name: string; size?: number } | null>(
-    tournament.regulamento ? { uri: tournament.regulamento, name: tournament.regulamento.split('/').pop() ?? 'regulamento.pdf' } : null
-  );
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

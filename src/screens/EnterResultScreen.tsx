@@ -27,21 +27,20 @@ export const EnterResultScreen = () => {
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
   const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
   const game = mockGames.find(g => g.id === route.params.gameId);
-  if (!tournament || !vertente || !game) return null;
 
-  const matchFormat = resolveMatchFormat(vertente);
+  const matchFormat = resolveMatchFormat(vertente!);
 
-  const isEditing = game.status === 'finished' && !!game.sets?.length;
+  const isEditing = game?.status === 'finished' && !!game?.sets?.length;
 
   const buildInitialSets = (): SetState[] => {
-    if (game.status === 'finished' && game.sets && game.sets.length > 0) {
+    if (game?.status === 'finished' && game.sets && game.sets.length > 0) {
       return game.sets.map(s => ({
         team1: String(s.team1),
         team2: String(s.team2),
         saved: true,
       }));
     }
-    if ((game.status === 'live' || game.status === 'paused') && game.sets && game.sets.length > 0) {
+    if ((game?.status === 'live' || game?.status === 'paused') && game?.sets && game.sets.length > 0) {
       return [
         ...game.sets.map(s => ({ team1: String(s.team1), team2: String(s.team2), saved: true })),
         { team1: '', team2: '', saved: false },
@@ -51,6 +50,8 @@ export const EnterResultScreen = () => {
   };
 
   const [sets, setSets] = useState<SetState[]>(buildInitialSets);
+
+  if (!tournament || !vertente || !game) return null;
   const currentSetIdx = sets.findIndex(s => !s.saved);
 
   const saveSet = () => {
