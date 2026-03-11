@@ -1,7 +1,17 @@
-import { VertenteType } from '../types';
+import type { Category, CategoryType } from '../types';
 import { Colors } from '../theme';
 
-export interface VertenteTypeConfig {
+/** Minimum confirmed teams required to start groups phase */
+export const MIN_TEAMS_TO_START = 4;
+
+export const getMinTeamsToStart = (
+  category?: Pick<Category, 'maxTeams' | 'minTeamsToStart'>,
+): number => {
+  if (!category) return MIN_TEAMS_TO_START;
+  return Math.max(2, Math.min(category.maxTeams, category.minTeamsToStart ?? MIN_TEAMS_TO_START));
+};
+
+export interface CategoryTypeConfig {
   label: string;       // Masculino, Feminino, Misto
   labelShort: string;  // Masc, Fem, Misto
   emoji: string;       // 👨, 👩, 👫
@@ -12,7 +22,7 @@ export interface VertenteTypeConfig {
   barBg: string;       // progress bar / section tint background
 }
 
-export const VERTENTE_CONFIG: Record<VertenteType, VertenteTypeConfig> = {
+export const CATEGORY_CONFIG: Record<CategoryType, CategoryTypeConfig> = {
   M: {
     label: 'Masculino',
     labelShort: 'Masc',

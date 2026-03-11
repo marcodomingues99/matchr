@@ -1,7 +1,8 @@
-import { Game, Team } from '../types';
+import { Match, BracketRound } from '../types';
+import { MATCH_STATUS } from './constants';
 
 /** Maps each bracket round to its next round */
-const NEXT_ROUND: Record<string, string> = {
+const NEXT_ROUND: Partial<Record<BracketRound, BracketRound>> = {
   r16: 'qf',
   qf: 'sf',
   sf: 'final',
@@ -10,33 +11,37 @@ const NEXT_ROUND: Record<string, string> = {
 /** Propagation order for processing rounds */
 const PROPAGATION_ORDER = ['r16', 'qf', 'sf'] as const;
 
+/** Prefix used for placeholder team IDs (not yet determined) */
+export const PLACEHOLDER_PREFIX = 'tmp-';
+
 /**
- * Check whether a team slot is a placeholder (not yet determined).
+ * Check whether a team ID is a placeholder (not yet determined).
  */
-export function isPlaceholderTeam(team: Team): boolean {
-  return team.id.startsWith('tmp-') || team.name === '?';
+export function isPlaceholderTeam(teamId: string): boolean {
+  return teamId.startsWith(PLACEHOLDER_PREFIX) || teamId === '?';
+}
+
+/** Whether a match is decided (has a winner) */
+function isDecided(m: Match): boolean {
+  return (m.status === MATCH_STATUS.FINISHED || m.status === MATCH_STATUS.WALKOVER) && !!m.winnerId;
 }
 
 /**
- * Given all bracket games for a vertente, propagate finished-game winners
+ * Given all bracket matches for a category, propagate finished-match winners
  * (and SF losers) into subsequent rounds.
  *
- * Returns a NEW array of shallow-cloned games with updated team slots.
- * The original game objects are never mutated.
+ * Returns a NEW array of shallow-cloned matches with updated team IDs.
+ * The original match objects are never mutated.
  */
-export function propagateBracket(bracketGames: Game[]): Game[] {
-  // Shallow-clone every game so we never touch the originals
-  const games = bracketGames.map(g => ({
-    ...g,
-    team1: { ...g.team1 },
-    team2: { ...g.team2 },
-  }));
+export function propagateBracket(bracketMatches: Match[]): Match[] {
+  // Shallow-clone every match so we never touch the originals
+  const matches = bracketMatches.map(m => ({ ...m }));
 
   // Index by phase
-  const byPhase: Record<string, Game[]> = {};
-  games.forEach(g => {
-    if (!byPhase[g.phase]) byPhase[g.phase] = [];
-    byPhase[g.phase].push(g);
+  const byPhase: Record<string, Match[]> = {};
+  matches.forEach(m => {
+    if (!byPhase[m.phase]) byPhase[m.phase] = [];
+    byPhase[m.phase].push(m);
   });
 
   for (const phase of PROPAGATION_ORDER) {
@@ -45,55 +50,50 @@ export function propagateBracket(bracketGames: Game[]): Game[] {
 
     if (phase === 'sf') {
       // ── Semi-finals: winners → final, losers → 3rd place ──
-      const finalGames = byPhase['final'];
-      const thirdGames = byPhase['3rd'];
-      const finalGame = finalGames?.[0];
-      const thirdGame = thirdGames?.[0];
+      const finalMatches = byPhase['final'];
+      const thirdMatches = byPhase['3rd'];
+      const finalMatch = finalMatches?.[0];
+      const thirdMatch = thirdMatches?.[0];
 
-      current.forEach((sfGame, idx) => {
-        if (sfGame.status !== 'finished' || !sfGame.winnerId) return;
+      current.forEach((sfMatch, idx) => {
+        if (!isDecided(sfMatch)) return;
 
-        const winner =
-          sfGame.winnerId === sfGame.team1.id ? sfGame.team1 : sfGame.team2;
-        const loser =
-          sfGame.winnerId === sfGame.team1.id ? sfGame.team2 : sfGame.team1;
+        const winnerId = sfMatch.winnerId!;
+        const loserId = sfMatch.team1Id === winnerId ? sfMatch.team2Id : sfMatch.team1Id;
 
-        if (finalGame) {
-          if (idx === 0) finalGame.team1 = { ...winner };
-          else finalGame.team2 = { ...winner };
+        if (finalMatch) {
+          if (idx === 0) finalMatch.team1Id = winnerId;
+          else finalMatch.team2Id = winnerId;
         }
-        if (thirdGame) {
-          if (idx === 0) thirdGame.team1 = { ...loser };
-          else thirdGame.team2 = { ...loser };
+        if (thirdMatch) {
+          if (idx === 0) thirdMatch.team1Id = loserId;
+          else thirdMatch.team2Id = loserId;
         }
       });
     } else {
       // ── Standard pairing: consecutive pairs feed into next round ──
-      const nextPhase = NEXT_ROUND[phase];
-      const nextGames = byPhase[nextPhase];
-      if (!nextGames) continue;
+      const nextPhase = NEXT_ROUND[phase as BracketRound];
+      if (!nextPhase) continue;
+      const nextMatches = byPhase[nextPhase];
+      if (!nextMatches) continue;
 
       for (let i = 0; i < current.length; i += 2) {
         const nextIdx = Math.floor(i / 2);
-        if (nextIdx >= nextGames.length) break;
+        if (nextIdx >= nextMatches.length) break;
 
-        const game1 = current[i];
-        const game2 = current[i + 1];
-        const nextGame = nextGames[nextIdx];
+        const match1 = current[i];
+        const match2 = current[i + 1];
+        const nextMatch = nextMatches[nextIdx];
 
-        if (game1?.status === 'finished' && game1.winnerId) {
-          const winner =
-            game1.winnerId === game1.team1.id ? game1.team1 : game1.team2;
-          nextGame.team1 = { ...winner };
+        if (match1 && isDecided(match1)) {
+          nextMatch.team1Id = match1.winnerId!;
         }
-        if (game2?.status === 'finished' && game2.winnerId) {
-          const winner =
-            game2.winnerId === game2.team1.id ? game2.team1 : game2.team2;
-          nextGame.team2 = { ...winner };
+        if (match2 && isDecided(match2)) {
+          nextMatch.team2Id = match2.winnerId!;
         }
       }
     }
   }
 
-  return games;
+  return matches;
 }

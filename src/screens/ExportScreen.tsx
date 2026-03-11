@@ -6,12 +6,14 @@ import { popTo } from '../utils/navigation';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -58,8 +60,11 @@ const SECTIONS: Section[] = [
 export const ExportScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exported, setExported] = useState<string[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -68,7 +73,7 @@ export const ExportScreen = () => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
   const simulateExport = (id: string) => {
     if (exporting !== null) return;
@@ -86,10 +91,10 @@ export const ExportScreen = () => {
       <LinearGradient colors={Gradients.header} className="px-lg pb-xl">
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
+            backLabel={`${CATEGORY_CONFIG[category.type].labelShort} ${category.level}`}
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[6px]">Exportar {'\u{1F4E5}'}</Text>
         </SafeAreaView>
       </LinearGradient>

@@ -5,13 +5,15 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { popTo } from '../utils/navigation';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { TeamGamesSheet } from '../components/TeamGamesSheet';
+import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { calcStats } from '../utils/scoring';
 import { Container } from '../components/Layout';
 
@@ -33,31 +35,40 @@ const PODIUM_HEIGHTS = [110, 80, 65];
 export const PodiumScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [] } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
   // Derive ranking from actual team stats
   const ranking: PodiumEntry[] = React.useMemo(() => {
-    if (!vertente) return [];
-    return vertente.teams
+    if (!category) return [];
+    return category.teams
       .filter(t => !t.withdrawn)
       .map(team => {
-        const stats = calcStats(team.id, mockGames, vertente.pointsPerWin);
+        const stats = calcStats(team.id, categoryMatches, category.pointsPerWin);
         return {
           pos: 0,
           name: team.name,
           players: team.players.map(p => p.name).join(' & '),
-          sets: `${stats.gamesWon}-${stats.gamesLost}`,
+          sets: `${stats.setsWon}-${stats.setsLost}`,
           team,
-          _sortKey: stats.pts * 10000 + (stats.gamesWon - stats.gamesLost),
+          _sortKey: stats.pts * 10000 + (stats.setsWon - stats.setsLost),
         };
       })
       .sort((a, b) => b._sortKey - a._sortKey)
       .map(({ _sortKey, ...rest }, i) => ({ ...rest, pos: i + 1 }));
-  }, [vertente]);
+  }, [category, categoryMatches]);
 
-  if (!tournament || !vertente) {
+  if (!tournament || !category) {
     return (
       <View className="flex-1 bg-gbg">
         <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
@@ -87,10 +98,10 @@ export const PodiumScreen = () => {
       <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
+            backLabel={`${CATEGORY_CONFIG[category.type].labelShort} ${category.level}`}
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">{'\u{1F3C6}'} Pódio Final</Text>
           <Text className="text-white/75 text-base font-nunito-semibold mt-xs">{tournament.name}</Text>
         </SafeAreaView>
@@ -148,7 +159,7 @@ export const PodiumScreen = () => {
 
           <TouchableOpacity
             className="rounded-lg overflow-hidden"
-            onPress={() => navigation.navigate('Export', { tournamentId: route.params.tournamentId, vertenteId: route.params.vertenteId })}
+            onPress={() => navigation.navigate('Export', { tournamentId: route.params.tournamentId, categoryId: route.params.categoryId })}
           >
             <LinearGradient colors={Gradients.primary} className="p-[15px] items-center">
               <Text className="text-white text-[15px] font-nunito">{'\u{1F4E5}'} Exportar Resultados</Text>
@@ -158,11 +169,11 @@ export const PodiumScreen = () => {
         </Container>
       </ScrollView>
       <HomeFAB onPress={() => navigation.dispatch(popTo('TournamentDetail'))} />
-      <TeamGamesSheet
+      <TeamMatchesSheet
         visible={sheetTeam !== null}
         team={sheetTeam}
-        vertente={vertente}
-        games={mockGames}
+        category={category}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
     </View>

@@ -5,17 +5,19 @@ import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigat
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { TeamGamesSheet } from '../components/TeamGamesSheet';
+import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
 import { Colors, Gradients } from '../theme';
-import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/avatarUtils';
 import { calcStats } from '../utils/scoring';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { STATUS_LABEL } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { STATUS_LABEL } from '../utils/labels';
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'TeamList'>;
@@ -23,35 +25,45 @@ type Route = RouteProp<RootStackParamList, 'TeamList'>;
 export const TeamListScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament, refetch: refetchTournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await Promise.all([refetchTournament(), refetchMatches()]);
+    setRefreshing(false);
+  }, [refetchTournament, refetchMatches]);
 
   const { sortedGroups, groupRankMap } = useMemo(() => {
-    const teams = vertente?.teams ?? [];
-    const ppw = vertente?.pointsPerWin;
+    const teams = category?.teams ?? [];
+    const ppw = category?.pointsPerWin;
     const sg = [...new Set(teams.map(t => t.group).filter(Boolean) as string[])].sort();
     const map: Record<string, number> = {};
     sg.forEach(g => {
       const members = teams
         .filter(t => t.group === g)
-        .sort((a, b) => calcStats(b.id, mockGames, ppw).pts - calcStats(a.id, mockGames, ppw).pts);
+        .sort((a, b) => calcStats(b.id, categoryMatches, ppw).pts - calcStats(a.id, categoryMatches, ppw).pts);
       members.forEach((t, i) => { map[t.id] = i + 1; });
     });
     return { sortedGroups: sg, groupRankMap: map };
-  }, [vertente?.teams, vertente?.pointsPerWin, mockGames]);
+  }, [category?.teams, category?.pointsPerWin, categoryMatches]);
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
-  const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
-  const isConfig = vertente.status === 'config';
-  const statusLabel = STATUS_LABEL[vertente.status] ?? 'Em preparação';
+  const { label: typeLabel } = CATEGORY_CONFIG[category.type];
+  const isConfig = category.status === 'config';
+  const statusLabel = STATUS_LABEL[category.status] ?? 'Em preparação';
 
   const getChipStyle = (group: string) =>
     GROUP_CHIP_POOL[sortedGroups.indexOf(group) % GROUP_CHIP_POOL.length];
@@ -62,14 +74,14 @@ export const TeamListScreen = () => {
       <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${typeLabel} ${vertente.level}`}
+            backLabel={`${typeLabel} ${category.level}`}
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[6px]">Duplas Inscritas {'\u{1F465}'}</Text>
           <View className="flex-row gap-[6px] mt-[6px]">
             <View className="bg-white/20 rounded-full px-[10px] py-[3px]">
-              <Text className="text-white text-xs font-nunito">{vertente.teams.length}/{vertente.maxTeams}</Text>
+              <Text className="text-white text-xs font-nunito">{category.teams.length}/{category.maxTeams}</Text>
             </View>
             <View className="bg-white/20 rounded-full px-[10px] py-[3px]">
               <Text className="text-white text-xs font-nunito">{statusLabel}</Text>
@@ -79,7 +91,7 @@ export const TeamListScreen = () => {
       </LinearGradient>
 
       <FlatList
-        data={vertente.teams}
+        data={category.teams}
         keyExtractor={t => t.id}
         contentContainerClassName="p-md pb-[100px] max-w-content w-full self-center"
         refreshControl={
@@ -88,9 +100,9 @@ export const TeamListScreen = () => {
         ListHeaderComponent={
           <>
             <View className="flex-row justify-between items-center mb-[6px] mt-xs" accessibilityRole="header">
-              <Text className="text-base font-nunito text-navy">Duplas — {vertente.level}</Text>
+              <Text className="text-base font-nunito text-navy">Duplas — {category.level}</Text>
               <TouchableOpacity
-                onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, categoryId: category.id })}
                 accessibilityRole="button"
                 accessibilityLabel="Adicionar nova dupla"
               >
@@ -111,7 +123,7 @@ export const TeamListScreen = () => {
             <Text className="text-base font-nunito-semibold text-muted mb-[20px]">Adiciona a primeira equipa</Text>
             <TouchableOpacity
               className="bg-blue rounded-md px-xl py-md"
-              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, categoryId: category.id })}
               accessibilityRole="button"
               accessibilityLabel="Adicionar primeira dupla"
             >
@@ -127,7 +139,7 @@ export const TeamListScreen = () => {
                   className={clsx(
                     'flex-row items-center gap-sm py-sm',
                     isWithdrawn && 'opacity-60 bg-red-bg-light -mx-md px-md rounded-none',
-                    idx < vertente.teams.length - 1 && 'border-b-[1.5px] border-b-gl',
+                    idx < category.teams.length - 1 && 'border-b-[1.5px] border-b-gl',
                   )}
                   onPress={() => setSheetTeam(team)}
                   activeOpacity={0.75}
@@ -166,7 +178,7 @@ export const TeamListScreen = () => {
                   ) : (
                     <View className="flex-row gap-sm">
                       <TouchableOpacity
-                        onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                        onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, categoryId: category.id, teamId: team.id })}
                         accessibilityRole="button"
                         accessibilityLabel={`Editar ${team.name}`}
                       >
@@ -181,8 +193,8 @@ export const TeamListScreen = () => {
                               { text: 'Cancelar', style: 'cancel' },
                               {
                                 text: 'Remover', style: 'destructive', onPress: () => {
-                                  vertente.teams = vertente.teams.filter(t => t.id !== team.id);
-                                  navigation.replace('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id });
+                                  // TODO: call api.removeTeam() when backend is ready
+                                  navigation.replace('TeamList', { tournamentId: tournament.id, categoryId: category.id });
                                 }
                               },
                             ],
@@ -194,7 +206,7 @@ export const TeamListScreen = () => {
                         </TouchableOpacity>
                       ) : (
                         <TouchableOpacity
-                          onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, vertenteId: vertente.id, teamId: team.id })}
+                          onPress={() => navigation.navigate('WithdrawConfirm', { tournamentId: tournament.id, categoryId: category.id, teamId: team.id })}
                           accessibilityRole="button"
                           accessibilityLabel={`Registar desistência de ${team.name}`}
                         >
@@ -208,11 +220,11 @@ export const TeamListScreen = () => {
             }}
       />
 
-      <TeamGamesSheet
+      <TeamMatchesSheet
         visible={sheetTeam !== null}
         team={sheetTeam}
-        vertente={vertente}
-        games={mockGames}
+        category={category}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
       <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />

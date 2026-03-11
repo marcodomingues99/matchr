@@ -5,11 +5,14 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList, Vertente } from '../types';
-import { mockTournaments } from '../mock/data';
+import { useQuery } from '@tanstack/react-query';
+import { RootStackParamList, Category } from '../types';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { parseDatePt, VERTENTE_STATUS } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { CATEGORY_STATUS } from '../utils/constants';
+import { formatDatePt, daysBetween, getCountdown as computeCountdown } from '../utils/dateUtils';
 import { LiveDot } from '../components/LiveDot';
 import { Container } from '../components/Layout';
 
@@ -18,7 +21,7 @@ type Route = RouteProp<RootStackParamList, 'TournamentDetail'>;
 
 type StatusKey = 'live' | 'wait' | 'done' | 'cfg';
 
-const phaseInfo = (v: Vertente): { label: string; pct: number; statusKey: StatusKey } => {
+const phaseInfo = (v: Category): { label: string; pct: number; statusKey: StatusKey } => {
   if (v.status === 'config') return { label: `${v.maxTeams} vagas`, pct: 0, statusKey: 'cfg' };
   if (v.status === 'groups') return {
     label: `${v.teams.length}/${v.maxTeams} duplas · Grupos`,
@@ -30,67 +33,56 @@ const phaseInfo = (v: Vertente): { label: string; pct: number; statusKey: Status
 };
 
 
-const getDays = (start: string, end: string) => {
-  const startDate = parseDatePt(start);
-  const endDate = parseDatePt(end);
-  if (!startDate || !endDate) return 1;
-  const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 ? diffDays + 1 : 1;
-};
-const getCountdown = (startDate: string) => {
-  const target = parseDatePt(startDate);
-  if (!target) return { days: 0, hours: 0, minutes: 0 };
-  const now = new Date();
-  const diff = target.getTime() - now.getTime();
-  if (diff <= 0) return { days: 0, hours: 0, minutes: 0 };
-  return {
-    days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-    hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
-    minutes: Math.floor((diff / (1000 * 60)) % 60),
-  };
-};
-
 export const TournamentDetailScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+  const { data: t, refetch } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const isUpcoming = t?.status === 'upcoming';
 
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
-  // Countdown for upcoming
-  const [countdown, setCountdown] = useState(getCountdown(t?.startDate ?? ''));
+  // Countdown for upcoming — tick every minute so display stays current
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!isUpcoming || !t) return;
-    const timer = setInterval(() => setCountdown(getCountdown(t.startDate)), 60000);
+    if (!isUpcoming) return;
+    const timer = setInterval(() => setTick(n => n + 1), 60000);
     return () => clearInterval(timer);
-  }, [isUpcoming, t?.startDate]);
-
-  // Unique vertente types for chips
-  const vertenteTypes = useMemo(
-    () => [...new Set(t?.vertentes.map(v => v.type) ?? [])],
-    [t?.vertentes],
+  }, [isUpcoming]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const countdown = useMemo(
+    () => (t?.startDate ? computeCountdown(t.startDate) : { days: 0, hours: 0, minutes: 0 }),
+    [t?.startDate, tick],
   );
 
-  const quickExportVertenteId = useMemo(() => {
+  // Unique category types for chips
+  const categoryTypes = useMemo(
+    () => [...new Set(t?.categories.map(v => v.type) ?? [])],
+    [t?.categories],
+  );
+
+  const quickExportCategoryId = useMemo(() => {
     if (!t) return undefined;
-    const liveVertente = t.vertentes.find(v => v.status === VERTENTE_STATUS.GROUPS || v.status === VERTENTE_STATUS.BRACKET);
-    if (liveVertente) return liveVertente.id;
+    const liveCategory = t.categories.find(v => v.status === CATEGORY_STATUS.GROUPS || v.status === CATEGORY_STATUS.BRACKET);
+    if (liveCategory) return liveCategory.id;
 
-    const configuredVertente = t.vertentes.find(v => v.status !== VERTENTE_STATUS.CONFIG);
-    if (configuredVertente) return configuredVertente.id;
+    const configuredCategory = t.categories.find(v => v.status !== CATEGORY_STATUS.CONFIG);
+    if (configuredCategory) return configuredCategory.id;
 
-    return t.vertentes[0]?.id;
-  }, [t?.vertentes]);
+    return t.categories[0]?.id;
+  }, [t?.categories]);
 
   if (!t) return null;
 
-  const totalTeams = t.vertentes.reduce((sum, v) => sum + v.teams.length, 0);
-  const days = getDays(t.startDate, t.endDate);
+  const totalTeams = t.categories.reduce((sum, v) => sum + v.teams.length, 0);
+  const days = daysBetween(t.startDate, t.endDate);
 
   return (
     <View className="flex-1 bg-gbg">
@@ -112,12 +104,12 @@ export const TournamentDetailScreen = () => {
             )}
           </View>
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[4px]">{t.name}{isUpcoming ? ' 🌸' : ''}</Text>
-          <Text className="text-white/65 text-md font-nunito-semibold mt-[3px]">📍 {t.location} · {t.startDate}{t.startDate !== t.endDate ? `–${t.endDate}` : ''}</Text>
+          <Text className="text-white/65 text-md font-nunito-semibold mt-[3px]">📍 {t.location} · {formatDatePt(t.startDate)}{t.startDate !== t.endDate ? `–${formatDatePt(t.endDate)}` : ''}</Text>
 
           {/* Chips row for upcoming */}
           {isUpcoming && (
             <View className="flex-row gap-[6px] mt-[10px] flex-wrap">
-              {vertenteTypes.map(vt => (
+              {categoryTypes.map(vt => (
                 <View key={vt} className="bg-white/20 rounded-[20px] px-[9px] py-[3px]">
                   <Text className="text-white text-xs font-nunito">{vt}</Text>
                 </View>
@@ -168,7 +160,7 @@ export const TournamentDetailScreen = () => {
         {!isUpcoming && (
           <View className="flex-row gap-sm p-md pb-xs">
             <View className="flex-1 bg-white rounded-lg p-md items-center shadow-card">
-              <Text className="text-2xl font-nunito-black text-blue">{t.vertentes.length}</Text>
+              <Text className="text-2xl font-nunito-black text-blue">{t.categories.length}</Text>
               <Text className="text-xs text-muted font-nunito-semibold mt-[2px] text-center">Categorias</Text>
             </View>
             <View className="flex-1 bg-white rounded-lg p-md items-center shadow-card">
@@ -183,14 +175,14 @@ export const TournamentDetailScreen = () => {
         )}
 
         {/* REGULAMENTO (active only) */}
-        {!isUpcoming && t.regulamento && (
+        {!isUpcoming && t.rulesUrl && (
           <View className="flex-row items-center gap-md bg-white rounded-lg p-[12px] mx-[12px] mb-[4px] shadow-card">
             <View className="w-[38px] h-[38px] bg-orange-bg rounded-[10px] items-center justify-center">
               <Text className="text-[18px]">📄</Text>
             </View>
             <View className="flex-1">
               <Text className="text-md font-nunito text-navy">Regulamento do torneio</Text>
-              <Text className="text-xs text-muted font-nunito-semibold mt-[2px]">{t.regulamento}</Text>
+              <Text className="text-xs text-muted font-nunito-semibold mt-[2px]">{t.rulesUrl}</Text>
             </View>
             <TouchableOpacity>
               <LinearGradient colors={Gradients.primary} className="rounded-sm px-[11px] py-[6px]" start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
@@ -203,8 +195,8 @@ export const TournamentDetailScreen = () => {
         {/* CATEGORIAS */}
         <Text className="text-base font-nunito text-navy m-[12px] mb-sm">Seleciona uma categoria</Text>
         <View className="flex-row flex-wrap gap-sm px-md">
-          {t.vertentes.map(v => {
-            const cfg = VERTENTE_CONFIG[v.type];
+          {t.categories.map(v => {
+            const cfg = CATEGORY_CONFIG[v.type];
             const info = phaseInfo(v);
             const pctStr = `${Math.round(info.pct * 100)}%` as `${number}%`;
             return (
@@ -213,7 +205,7 @@ export const TournamentDetailScreen = () => {
                   className="min-h-[110px] rounded-lg overflow-hidden"
                   style={{ elevation: 3 }}
                   activeOpacity={0.85}
-                  onPress={() => navigation.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+                  onPress={() => navigation.navigate('CategoryHub', { tournamentId: t.id, categoryId: v.id })}
                   accessibilityRole="button"
                   accessibilityLabel={`${cfg.label} ${v.level}, ${info.label}`}
                   accessibilityHint="Abrir categoria"
@@ -260,7 +252,7 @@ export const TournamentDetailScreen = () => {
         {/* Add categoria */}
         <TouchableOpacity
           className="border-2 border-dashed border-gray rounded-lg p-md mx-md items-center bg-white"
-          onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: t.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([]) })}
+          onPress={() => navigation.navigate('ConfigureCategory', { tournamentId: t.id, categoryIndex: 0, isLast: true, pendingCategories: [] })}
         >
           <Text className="text-3xl text-muted">＋</Text>
           <Text className="text-md font-nunito text-muted mt-[3px]">Adicionar categoria</Text>
@@ -280,7 +272,7 @@ export const TournamentDetailScreen = () => {
               <TouchableOpacity
                 className="flex-1 bg-white rounded-lg p-md items-center shadow-card"
                 activeOpacity={0.7}
-                onPress={() => quickExportVertenteId && navigation.navigate('Export', { tournamentId: t.id, vertenteId: quickExportVertenteId })}
+                onPress={() => quickExportCategoryId && navigation.navigate('Export', { tournamentId: t.id, categoryId: quickExportCategoryId })}
               >
                 <Text className="text-3xl">📥</Text>
                 <Text className="text-sm font-nunito text-navy mt-[5px]">Exportar</Text>

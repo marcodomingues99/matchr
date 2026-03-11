@@ -4,12 +4,12 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 import {
   HomeScreen, TournamentDetailScreen, CreateTournamentScreen,
-  EditTournamentScreen, VertenteHubScreen, TeamListScreen,
+  EditTournamentScreen, CategoryHubScreen, TeamListScreen,
   GroupsTableScreen, GroupsGamesScreen, KnockoutScreen,
-  EnterResultScreen, GamePausedScreen, ConfirmCloseGameScreen,
-  ConfirmCloseTournamentScreen,
-  PodiumScreen, ExportScreen, ConfigureVertenteScreen,
-  EditGameScreen, ManageTeamScreen, WithdrawConfirmScreen,
+  EnterResultScreen, MatchPausedScreen, ConfirmCloseMatchScreen,
+  ConfirmCloseCategoryScreen,
+  PodiumScreen, ExportScreen, ConfigureCategoryScreen,
+  EditMatchScreen, ManageTeamScreen, WithdrawConfirmScreen,
   FinishedTournamentScreen, GroupsEmptyScreen,
 } from '../screens';
 
@@ -23,8 +23,8 @@ export const Navigation = () => (
       <Stack.Screen name="EditTournament" component={EditTournamentScreen} />
       <Stack.Screen name="TournamentDetail" component={TournamentDetailScreen} />
       <Stack.Screen name="UpcomingTournament" component={TournamentDetailScreen} />
-      <Stack.Screen name="ConfigureVertente" component={ConfigureVertenteScreen} />
-      <Stack.Screen name="VertenteHub" component={VertenteHubScreen} />
+      <Stack.Screen name="ConfigureCategory" component={ConfigureCategoryScreen} />
+      <Stack.Screen name="CategoryHub" component={CategoryHubScreen} />
       <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
       <Stack.Screen name="EditTeam" component={ManageTeamScreen} />
       <Stack.Screen name="TeamList" component={TeamListScreen} />
@@ -33,11 +33,11 @@ export const Navigation = () => (
       <Stack.Screen name="GroupsTable" component={GroupsTableScreen} />
       <Stack.Screen name="GroupsGames" component={GroupsGamesScreen} />
       <Stack.Screen name="Knockout" component={KnockoutScreen} />
-      <Stack.Screen name="EditGame" component={EditGameScreen} />
+      <Stack.Screen name="EditMatch" component={EditMatchScreen} />
       <Stack.Screen name="EnterResult" component={EnterResultScreen} />
-      <Stack.Screen name="GamePaused" component={GamePausedScreen} />
-      <Stack.Screen name="ConfirmCloseGame" component={ConfirmCloseGameScreen} />
-      <Stack.Screen name="ConfirmCloseTournament" component={ConfirmCloseTournamentScreen} />
+      <Stack.Screen name="MatchPaused" component={MatchPausedScreen} />
+      <Stack.Screen name="ConfirmCloseMatch" component={ConfirmCloseMatchScreen} />
+      <Stack.Screen name="ConfirmCloseCategory" component={ConfirmCloseCategoryScreen} />
       <Stack.Screen name="Podium" component={PodiumScreen} />
       <Stack.Screen name="Export" component={ExportScreen} />
       <Stack.Screen name="FinishedTournament" component={FinishedTournamentScreen} />

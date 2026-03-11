@@ -6,8 +6,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import clsx from 'clsx';
-import { RootStackParamList } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { useQuery } from '@tanstack/react-query';
+import { RootStackParamList, ResolvedMatch } from '../types';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -15,16 +17,24 @@ import { Gradients } from '../theme';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'ConfirmCloseGame'>;
+type Route = RouteProp<RootStackParamList, 'ConfirmCloseMatch'>;
 
-export const ConfirmCloseGameScreen = () => {
+export const ConfirmCloseMatchScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  const game = mockGames.find(g => g.id === route.params.gameId);
 
-  if (!tournament || !vertente || !game) {
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+
+  const { data: match } = useQuery({
+    queryKey: matchKeys.detail(route.params.matchId),
+    queryFn: () => api.getMatch(route.params.matchId),
+  });
+
+  if (!tournament || !category || !match || !match.winnerId) {
     return (
       <View className="flex-1 bg-gbg">
         <LinearGradient colors={Gradients.green} className="px-lg pb-lg">
@@ -42,10 +52,10 @@ export const ConfirmCloseGameScreen = () => {
     );
   }
 
-  const winnerIsTeam1 = game.winnerId === game.team1.id;
-  const winner = winnerIsTeam1 ? game.team1 : game.team2;
-  const loser = winnerIsTeam1 ? game.team2 : game.team1;
-  const sets = game.sets ?? [];
+  const winnerIsTeam1 = match.winnerId === match.team1.id;
+  const winner = winnerIsTeam1 ? match.team1 : match.team2;
+  const loser = winnerIsTeam1 ? match.team2 : match.team1;
+  const sets = match.sets;
   const winnerSets = sets.filter(s => winnerIsTeam1 ? s.team1 > s.team2 : s.team2 > s.team1).length;
   const loserSets = sets.length - winnerSets;
 
@@ -57,7 +67,7 @@ export const ConfirmCloseGameScreen = () => {
             backLabel="Resultado"
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">Confirmar Resultado</Text>
           <Text className="text-white/75 text-base font-nunito-semibold mt-[4px]">Verifica antes de guardar</Text>
         </SafeAreaView>

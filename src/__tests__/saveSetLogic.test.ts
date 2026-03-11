@@ -4,7 +4,7 @@
  * The logic is extracted here so it can be unit-tested without React Native.
  */
 
-import { MATCH_FORMAT } from '../utils/scoring';
+import { DEFAULT_MATCH_FORMAT } from '../utils/scoring';
 
 interface SetState { team1: string; team2: string; saved: boolean }
 
@@ -18,14 +18,14 @@ function saveSetFixed(sets: SetState[]): SetState[] {
   );
 
   const allSaved = newSets.every(s => s.saved);
-  if (allSaved && newSets.length < MATCH_FORMAT.MAX_SETS) {
+  if (allSaved && newSets.length < DEFAULT_MATCH_FORMAT.maxSets) {
     let t1Wins = 0, t2Wins = 0;
     newSets.forEach(s => {
       const s1 = parseInt(s.team1) || 0;
       const s2 = parseInt(s.team2) || 0;
       if (s1 > s2) t1Wins++; else if (s2 > s1) t2Wins++;
     });
-    if (t1Wins < MATCH_FORMAT.SETS_TO_WIN && t2Wins < MATCH_FORMAT.SETS_TO_WIN) {
+    if (t1Wins < DEFAULT_MATCH_FORMAT.setsToWin && t2Wins < DEFAULT_MATCH_FORMAT.setsToWin) {
       newSets.push({ team1: '', team2: '', saved: false });
     }
   }
@@ -119,7 +119,7 @@ describe('saveSet — set progression (using fixed version)', () => {
 
 describe('confirm-result button visibility condition', () => {
   const canConfirm = (sets: SetState[]) =>
-    sets.every(s => s.saved) && sets.length >= MATCH_FORMAT.SETS_TO_WIN;
+    sets.every(s => s.saved) && sets.length >= DEFAULT_MATCH_FORMAT.setsToWin;
 
   it('is hidden when only 1 set is saved', () => {
     expect(canConfirm([{ team1: '6', team2: '3', saved: true }])).toBe(false);

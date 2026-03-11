@@ -5,13 +5,15 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors } from '../theme';
-import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/avatarUtils';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -24,12 +26,15 @@ export const WithdrawConfirmScreen = () => {
     const route = useRoute<Route>();
     const [selected, setSelected] = useState<WithdrawOption>('walkover');
 
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+    const { data: tournament } = useQuery({
+        queryKey: tournamentKeys.detail(route.params.tournamentId),
+        queryFn: () => api.getTournament(route.params.tournamentId),
+    });
     if (!tournament) return null;
-    const vertente = tournament.vertentes.find(v => v.id === route.params.vertenteId);
-    if (!vertente) return null;
-    const teamIdx = vertente.teams.findIndex(t => t.id === route.params.teamId);
-    const team = vertente.teams[teamIdx];
+    const category = tournament.categories.find(v => v.id === route.params.categoryId);
+    if (!category) return null;
+    const teamIdx = category.teams.findIndex(t => t.id === route.params.teamId);
+    const team = category.teams[teamIdx];
 
     if (!team) return null;
 
@@ -49,7 +54,7 @@ export const WithdrawConfirmScreen = () => {
                         backLabel="Duplas"
                         onBack={() => navigation.goBack()}
                     />
-                    <SubBadge type={vertente.type} level={vertente.level} />
+                    <SubBadge type={category.type} level={category.level} />
                     <Text className="text-white text-[20px] md:text-[24px] font-nunito-black mt-[4px]">Desistência 🚫</Text>
                 </SafeAreaView>
             </LinearGradient>

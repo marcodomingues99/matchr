@@ -4,10 +4,13 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { Colors } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { formatDatePt } from '../utils/dateUtils';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList, 'FinishedTournament'>;
@@ -16,13 +19,19 @@ type Route = RouteProp<RootStackParamList, 'FinishedTournament'>;
 export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+    const { tournamentId } = route.params;
+    const { data: t } = useQuery({
+        queryKey: tournamentKeys.detail(tournamentId),
+        queryFn: () => api.getTournament(tournamentId),
+    });
+    const { data: allMatches = [] } = useQuery({
+        queryKey: matchKeys.byTournament(tournamentId),
+        queryFn: () => api.getMatchesByTournament(tournamentId),
+        enabled: !!t,
+    });
 
-    const totalTeams = t?.vertentes.reduce((sum, v) => sum + v.teams.length, 0) ?? 0;
-    const totalGames = React.useMemo(() => {
-        const teamIds = new Set(t?.vertentes.flatMap(v => v.teams.map(team => team.id)) ?? []);
-        return mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id)).length;
-    }, [t]);
+    const totalTeams = t?.categories.reduce((sum, v) => sum + v.teams.length, 0) ?? 0;
+    const totalMatches = allMatches.length;
 
     if (!t) return null;
 
@@ -53,12 +62,12 @@ export const FinishedTournamentScreen = () => {
                         </View>
                     </View>
                     <Text className="text-white text-[20px] md:text-[26px] font-nunito-black text-center">{t.name}</Text>
-                    <Text className="text-white/[0.55] text-md font-nunito-semibold mt-[3px] text-center">📍 {t.location} · {t.startDate}–{t.endDate}</Text>
+                    <Text className="text-white/[0.55] text-md font-nunito-semibold mt-[3px] text-center">📍 {t.location} · {formatDatePt(t.startDate)}–{formatDatePt(t.endDate)}</Text>
 
                     {/* Stats */}
                     <View className="flex-row items-center bg-white/[0.12] rounded-lg mt-[14px] py-[10px] px-[6px]">
                         <View className="flex-1 items-center">
-                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{t.vertentes.length}</Text>
+                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{t.categories.length}</Text>
                             <Text className="text-xxs font-nunito-bold text-white/[0.55] mt-[1px]">Categorias</Text>
                         </View>
                         <View className="w-[1px] h-[24px] bg-white/[0.15]" />
@@ -68,7 +77,7 @@ export const FinishedTournamentScreen = () => {
                         </View>
                         <View className="w-[1px] h-[24px] bg-white/[0.15]" />
                         <View className="flex-1 items-center">
-                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{totalGames}</Text>
+                            <Text className="text-[20px] md:text-[24px] font-nunito-black text-white">{totalMatches}</Text>
                             <Text className="text-xxs font-nunito-bold text-white/[0.55] mt-[1px]">Jogos</Text>
                         </View>
                     </View>
@@ -78,8 +87,8 @@ export const FinishedTournamentScreen = () => {
             {/* ═══ BODY ═══ */}
             <ScrollView className="flex-1" contentContainerClassName="p-[14px] pb-[36px]" showsVerticalScrollIndicator={false}>
                 <Container>
-                    {t.vertentes.map((v) => {
-                        const cfg = VERTENTE_CONFIG[v.type];
+                    {t.categories.map((v) => {
+                        const cfg = CATEGORY_CONFIG[v.type];
                         const winner = v.teams[0];
                         const runnerUp = v.teams[1];
                         const third = v.teams[2];
@@ -90,7 +99,7 @@ export const FinishedTournamentScreen = () => {
                                 activeOpacity={0.85}
                                 className="rounded-xl mb-[14px] overflow-hidden shadow-card"
                                 style={{ backgroundColor: cfg.barBg }}
-                                onPress={() => navigation.navigate('Podium', { tournamentId: t.id, vertenteId: v.id })}
+                                onPress={() => navigation.navigate('Podium', { tournamentId: t.id, categoryId: v.id })}
                             >
                                 {/* Colored top bar */}
                                 <LinearGradient colors={cfg.gradient} className="h-[4px]" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />

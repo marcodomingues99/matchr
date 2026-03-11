@@ -1,53 +1,43 @@
-import { Game } from '../types';
-import type { Vertente } from '../types';
+import type { Match, MatchFormat, Category, TeamStats } from '../types';
 
 export const PTS_PER_WIN = 3;
 
-/** Format constants for a padel match (standard best-of-3 with super tie-break) */
-export const MATCH_FORMAT = {
-  MAX_SETS: 3,
-  SETS_TO_WIN: 2,
-  SUPER_TIE_BREAK_INDEX: 2, // 0-based index of the 3rd set
+/** Default format for a padel match (standard best-of-3 with super tie-break) */
+export const DEFAULT_MATCH_FORMAT: MatchFormat = {
+  maxSets: 3,
+  setsToWin: 2,
+  superTieBreakIndex: 2, // 0-based index of the 3rd set
 };
 
 export const resolvePointsPerWin = (
-  vertente?: Pick<Vertente, 'pointsPerWin'>,
-): number => vertente?.pointsPerWin ?? PTS_PER_WIN;
+  category?: Pick<Category, 'pointsPerWin'>,
+): number => category?.pointsPerWin ?? PTS_PER_WIN;
 
 export const resolveMatchFormat = (
-  vertente?: Pick<Vertente, 'matchFormat'>,
-) => ({
-  MAX_SETS: vertente?.matchFormat?.maxSets ?? MATCH_FORMAT.MAX_SETS,
-  SETS_TO_WIN: vertente?.matchFormat?.setsToWin ?? MATCH_FORMAT.SETS_TO_WIN,
-  SUPER_TIE_BREAK_INDEX: vertente?.matchFormat?.superTieBreakIndex ?? MATCH_FORMAT.SUPER_TIE_BREAK_INDEX,
+  format?: Partial<MatchFormat>,
+): MatchFormat => ({
+  maxSets: format?.maxSets ?? DEFAULT_MATCH_FORMAT.maxSets,
+  setsToWin: format?.setsToWin ?? DEFAULT_MATCH_FORMAT.setsToWin,
+  superTieBreakIndex: format?.superTieBreakIndex ?? DEFAULT_MATCH_FORMAT.superTieBreakIndex,
 });
 
-export interface TeamStats {
-  wins: number;
-  losses: number;
-  played: number;
-  pts: number;
-  gamesWon: number;
-  gamesLost: number;
-}
-
-export const calcStats = (teamId: string, games: Game[], pointsPerWin: number = PTS_PER_WIN): TeamStats => {
-  const relevant = games.filter(
-    g => (g.team1.id === teamId || g.team2.id === teamId) &&
-         (g.status === 'finished' || g.status === 'walkover'),
+export const calcStats = (teamId: string, matches: Match[], pointsPerWin: number = PTS_PER_WIN): TeamStats => {
+  const relevant = matches.filter(
+    m => (m.team1Id === teamId || m.team2Id === teamId) &&
+         (m.status === 'finished' || m.status === 'walkover'),
   );
-  let wins = 0, losses = 0, gamesWon = 0, gamesLost = 0;
-  relevant.forEach(g => {
-    const isT1 = g.team1.id === teamId;
-    if (g.winnerId === teamId) wins++;
-    else if (g.winnerId !== undefined) losses++;
-    // Walkover games have no sets played — only count games-within-sets for finished games
-    if (g.status === 'finished') {
-      (g.sets ?? []).forEach(set => {
-        gamesWon  += isT1 ? set.team1 : set.team2;
-        gamesLost += isT1 ? set.team2 : set.team1;
+  let wins = 0, losses = 0, setsWon = 0, setsLost = 0;
+  relevant.forEach(m => {
+    const isT1 = m.team1Id === teamId;
+    if (m.winnerId === teamId) wins++;
+    else if (m.winnerId != null) losses++;
+    // Walkover matches have no sets played — only count games-within-sets for finished matches
+    if (m.status === 'finished') {
+      m.sets.forEach(set => {
+        setsWon  += isT1 ? set.team1 : set.team2;
+        setsLost += isT1 ? set.team2 : set.team1;
       });
     }
   });
-  return { wins, losses, played: wins + losses, pts: wins * pointsPerWin, gamesWon, gamesLost };
+  return { wins, losses, played: wins + losses, pts: wins * pointsPerWin, setsWon, setsLost };
 };

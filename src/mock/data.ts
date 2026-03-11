@@ -1,17 +1,18 @@
-import { Tournament, Game } from '../types';
+import { Tournament, Match } from '../types';
+import { buildTeamMap } from '../utils/resolveMatch';
 
 export const mockTournaments: Tournament[] = [
   {
     id: '1',
     name: 'Open de Padel Lisboa 2026',
     location: 'Clube Restelo',
-    startDate: '14 Mar 2026',
-    endDate: '16 Mar 2026',
+    startDate: '2026-03-14T00:00:00',
+    endDate: '2026-03-16T00:00:00',
     status: 'active',
     photo: 'https://images.unsplash.com/photo-1554068865-24cecd4e34b8?w=800&q=80',
-    vertentes: [
+    categories: [
       {
-        id: 'v1',
+        id: 'v1', tournamentId: '1',
         type: 'M',
         level: 'M5',
         maxTeams: 16,
@@ -71,7 +72,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v2',
+        id: 'v2', tournamentId: '1',
         type: 'M',
         level: 'M4',
         maxTeams: 16,
@@ -91,7 +92,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v3',
+        id: 'v3', tournamentId: '1',
         type: 'F',
         level: 'F4',
         maxTeams: 16,
@@ -100,7 +101,7 @@ export const mockTournaments: Tournament[] = [
         teams: [],
       },
       {
-        id: 'v4',
+        id: 'v4', tournamentId: '1',
         type: 'MX',
         level: 'MX3',
         maxTeams: 8,
@@ -114,7 +115,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v11',
+        id: 'v11', tournamentId: '1',
         type: 'F',
         level: 'F3',
         maxTeams: 8,
@@ -144,7 +145,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v12',
+        id: 'v12', tournamentId: '1',
         type: 'M',
         level: 'M3',
         maxTeams: 8,
@@ -158,7 +159,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v13',
+        id: 'v13', tournamentId: '1',
         type: 'F',
         level: 'F5',
         maxTeams: 8,
@@ -171,7 +172,7 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v14',
+        id: 'v14', tournamentId: '1',
         type: 'MX',
         level: 'MX4',
         maxTeams: 8,
@@ -190,22 +191,22 @@ export const mockTournaments: Tournament[] = [
     id: '2',
     name: 'Torneio Primavera',
     location: 'Quinta da Marinha',
-    startDate: '5 Abr 2026',
-    endDate: '5 Abr 2026',
+    startDate: '2026-04-05T00:00:00',
+    endDate: '2026-04-05T00:00:00',
     status: 'upcoming',
     photo: 'https://images.unsplash.com/photo-1599586120429-48281b6f0ece?w=800&q=80',
-    vertentes: [],
+    categories: [],
   },
   {
     id: '3',
     name: 'Masters Inverno 2026',
     location: 'Cascais',
-    startDate: '10 Jan 2026',
-    endDate: '12 Jan 2026',
+    startDate: '2026-01-10T00:00:00',
+    endDate: '2026-01-12T00:00:00',
     status: 'finished',
-    vertentes: [
+    categories: [
       {
-        id: 'v8', type: 'M', level: 'M5', maxTeams: 16, courts: 4, status: 'finished',
+        id: 'v8', tournamentId: '3', type: 'M', level: 'M5', maxTeams: 16, courts: 4, status: 'finished',
         teams: [
           { id: 'fw1', name: 'Os Campeões', group: 'A', players: [{ id: 'fp1', name: 'Ricardo Alves', phone: '911111111' }, { id: 'fp2', name: 'Bruno Dias', phone: '911111112' }] },
           { id: 'fw2', name: 'Padel Force', group: 'A', players: [{ id: 'fp3', name: 'Nuno Reis', phone: '911111113' }, { id: 'fp4', name: 'Marco Vieira', phone: '911111114' }] },
@@ -213,14 +214,14 @@ export const mockTournaments: Tournament[] = [
         ],
       },
       {
-        id: 'v9', type: 'F', level: 'F4', maxTeams: 8, courts: 2, status: 'finished',
+        id: 'v9', tournamentId: '3', type: 'F', level: 'F4', maxTeams: 8, courts: 2, status: 'finished',
         teams: [
           { id: 'fw4', name: 'Power Girls', group: 'A', players: [{ id: 'fp7', name: 'Ana Santos', phone: '922222221' }, { id: 'fp8', name: 'Marta Silva', phone: '922222222' }] },
           { id: 'fw5', name: 'Net Queens', group: 'A', players: [{ id: 'fp9', name: 'Sofia Rocha', phone: '922222223' }, { id: 'fp10', name: 'Inês Pinto', phone: '922222224' }] },
         ],
       },
       {
-        id: 'v10', type: 'MX', level: 'MX3', maxTeams: 8, courts: 2, status: 'finished',
+        id: 'v10', tournamentId: '3', type: 'MX', level: 'MX3', maxTeams: 8, courts: 2, status: 'finished',
         teams: [
           { id: 'fw6', name: 'Mix Masters', group: 'A', players: [{ id: 'fp11', name: 'Tomás Neves', phone: '933333331' }, { id: 'fp12', name: 'Beatriz Lima', phone: '933333332' }] },
           { id: 'fw7', name: 'Padel Duo', group: 'A', players: [{ id: 'fp13', name: 'Hugo Mendes', phone: '933333333' }, { id: 'fp14', name: 'Clara Ferreira', phone: '933333334' }] },
@@ -232,13 +233,13 @@ export const mockTournaments: Tournament[] = [
     id: '4',
     name: 'Circuito Setúbal – Último Jogo',
     location: 'Clube Naval Setúbal',
-    startDate: '2 Mar 2026',
-    endDate: '2 Mar 2026',
+    startDate: '2026-03-02T00:00:00',
+    endDate: '2026-03-02T00:00:00',
     status: 'active',
     photo: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800&q=80',
-    vertentes: [
+    categories: [
       {
-        id: 'vfin',
+        id: 'vfin', tournamentId: '4',
         type: 'M',
         level: 'M4',
         maxTeams: 4,
@@ -272,195 +273,126 @@ export const mockTournaments: Tournament[] = [
   },
 ];
 
-export const mockGames: Game[] = [
+/** Pre-built team lookup from all tournaments */
+export const mockTeamMap = buildTeamMap(mockTournaments);
+
+export const mockMatches: Match[] = [
   // ─── Grupo A ───────────────────────────────────────────────────────────────
-  // t1 «Os Invencíveis»: 3 jogos propositais para demo da sheet
   {
-    id: 'g1',
-    team1: {
-      id: 't1', name: 'Os Invencíveis', group: 'A',
-      photo: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?w=200&q=80',
-      players: [
-        { id: 'p1', name: 'João Silva' }, { id: 'p2', name: 'Miguel Costa' },
-      ]
-    },
-    team2: {
-      id: 't2', name: 'Thunderstruck', group: 'A', players: [
-        { id: 'p3', name: 'Rui Ferreira' }, { id: 'p4', name: 'André Santos' },
-      ]
-    },
-    court: 'C1', date: '14 Mar', time: '10:00',
+    id: 'g1', categoryId: 'v1',
+    team1Id: 't1', team2Id: 't2',
+    court: 'C1', scheduledAt: '2026-03-14T10:00:00',
     phase: 'groups', round: 1,
     sets: [{ team1: 6, team2: 4 }, { team1: 6, team2: 3 }],
     status: 'finished', winnerId: 't1',
   },
   {
-    id: 'g2',
-    team1: {
-      id: 't1', name: 'Os Invencíveis', group: 'A',
-      photo: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?w=200&q=80',
-      players: [
-        { id: 'p1', name: 'João Silva' }, { id: 'p2', name: 'Miguel Costa' },
-      ]
-    },
-    team2: {
-      id: 't5', name: 'Net Hunters', group: 'A', players: [
-        { id: 'p9', name: 'Tiago Rocha' }, { id: 'p10', name: 'Hugo Pinto' },
-      ]
-    },
-    court: 'C2', date: '14 Mar', time: '12:00',
+    id: 'g2', categoryId: 'v1',
+    team1Id: 't1', team2Id: 't5',
+    court: 'C2', scheduledAt: '2026-03-14T12:00:00',
     phase: 'groups', round: 2,
     sets: [{ team1: 4, team2: 3 }],
     status: 'live',
   },
   {
-    id: 'g3',
-    team1: {
-      id: 't2', name: 'Thunderstruck', group: 'A', players: [
-        { id: 'p3', name: 'Rui Ferreira' }, { id: 'p4', name: 'André Santos' },
-      ]
-    },
-    team2: {
-      id: 't1', name: 'Os Invencíveis', group: 'A',
-      photo: 'https://images.unsplash.com/photo-1547347298-4074fc3086f0?w=200&q=80',
-      players: [
-        { id: 'p1', name: 'João Silva' }, { id: 'p2', name: 'Miguel Costa' },
-      ]
-    },
-    court: 'C3', date: '14 Mar', time: '15:30',
+    id: 'g3', categoryId: 'v1',
+    team1Id: 't2', team2Id: 't1',
+    court: 'C3', scheduledAt: '2026-03-14T15:30:00',
     phase: 'groups', round: 3,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo B ───────────────────────────────────────────────────────────────
   {
-    id: 'g4',
-    team1: {
-      id: 't3', name: 'Power Smash', group: 'B', players: [
-        { id: 'p5', name: 'Carlos Lopes' }, { id: 'p6', name: 'Pedro Martins' },
-      ]
-    },
-    team2: {
-      id: 't4', name: 'Slam Kings', group: 'B', players: [
-        { id: 'p7', name: 'Rui Santos' }, { id: 'p8', name: 'Pedro Lopes' },
-      ]
-    },
-    court: 'C1', date: '14 Mar', time: '11:00',
+    id: 'g4', categoryId: 'v1',
+    team1Id: 't3', team2Id: 't4',
+    court: 'C1', scheduledAt: '2026-03-14T11:00:00',
     phase: 'groups', round: 1,
     sets: [{ team1: 6, team2: 3 }, { team1: 6, team2: 4 }],
     status: 'finished', winnerId: 't3',
   },
   {
-    id: 'g5',
-    team1: {
-      id: 't7', name: 'Ace Force', group: 'B', players: [
-        { id: 'p13', name: 'Ricardo Alves' }, { id: 'p14', name: 'Vítor Cunha' },
-      ]
-    },
-    team2: {
-      id: 't3', name: 'Power Smash', group: 'B', players: [
-        { id: 'p5', name: 'Carlos Lopes' }, { id: 'p6', name: 'Pedro Martins' },
-      ]
-    },
-    court: 'C4', date: '14 Mar', time: '14:00',
+    id: 'g5', categoryId: 'v1',
+    team1Id: 't7', team2Id: 't3',
+    court: 'C4', scheduledAt: '2026-03-14T14:00:00',
     phase: 'groups', round: 2,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo C ───────────────────────────────────────────────────────────────
   {
-    id: 'g6',
-    team1: {
-      id: 't6', name: 'Purple Rain', group: 'C', players: [
-        { id: 'p11', name: 'Bruno Carvalho' }, { id: 'p12', name: 'Nuno Sousa' },
-      ]
-    },
-    team2: {
-      id: 't8', name: 'Iron Wall', group: 'C', players: [
-        { id: 'p15', name: 'Diogo Melo' }, { id: 'p16', name: 'Filipe Dias' },
-      ]
-    },
-    court: 'C3', date: '14 Mar', time: '13:00',
+    id: 'g6', categoryId: 'v1',
+    team1Id: 't6', team2Id: 't8',
+    court: 'C3', scheduledAt: '2026-03-14T13:00:00',
     phase: 'groups', round: 1,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo Z (Torneio 4 – último jogo) ────────────────────────────────────
   {
-    id: 'gz1',
-    team1: { id: 'tz1', name: 'Última Barreira', group: 'Z', players: [{ id: 'pz1', name: 'Luís Figo' }, { id: 'pz2', name: 'Marco Ramos' }] },
-    team2: { id: 'tz2', name: 'Ponto Final', group: 'Z', players: [{ id: 'pz3', name: 'Sérgio Montes' }, { id: 'pz4', name: 'Tiago Vaz' }] },
-    court: 'C1', date: '2 Mar', time: '09:00',
+    id: 'gz1', categoryId: 'vfin',
+    team1Id: 'tz1', team2Id: 'tz2',
+    court: 'C1', scheduledAt: '2026-03-02T09:00:00',
     phase: 'groups', round: 1,
     sets: [{ team1: 6, team2: 3 }, { team1: 6, team2: 4 }],
     status: 'finished', winnerId: 'tz1',
   },
   {
-    id: 'gz2',
-    team1: { id: 'tz1', name: 'Última Barreira', group: 'Z', players: [{ id: 'pz1', name: 'Luís Figo' }, { id: 'pz2', name: 'Marco Ramos' }] },
-    team2: { id: 'tz3', name: 'Jogo Decisivo', group: 'Z', players: [{ id: 'pz5', name: 'Rui Norte' }, { id: 'pz6', name: 'Paulo Melo' }] },
-    court: 'C2', date: '2 Mar', time: '10:30',
+    id: 'gz2', categoryId: 'vfin',
+    team1Id: 'tz1', team2Id: 'tz3',
+    court: 'C2', scheduledAt: '2026-03-02T10:30:00',
     phase: 'groups', round: 2,
     sets: [{ team1: 4, team2: 6 }, { team1: 3, team2: 6 }],
     status: 'finished', winnerId: 'tz3',
   },
   {
-    id: 'gz3',
-    team1: { id: 'tz2', name: 'Ponto Final', group: 'Z', players: [{ id: 'pz3', name: 'Sérgio Montes' }, { id: 'pz4', name: 'Tiago Vaz' }] },
-    team2: { id: 'tz3', name: 'Jogo Decisivo', group: 'Z', players: [{ id: 'pz5', name: 'Rui Norte' }, { id: 'pz6', name: 'Paulo Melo' }] },
-    court: 'C1', date: '2 Mar', time: '12:00',
+    id: 'gz3', categoryId: 'vfin',
+    team1Id: 'tz2', team2Id: 'tz3',
+    court: 'C1', scheduledAt: '2026-03-02T12:00:00',
     phase: 'groups', round: 3,
     sets: [{ team1: 7, team2: 5 }, { team1: 6, team2: 4 }],
     status: 'finished', winnerId: 'tz2',
   },
-  // ─── Bracket F3 ────────────────────────────────────────────────────────────
+  // ─── Groups F3 (v11) ─────────────────────────────────────────────────────
   {
-    id: 'gf1',
-    team1: {
-      id: 'tb1', name: 'Estrelas FC', group: 'A', players: [
-        { id: 'pb1', name: 'Ana Silva' }, { id: 'pb2', name: 'Beatriz Costa' },
-      ]
-    },
-    team2: {
-      id: 'tb2', name: 'Power Ladies', group: 'A', players: [
-        { id: 'pb3', name: 'Catarina Lopes' }, { id: 'pb4', name: 'Diana Santos' },
-      ]
-    },
-    court: 'C2', date: '14 Mar', time: '11:00',
+    id: 'gf1', categoryId: 'v11',
+    team1Id: 'tb1', team2Id: 'tb2',
+    court: 'C2', scheduledAt: '2026-03-14T11:00:00',
     phase: 'groups', round: 1,
     sets: [{ team1: 6, team2: 4 }],
     status: 'paused',
   },
   // ─── Bracket F3 (v11) ─────────────────────────────────────────────────────
   {
-    id: 'bf1',
-    team1: { id: 'tb1', name: 'Estrelas FC', group: 'A', players: [{ id: 'pb1', name: 'Ana Silva' }, { id: 'pb2', name: 'Beatriz Costa' }] },
-    team2: { id: 'tb4', name: 'Ace Queens', group: 'B', players: [{ id: 'pb7', name: 'Gabriela Matos' }, { id: 'pb8', name: 'Helena Pinto' }] },
-    court: 'C1', date: '15 Mar', time: '10:00',
+    id: 'bf1', categoryId: 'v11',
+    team1Id: 'tb1', team2Id: 'tb4',
+    court: 'C1', scheduledAt: '2026-03-15T10:00:00',
     phase: 'sf',
     sets: [{ team1: 6, team2: 3 }, { team1: 6, team2: 4 }],
     status: 'finished', winnerId: 'tb1',
   },
   {
-    id: 'bf2',
-    team1: { id: 'tb2', name: 'Power Ladies', group: 'A', players: [{ id: 'pb3', name: 'Catarina Lopes' }, { id: 'pb4', name: 'Diana Santos' }] },
-    team2: { id: 'tb3', name: 'Wild Cards', group: 'B', players: [{ id: 'pb5', name: 'Eva Pereira' }, { id: 'pb6', name: 'Filipa Rocha' }] },
-    court: 'C2', date: '15 Mar', time: '10:00',
+    id: 'bf2', categoryId: 'v11',
+    team1Id: 'tb2', team2Id: 'tb3',
+    court: 'C2', scheduledAt: '2026-03-15T10:00:00',
     phase: 'sf',
     sets: [{ team1: 4, team2: 6 }],
     status: 'live',
   },
   {
-    id: 'bf3',
-    team1: { id: 'tb1', name: 'Estrelas FC', group: 'A', players: [{ id: 'pb1', name: 'Ana Silva' }, { id: 'pb2', name: 'Beatriz Costa' }] },
-    team2: { id: 'tmp-f', name: '?', players: [{ id: 'x1', name: '' }, { id: 'x2', name: '' }] },
-    court: 'C1', date: '16 Mar', time: '14:00',
+    id: 'bf3', categoryId: 'v11',
+    team1Id: 'tb1', team2Id: 'tmp-f',
+    court: 'C1', scheduledAt: '2026-03-16T14:00:00',
     phase: 'final',
+    sets: [],
     status: 'scheduled',
   },
   {
-    id: 'bf4',
-    team1: { id: 'tb4', name: 'Ace Queens', group: 'B', players: [{ id: 'pb7', name: 'Gabriela Matos' }, { id: 'pb8', name: 'Helena Pinto' }] },
-    team2: { id: 'tmp-3', name: '?', players: [{ id: 'x3', name: '' }, { id: 'x4', name: '' }] },
-    court: 'C2', date: '16 Mar', time: '14:00',
+    id: 'bf4', categoryId: 'v11',
+    team1Id: 'tb4', team2Id: 'tmp-3',
+    court: 'C2', scheduledAt: '2026-03-16T14:00:00',
     phase: '3rd',
+    sets: [],
     status: 'scheduled',
   },
 ];

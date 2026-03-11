@@ -1,4 +1,4 @@
-import { getInitials } from '../utils/teamUtils';
+import { getInitials } from '../utils/avatarUtils';
 
 describe('getInitials', () => {
   it('returns two uppercase initials for a two-word name', () => {

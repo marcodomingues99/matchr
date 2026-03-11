@@ -4,9 +4,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
-import { parseDatePt } from '../utils/constants';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
+import { daysBetween } from '../utils/dateUtils';
 import { popTo } from '../utils/navigation';
 import { calcStats } from '../utils/scoring';
 import { SubBadge } from '../components/SubBadge';
@@ -15,7 +17,7 @@ import { Colors, Gradients } from '../theme';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'ConfirmCloseTournament'>;
+type Route = RouteProp<RootStackParamList, 'ConfirmCloseCategory'>;
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 const AVATAR_COLORS: [string, string][] = [
@@ -32,61 +34,61 @@ const initials = (name: string) =>
         .map(w => w[0].toUpperCase())
         .join('');
 
-export const ConfirmCloseTournamentScreen = () => {
+export const ConfirmCloseCategoryScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-    const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+    const { tournamentId, categoryId } = route.params;
+    const { data: tournament } = useQuery({
+        queryKey: tournamentKeys.detail(tournamentId),
+        queryFn: () => api.getTournament(tournamentId),
+    });
+    const category = tournament?.categories.find(v => v.id === categoryId);
+    const { data: matches = [] } = useQuery({
+        queryKey: matchKeys.byCategory(categoryId),
+        queryFn: () => api.getMatchesByCategory(categoryId),
+        enabled: !!category,
+    });
 
-    if (!tournament || !vertente) return null;
+    if (!tournament || !category) return null;
 
-    // Games for this vertente's teams
-    const vertenteTeamIds = new Set(vertente.teams.map(t => t.id));
-    const games = mockGames.filter(
-        g => vertenteTeamIds.has(g.team1.id) && vertenteTeamIds.has(g.team2.id),
-    );
-    const totalGames = games.length;
-    const totalTeams = vertente.teams.length;
+    const totalMatches = matches.length;
+    const totalTeams = category.teams.length;
 
     // Days between startDate and endDate
-    const startD = parseDatePt(tournament.startDate);
-    const endD = parseDatePt(tournament.endDate);
-    const days = startD && endD
-        ? Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86_400_000) + 1)
-        : 1;
+    const days = daysBetween(tournament.startDate, tournament.endDate);
 
     // Top 3 from final/3rd-place results, with stats fallback
-    const finishedBracketGames = games.filter(g =>
+    const finishedBracketMatches = matches.filter(g =>
         g.phase !== 'groups' &&
         (g.status === 'finished' || g.status === 'walkover') &&
         !!g.winnerId,
     );
-    const finalGame = [...finishedBracketGames].reverse().find(g => g.phase === 'final');
-    const thirdPlaceGame = [...finishedBracketGames].reverse().find(g => g.phase === '3rd');
+    const finalMatch = [...finishedBracketMatches].reverse().find(g => g.phase === 'final');
+    const thirdPlaceMatch = [...finishedBracketMatches].reverse().find(g => g.phase === '3rd');
 
-    const winner = finalGame
-        ? (finalGame.winnerId === finalGame.team1.id ? finalGame.team1 : finalGame.team2)
+    const winner = finalMatch
+        ? (finalMatch.winnerId === finalMatch.team1Id ? finalMatch.team1 : finalMatch.team2)
         : undefined;
-    const runnerUp = finalGame
-        ? (finalGame.winnerId === finalGame.team1.id ? finalGame.team2 : finalGame.team1)
+    const runnerUp = finalMatch
+        ? (finalMatch.winnerId === finalMatch.team1Id ? finalMatch.team2 : finalMatch.team1)
         : undefined;
-    const third = thirdPlaceGame
-        ? (thirdPlaceGame.winnerId === thirdPlaceGame.team1.id ? thirdPlaceGame.team1 : thirdPlaceGame.team2)
+    const third = thirdPlaceMatch
+        ? (thirdPlaceMatch.winnerId === thirdPlaceMatch.team1Id ? thirdPlaceMatch.team1 : thirdPlaceMatch.team2)
         : undefined;
 
-    const fallbackByStats = vertente.teams
+    const fallbackByStats = category.teams
         .filter(t => !t.withdrawn)
         .map(team => ({
             team,
-            stats: calcStats(team.id, games, vertente.pointsPerWin),
+            stats: calcStats(team.id, matches, category.pointsPerWin),
         }))
         .sort((a, b) => {
             if (b.stats.pts !== a.stats.pts) return b.stats.pts - a.stats.pts;
-            return (b.stats.gamesWon - b.stats.gamesLost) - (a.stats.gamesWon - a.stats.gamesLost);
+            return (b.stats.setsWon - b.stats.setsLost) - (a.stats.setsWon - a.stats.setsLost);
         })
         .map(x => x.team);
 
-    const top3 = [winner, runnerUp, third].filter(Boolean) as typeof vertente.teams;
+    const top3 = [winner, runnerUp, third].filter(Boolean) as typeof category.teams;
     fallbackByStats.forEach(team => {
         if (top3.length < 3 && !top3.some(t => t.id === team.id)) {
             top3.push(team);
@@ -94,8 +96,8 @@ export const ConfirmCloseTournamentScreen = () => {
     });
 
     // Final score summary
-    const finalScore = finalGame?.sets
-        ? finalGame.sets.map(s => `${s.team1}–${s.team2}`).join(' / ')
+    const finalScore = finalMatch?.sets.length
+        ? finalMatch.sets.map(s => `${s.team1}–${s.team2}`).join(' / ')
         : '—';
 
     return (
@@ -106,7 +108,7 @@ export const ConfirmCloseTournamentScreen = () => {
                         backLabel="Resultado Final"
                         onBack={() => navigation.goBack()}
                     />
-                    <SubBadge type={vertente.type} level={vertente.level} />
+                    <SubBadge type={category.type} level={category.level} />
                     <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">Confirmar Fecho 🏁</Text>
                     <Text className="text-white/75 text-base font-nunito-semibold mt-[4px]">Verifica antes de fechar a categoria</Text>
                 </SafeAreaView>
@@ -137,7 +139,7 @@ export const ConfirmCloseTournamentScreen = () => {
                     {/* Stats */}
                     <View className="flex-row gap-sm mb-md">
                         {[
-                            { value: totalGames, label: 'jogos', color: Colors.blue },
+                            { value: totalMatches, label: 'jogos', color: Colors.blue },
                             { value: totalTeams, label: 'duplas', color: Colors.green },
                             { value: days, label: days === 1 ? 'dia' : 'dias', color: Colors.orange },
                         ].map(({ value, label, color }) => (
@@ -162,7 +164,7 @@ export const ConfirmCloseTournamentScreen = () => {
                         onPress={() =>
                             navigation.navigate('Podium', {
                                 tournamentId: route.params.tournamentId,
-                                vertenteId: route.params.vertenteId,
+                                categoryId: route.params.categoryId,
                             })
                         }
                     >

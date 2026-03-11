@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Platform, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,16 +8,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { PT_MONTHS } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { formatDateInputPt, formatDatePt } from '../utils/dateUtils';
 import { popTo } from '../utils/navigation';
 import { Container } from '../components/Layout';
 
-const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+const formatDate = formatDateInputPt;
 
 type Nav = StackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'EditTournament'>;
@@ -25,23 +27,40 @@ type Route = RouteProp<RootStackParamList, 'EditTournament'>;
 export const EditTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
 
   const [name, setName] = useState(tournament?.name ?? '');
   const [location, setLocation] = useState(tournament?.location ?? '');
-  const [vertentes, setVertentes] = useState(tournament?.vertentes ?? []);
+  const [categories, setCategories] = useState(tournament?.categories ?? []);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [photo, setPhoto] = useState(tournament?.photo ?? '');
-  const [regulamento, setRegulamento] = useState<{ uri: string; name: string; size?: number } | null>(
-    tournament?.regulamento ? { uri: tournament.regulamento, name: tournament.regulamento.split('/').pop() ?? 'regulamento.pdf' } : null
+  const [rulesUrl, setRulesUrl] = useState<{ uri: string; name: string; size?: number } | null>(
+    tournament?.rulesUrl ? { uri: tournament.rulesUrl, name: tournament.rulesUrl.split('/').pop() ?? 'regulamento.pdf' } : null
   );
+
+  useEffect(() => {
+    if (tournament) {
+      setName(tournament.name);
+      setLocation(tournament.location);
+      setCategories(tournament.categories);
+      setPhoto(tournament.photo ?? '');
+      setRulesUrl(
+        tournament.rulesUrl
+          ? { uri: tournament.rulesUrl, name: tournament.rulesUrl.split('/').pop() ?? 'regulamento.pdf' }
+          : null,
+      );
+    }
+  }, [tournament]);
 
   if (!tournament) return null;
 
-  const handleRemoveVertente = (vertenteId: string) => {
+  const handleRemoveCategory = (categoryId: string) => {
     Alert.alert(
       'Remover categoria',
       'Tens a certeza que queres remover esta categoria?',
@@ -50,7 +69,7 @@ export const EditTournamentScreen = () => {
         {
           text: 'Remover',
           style: 'destructive',
-          onPress: () => setVertentes(prev => prev.filter(v => v.id !== vertenteId)),
+          onPress: () => setCategories(prev => prev.filter(v => v.id !== categoryId)),
         },
       ],
     );
@@ -85,7 +104,7 @@ export const EditTournamentScreen = () => {
     const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
     if (!result.canceled) {
       const asset = result.assets[0];
-      setRegulamento({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined });
+      setRulesUrl({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined });
     }
   };
 
@@ -136,7 +155,7 @@ export const EditTournamentScreen = () => {
                 <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Data inicio</Text>
                 <TouchableOpacity className="border-[1.5px] border-gl rounded-sm px-sm py-[10px] bg-gbg flex-row items-center justify-between" onPress={() => setShowStartPicker(true)} activeOpacity={0.7}>
                   <Text className={clsx('text-lg font-nunito-bold', startDate ? 'text-navy' : 'text-gray')}>
-                    {startDate ? formatDate(startDate) : tournament.startDate}
+                    {startDate ? formatDate(startDate) : formatDatePt(tournament.startDate)}
                   </Text>
                   <Text className="text-[14px]">📅</Text>
                 </TouchableOpacity>
@@ -156,7 +175,7 @@ export const EditTournamentScreen = () => {
                 <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Data fim</Text>
                 <TouchableOpacity className="border-[1.5px] border-gl rounded-sm px-sm py-[10px] bg-gbg flex-row items-center justify-between" onPress={() => setShowEndPicker(true)} activeOpacity={0.7}>
                   <Text className={clsx('text-lg font-nunito-bold', endDate ? 'text-navy' : 'text-gray')}>
-                    {endDate ? formatDate(endDate) : tournament.endDate}
+                    {endDate ? formatDate(endDate) : formatDatePt(tournament.endDate)}
                   </Text>
                   <Text className="text-[14px]">📅</Text>
                 </TouchableOpacity>
@@ -175,16 +194,16 @@ export const EditTournamentScreen = () => {
             </View>
 
             <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Regulamento</Text>
-            {regulamento ? (
+            {rulesUrl ? (
               <View className="flex-row items-center gap-[11px] bg-gbg rounded-sm p-[12px]">
                 <View className="w-[38px] h-[38px] bg-white rounded-[9px] items-center justify-center shadow-card shrink-0">
                   <Text className="text-[18px]">📄</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-md font-nunito text-navy" numberOfLines={1}>{regulamento.name}</Text>
+                  <Text className="text-md font-nunito text-navy" numberOfLines={1}>{rulesUrl.name}</Text>
                   <Text className="text-xs font-nunito-semibold text-muted mt-[2px]">Regulamento carregado</Text>
                 </View>
-                <TouchableOpacity onPress={() => setRegulamento(null)}>
+                <TouchableOpacity onPress={() => setRulesUrl(null)}>
                   <Text className="text-lg font-nunito text-red px-[4px]">✕</Text>
                 </TouchableOpacity>
               </View>
@@ -197,21 +216,21 @@ export const EditTournamentScreen = () => {
           </View>
 
           <Text className="text-muted text-md font-nunito uppercase tracking-[0.5px] mb-[10px]">Categorias</Text>
-          {vertentes.map((v, i) => (
+          {categories.map((v, i) => (
             <View key={v.id} className="bg-white rounded-md p-md flex-row items-center gap-[10px] mb-sm shadow-card overflow-hidden">
               <TouchableOpacity
                 className="flex-row items-center flex-1 gap-[10px]"
-                onPress={() => navigation.navigate('ConfigureVertente', { tournamentId: tournament.id, vertenteIndex: 0, isLast: true, pendingVertentes: JSON.stringify([{ type: v.type, level: v.level }]) })}
+                onPress={() => navigation.navigate('ConfigureCategory', { tournamentId: tournament.id, categoryIndex: 0, isLast: true, pendingCategories: [{ type: v.type, level: v.level }] })}
               >
-                <View className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: VERTENTE_CONFIG[v.type].color }} />
+                <View className="w-[10px] h-[10px] rounded-full" style={{ backgroundColor: CATEGORY_CONFIG[v.type].color }} />
                 <View className="flex-1">
-                  <Text className="text-base font-nunito text-navy">{VERTENTE_CONFIG[v.type].label} · {v.level}</Text>
+                  <Text className="text-base font-nunito text-navy">{CATEGORY_CONFIG[v.type].label} · {v.level}</Text>
                   <Text className="text-sm font-nunito-semibold text-muted">{v.teams.length}/{v.maxTeams} duplas · {v.courts} courts</Text>
                 </View>
                 <Text className="text-[14px]">✏️</Text>
               </TouchableOpacity>
               {v.status === 'config' && (
-                <TouchableOpacity onPress={() => handleRemoveVertente(v.id)} className="px-[10px] py-[4px] border-l border-l-red-border ml-sm">
+                <TouchableOpacity onPress={() => handleRemoveCategory(v.id)} className="px-[10px] py-[4px] border-l border-l-red-border ml-sm">
                   <Text className="text-[16px]">🗑️</Text>
                 </TouchableOpacity>
               )}

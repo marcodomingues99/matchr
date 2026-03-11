@@ -5,17 +5,21 @@ import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigat
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { useQuery } from '@tanstack/react-query';
+import { RootStackParamList, Team, ResolvedMatch } from '../types';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { GameCard } from '../components/GameCard';
-import { TeamGamesSheet } from '../components/TeamGamesSheet';
+import { MatchCard } from '../components/MatchCard';
+import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
 import { Colors, Gradients } from '../theme';
 import { calcStats } from '../utils/scoring';
 import { GROUP_GRADIENT_POOL } from '../utils/groupColors';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS, GAME_STATUS_LABEL } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { MATCH_STATUS } from '../utils/constants';
+import { MATCH_STATUS_LABEL } from '../utils/labels';
+import { formatTimePt } from '../utils/dateUtils';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -26,22 +30,32 @@ type TabKey = 'table' | 'results' | 'games';
 export const GroupsTableScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament, refetch: refetchTournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
 
   const [activeTab, setActiveTab] = useState<TabKey>('table');
   const [sheetTeam, setSheetTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await Promise.all([refetchTournament(), refetchMatches()]);
+    setRefreshing(false);
+  }, [refetchTournament, refetchMatches]);
 
   // Extract sorted group names
   const groups = useMemo(
-    () => [...new Set((vertente?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? [])].sort(),
-    [vertente?.teams],
+    () => [...new Set((category?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? [])].sort(),
+    [category?.teams],
   );
   const [activeGroup, setActiveGroup] = useState<string>(groups[0] ?? '');
 
@@ -54,7 +68,7 @@ export const GroupsTableScreen = () => {
 
   // Group teams by group
   const grouped = useMemo(() => {
-    const teams = vertente?.teams ?? [];
+    const teams = category?.teams ?? [];
     const result: Record<string, typeof teams> = {};
     teams.forEach(t => {
       const g = t.group ?? '';
@@ -62,29 +76,18 @@ export const GroupsTableScreen = () => {
       result[g].push(t);
     });
     return result;
-  }, [vertente?.teams]);
+  }, [category?.teams]);
 
-  const qualifiers = vertente?.qualifiersPerGroup ?? 2;
-  const mockStats = (teamId: string) => calcStats(teamId, mockGames, vertente?.pointsPerWin);
+  const qualifiers = category?.qualifiersPerGroup ?? 2;
+  const getStats = (teamId: string) => calcStats(teamId, categoryMatches, category?.pointsPerWin);
 
-  // Set of team IDs that belong to this vertente (used to scope game filtering)
-  const vertenteTeamIds = useMemo(
-    () => new Set(vertente?.teams.map(t => t.id) ?? []),
-    [vertente?.teams],
+  // Filter matches by active group
+  const filteredMatches = useMemo<ResolvedMatch[]>(
+    () => categoryMatches.filter(g => g.team1.group === activeGroup || g.team2.group === activeGroup),
+    [activeGroup, categoryMatches],
   );
 
-  // Filter games by active group AND only include games whose teams belong to this vertente
-  const filteredGames = useMemo(
-    () => mockGames.filter(
-      g =>
-        vertenteTeamIds.has(g.team1.id) &&
-        vertenteTeamIds.has(g.team2.id) &&
-        (g.team1.group === activeGroup || g.team2.group === activeGroup),
-    ),
-    [activeGroup, vertenteTeamIds],
-  );
-
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
   const showGroupSelector = activeTab !== 'table' && groups.length > 0;
 
@@ -93,10 +96,10 @@ export const GroupsTableScreen = () => {
       <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
+            backLabel={`${CATEGORY_CONFIG[category.type].labelShort} ${category.level}`}
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">Fase de Grupos</Text>
         </SafeAreaView>
       </LinearGradient>
@@ -175,7 +178,7 @@ export const GroupsTableScreen = () => {
           ) : (
             Object.keys(grouped).sort().map((group, groupIdx) => {
               const gradient = GROUP_GRADIENT_POOL[groupIdx % GROUP_GRADIENT_POOL.length];
-              const teams = [...grouped[group]].sort((a, b) => mockStats(b.id).pts - mockStats(a.id).pts);
+              const teams = [...grouped[group]].sort((a, b) => getStats(b.id).pts - getStats(a.id).pts);
               return (
                 <View key={group} className="bg-white rounded-md overflow-hidden mb-md shadow-card">
                   {/* Coloured group header */}
@@ -197,7 +200,7 @@ export const GroupsTableScreen = () => {
 
                   {/* Team rows */}
                   {teams.map((team, idx) => {
-                    const stats = mockStats(team.id);
+                    const stats = getStats(team.id);
                     const isQ = idx < qualifiers;
                     const isLastRow = idx === teams.length - 1;
                     return (
@@ -216,7 +219,7 @@ export const GroupsTableScreen = () => {
                         <Text className="flex-1 text-sm font-nunito-bold text-navy text-center">{stats.played}</Text>
                         <Text className="flex-1 text-sm font-nunito-bold text-green text-center">{stats.wins}</Text>
                         <Text className="flex-1 text-sm font-nunito-bold text-red text-center">{stats.losses}</Text>
-                        <Text className="flex-[1.4] text-sm font-nunito-bold text-navy text-center">{stats.gamesWon}-{stats.gamesLost}</Text>
+                        <Text className="flex-[1.4] text-sm font-nunito-bold text-navy text-center">{stats.setsWon}-{stats.setsLost}</Text>
                         <Text className="flex-1 text-sm font-nunito-black text-blue text-center">{stats.pts}</Text>
                       </TouchableOpacity>
                     );
@@ -229,22 +232,22 @@ export const GroupsTableScreen = () => {
 
         {/* TAB: Resultados (filtered by group) */}
         {activeTab === 'results' && (
-          filteredGames.length === 0 ? (
+          filteredMatches.length === 0 ? (
             <View className="items-center mt-[48px] px-xl">
               <Text className="text-md font-nunito-semibold text-muted text-center leading-[18px]">Sem resultados para o Grupo {activeGroup}</Text>
             </View>
           ) : (
-            filteredGames.map(g => (
+            filteredMatches.map(g => (
               <View key={g.id} className="bg-white rounded-md p-md mb-sm shadow-card">
                 <View className="flex-row justify-between items-center mb-sm">
-                  <Text className="text-sm font-nunito-bold text-muted">{g.time} · {g.court}</Text>
+                  <Text className="text-sm font-nunito-bold text-muted">{formatTimePt(g.scheduledAt)} · {g.court}</Text>
                   <View className={clsx(
                     'rounded-full px-[8px] py-[3px]',
-                    g.status === GAME_STATUS.FINISHED ? 'bg-green-bg-light' :
-                      g.status === GAME_STATUS.LIVE ? 'bg-red-bg' : 'bg-gbg',
+                    g.status === MATCH_STATUS.FINISHED ? 'bg-green-bg-light' :
+                      g.status === MATCH_STATUS.LIVE ? 'bg-red-bg' : 'bg-gbg',
                   )}>
                     <Text className="text-xs font-nunito text-navy">
-                      {GAME_STATUS_LABEL[g.status] ?? g.status}
+                      {MATCH_STATUS_LABEL[g.status] ?? g.status}
                     </Text>
                   </View>
                 </View>
@@ -252,7 +255,7 @@ export const GroupsTableScreen = () => {
                   <TouchableOpacity className="flex-1" onPress={() => setSheetTeam(g.team1)} activeOpacity={0.7}>
                     <Text className="flex-1 text-base font-nunito text-navy" numberOfLines={1}>{g.team1.name}</Text>
                   </TouchableOpacity>
-                  {g.sets && g.sets.length > 0 ? (
+                  {g.sets.length > 0 ? (
                     <View className="flex-row gap-[6px] items-center">
                       {g.sets.map((set, i) => (
                         <View key={i} className="flex-row items-center gap-[2px] bg-gbg rounded-sm px-[6px] py-[3px]">
@@ -274,22 +277,22 @@ export const GroupsTableScreen = () => {
           )
         )}
 
-        {/* TAB: Jogos (GameCards filtered by group) */}
+        {/* TAB: Jogos (MatchCards filtered by group) */}
         {activeTab === 'games' && (
-          filteredGames.length === 0 ? (
+          filteredMatches.length === 0 ? (
             <View className="items-center mt-[48px] px-xl">
               <Text className="text-md font-nunito-semibold text-muted text-center leading-[18px]">Sem jogos para o Grupo {activeGroup}</Text>
             </View>
           ) : (
-            filteredGames.map(g => (
-              <GameCard
+            filteredMatches.map(g => (
+              <MatchCard
                 key={g.id}
-                game={g}
+                match={g}
                 onTeamPress={setSheetTeam}
-                onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
-                onEnterResult={() => g.status === GAME_STATUS.PAUSED
-                  ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
-                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                onEdit={() => navigation.navigate('EditMatch', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })}
+                onEnterResult={() => g.status === MATCH_STATUS.PAUSED
+                  ? navigation.navigate('MatchPaused', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })
+                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })
                 }
               />
             ))
@@ -301,12 +304,12 @@ export const GroupsTableScreen = () => {
       </ScrollView>
       )}
 
-      {/* Team games bottom sheet */}
-      <TeamGamesSheet
+      {/* Team matches bottom sheet */}
+      <TeamMatchesSheet
         visible={sheetTeam !== null}
         team={sheetTeam}
-        vertente={vertente}
-        games={mockGames}
+        category={category}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
       <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />
