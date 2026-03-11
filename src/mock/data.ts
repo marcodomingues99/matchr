@@ -299,6 +299,7 @@ export const mockMatches: Match[] = [
     team1Id: 't2', team2Id: 't1',
     court: 'C3', scheduledAt: '2026-03-14T15:30:00',
     phase: 'groups', round: 3,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo B ───────────────────────────────────────────────────────────────
@@ -315,6 +316,7 @@ export const mockMatches: Match[] = [
     team1Id: 't7', team2Id: 't3',
     court: 'C4', scheduledAt: '2026-03-14T14:00:00',
     phase: 'groups', round: 2,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo C ───────────────────────────────────────────────────────────────
@@ -323,6 +325,7 @@ export const mockMatches: Match[] = [
     team1Id: 't6', team2Id: 't8',
     court: 'C3', scheduledAt: '2026-03-14T13:00:00',
     phase: 'groups', round: 1,
+    sets: [],
     status: 'scheduled',
   },
   // ─── Grupo Z (Torneio 4 – último jogo) ────────────────────────────────────
@@ -381,6 +384,7 @@ export const mockMatches: Match[] = [
     team1Id: 'tb1', team2Id: 'tmp-f',
     court: 'C1', scheduledAt: '2026-03-16T14:00:00',
     phase: 'final',
+    sets: [],
     status: 'scheduled',
   },
   {
@@ -388,6 +392,7 @@ export const mockMatches: Match[] = [
     team1Id: 'tb4', team2Id: 'tmp-3',
     court: 'C2', scheduledAt: '2026-03-16T14:00:00',
     phase: '3rd',
+    sets: [],
     status: 'scheduled',
   },
 ];

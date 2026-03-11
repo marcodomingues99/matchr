@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
@@ -6,8 +6,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -22,7 +24,10 @@ type Route = RouteProp<RootStackParamList, 'ManageTeam'>;
 export const ManageTeamScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
   const editTeamId = route.params.teamId;
@@ -37,6 +42,19 @@ export const ManageTeamScreen = () => {
   const [p2Name, setP2Name] = useState(existingTeam?.players[1].name ?? '');
   const [p2Phone, setP2Phone] = useState(existingTeam?.players[1].phone ?? '');
   const [p2Email, setP2Email] = useState(existingTeam?.players[1].email ?? '');
+
+  useEffect(() => {
+    if (existingTeam) {
+      setTeamName(existingTeam.name);
+      setPhoto(existingTeam.photo);
+      setP1Name(existingTeam.players[0].name ?? '');
+      setP1Phone(existingTeam.players[0].phone ?? '');
+      setP1Email(existingTeam.players[0].email ?? '');
+      setP2Name(existingTeam.players[1].name ?? '');
+      setP2Phone(existingTeam.players[1].phone ?? '');
+      setP2Email(existingTeam.players[1].email ?? '');
+    }
+  }, [existingTeam?.id]);
 
   if (!tournament || !category) return null;
 

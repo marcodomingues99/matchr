@@ -85,7 +85,7 @@ export interface Match {
   scheduledAt: string;
   phase: MatchPhase;
   round?: number;
-  sets?: SetScore[];
+  sets: SetScore[];
   status: MatchStatus;
   winnerId?: string;
 }

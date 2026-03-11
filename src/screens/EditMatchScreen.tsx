@@ -1,13 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { RootStackParamList, ResolvedMatch } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatch } from '../utils/resolveMatch';
+import { RootStackParamList } from '../types';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -22,28 +23,30 @@ type Route = RouteProp<RootStackParamList, 'EditMatch'>;
 export const EditMatchScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const category = tournament?.categories.find(v => v.id === route.params.categoryId);
-  const rawMatch = mockMatches.find(g => g.id === route.params.matchId);
 
-  const matchData: ResolvedMatch = rawMatch
-    ? resolveMatch(rawMatch, mockTeamMap)
-    : {
-        id: route.params.matchId, categoryId: route.params.categoryId,
-        team1Id: 'tmp-t1', team2Id: 'tmp-t2',
-        team1: { id: 'tmp-t1', name: 'Equipa 1', players: [{ id: 'x1', name: '' }, { id: 'x2', name: '' }] },
-        team2: { id: 'tmp-t2', name: 'Equipa 2', players: [{ id: 'x3', name: '' }, { id: 'x4', name: '' }] },
-        court: 'C1', scheduledAt: '', phase: 'groups' as const,
-        status: 'scheduled' as const,
-      };
+  const { data: matchData } = useQuery({
+    queryKey: matchKeys.detail(route.params.matchId),
+    queryFn: () => api.getMatch(route.params.matchId),
+    enabled: !!tournament,
+  });
 
-  const [court, setCourt] = useState(matchData.court);
-  const [time, setTime] = useState(
-    matchData.scheduledAt ? formatTimePt(matchData.scheduledAt) : '',
-  );
-  const [date, setDate] = useState(
-    matchData.scheduledAt ? matchData.scheduledAt.split('T')[0] + 'T00:00:00' : '',
-  );
+  const [court, setCourt] = useState('');
+  const [time, setTime] = useState('');
+  const [date, setDate] = useState('');
+
+  useEffect(() => {
+    if (matchData) {
+      setCourt(matchData.court);
+      setTime(matchData.scheduledAt ? formatTimePt(matchData.scheduledAt) : '');
+      setDate(matchData.scheduledAt ? matchData.scheduledAt.split('T')[0] + 'T00:00:00' : '');
+    }
+  }, [matchData]);
 
   const tournamentDays = useMemo(() => {
     if (!tournament?.startDate || !tournament?.endDate) return [];
@@ -55,28 +58,16 @@ export const EditMatchScreen = () => {
     [category?.courts],
   );
 
-  if (!tournament || !category) return null;
-
-  const persistScheduling = () => {
-    if (!rawMatch) return;
-    rawMatch.court = court;
-    rawMatch.scheduledAt = date && time ? date.split('T')[0] + 'T' + time + ':00' : '';
-  };
+  if (!tournament || !category || !matchData) return null;
 
   const handleSave = () => {
-    persistScheduling();
+    // TODO: call api.updateMatchSchedule() when backend is ready
     navigation.goBack();
   };
 
   const markWalkover = (winnerId: string) => {
-    if (!rawMatch) {
-      navigation.goBack();
-      return;
-    }
-    persistScheduling();
-    rawMatch.status = 'walkover';
-    rawMatch.winnerId = winnerId;
-    rawMatch.sets = [];
+    // TODO: call api.updateMatchSchedule() when backend is ready
+    // TODO: call api.finishMatch() for walkover when backend is ready
     navigation.goBack();
   };
 

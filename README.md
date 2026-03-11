@@ -51,6 +51,7 @@ Os testes estão em `src/__tests__/` e usam **Jest** + **ts-jest**.
 | `filteredGames.test.ts` | Filtragem de jogos (matches) por grupo/estado |
 | `saveSetLogic.test.ts` | Lógica de validação e gravação de sets |
 | `bracketPropagation.test.ts` | Propagação de resultados no bracket eliminatório |
+| `api/mockClient.test.ts` | MockClient — leituras, resolução de equipas, stubs de escrita |
 
 ## Versão
 
@@ -95,6 +96,7 @@ Após a build terminar, o terminal mostra um link para descarregar o `.apk`.
 
 ```
 src/
+├── api/            Camada de acesso a dados (interface + mock + React Query)
 ├── components/     Componentes reutilizáveis
 │   ├── Breadcrumb        Navegação breadcrumb
 │   ├── Button            Botão com gradiente
@@ -154,14 +156,46 @@ src/
 | NativeWind 4 | Tailwind CSS para React Native (styling responsivo) |
 | React Navigation 7 | Navegação stack |
 | expo-linear-gradient | Gradientes nos botões e headers |
+| React Query 5 | Gestão de estado assíncrono (API layer) |
 | Jest + ts-jest | Testes unitários |
 | Reanimated 4 | Animações |
 
 ## Notas
 
-- Todos os dados são **mock** (sem backend) — ver `src/mock/data.ts`
 - A navegação usa **route params** para passar IDs entre ecrãs (tournamentId → categoryId → matchId)
 - Categorias suportadas: **Masculino (M)**, **Feminino (F)** e **Misto (MX)**, cada uma com níveis de 1 a 6
 - O styling usa **NativeWind v4** (Tailwind CSS) com classes responsivas (`md:`, `lg:`) — config em `tailwind.config.ts`
 - Layout responsivo via componentes `Container`, `Grid` e `GridItem` em `src/components/Layout.tsx`
 - Os tipos `Match` (antigo `Game`) e `Category` (antigo `Vertente`) refletem a terminologia atual do domínio
+
+## API Layer
+
+Todos os ecrãs acedem a dados via `src/api/client.ts`, que exporta uma interface `ApiClient` e uma instância `api`. Os ecrãs usam **React Query** (`useQuery`) — nenhum ecrã importa diretamente de `mock/data.ts`.
+
+### Estrutura
+
+```
+src/api/
+├── client.ts        # Interface ApiClient + export da instância default
+├── mockClient.ts    # Implementação mock (lê de mock/data.ts)
+├── queryClient.ts   # Configuração do React Query client
+└── queryKeys.ts     # Factories de query keys
+```
+
+### Estado atual (Fase 1 — Leituras)
+
+- Todos os métodos de leitura estão implementados no `MockClient`, retornando dados dos fixtures mock
+- Métodos de escrita/mutação existem na interface mas lançam `Not implemented`
+- `staleTime: Infinity` e `gcTime: Infinity` porque os dados são mock estáticos
+- Para trocar para um backend real, basta implementar `ApiClient` e alterar o export em `client.ts`
+
+### Query keys
+
+```ts
+tournamentKeys.all           // ['tournaments']
+tournamentKeys.detail(id)    // ['tournaments', id]
+matchKeys.byCategory(id)     // ['matches', { categoryId }]
+matchKeys.bracket(id)        // ['matches', { categoryId, bracket: true }]
+matchKeys.byTournament(id)   // ['matches', { tournamentId }]
+matchKeys.detail(id)         // ['matches', id]
+```

@@ -74,7 +74,7 @@ export const MatchCard: React.FC<MatchCardProps> = React.memo(({ match, onPress,
   /** Interleaved scores for the finished condensed row:
    *  for each set → winner score (blue) then loser score (muted) */
   const renderFinishedScores = () => {
-    if (!match.sets?.length) return null;
+    if (!match.sets.length) return null;
     return (
       <View className="flex-row gap-[3px]">
         {match.sets.map((set: SetScore, i: number) => {
@@ -93,7 +93,7 @@ export const MatchCard: React.FC<MatchCardProps> = React.memo(({ match, onPress,
 
   /** Per-team score row for live / paused / scheduled */
   const renderScores = (forTeam: 1 | 2) => {
-    if (isScheduled || !match.sets?.length) {
+    if (isScheduled || !match.sets.length) {
       return <ScoreBox value="–" variant="pending" />;
     }
     return (

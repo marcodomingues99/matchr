@@ -13,8 +13,10 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Tournament, Category, CategoryStatus } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { Colors, Gradients } from '../theme';
 import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { LiveDot } from '../components/LiveDot';
@@ -46,13 +48,17 @@ const HomeHeader = ({ right }: { right?: React.ReactNode }) => (
 
 export const HomeScreen = () => {
   const navigation = useNavigation<Nav>();
-  const tournaments = mockTournaments;
+  const { data: tournaments = [], refetch } = useQuery({
+    queryKey: tournamentKeys.all,
+    queryFn: () => api.getTournaments(),
+  });
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
   const active   = React.useMemo(() => tournaments.filter(t => t.status === 'active'),   [tournaments]);
   const upcoming = React.useMemo(() => tournaments.filter(t => t.status === 'upcoming'), [tournaments]);

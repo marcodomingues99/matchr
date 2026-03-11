@@ -5,9 +5,10 @@ import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigat
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, ResolvedMatch, Team } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatches } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { MatchCard } from '../components/MatchCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -31,28 +32,39 @@ interface BracketRound {
 export const KnockoutScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament, refetch: refetchTournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: apiBracketMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: matchKeys.bracket(categoryId),
+    queryFn: () => api.getBracketMatches(categoryId),
+    enabled: !!category,
+  });
 
   const [activeRound, setActiveRound] = React.useState(0);
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await Promise.all([refetchTournament(), refetchMatches()]);
+    setRefreshing(false);
+  }, [refetchTournament, refetchMatches]);
 
   // Derive bracket rounds from actual game data, with propagation
   const { rounds, allBracketMatches } = React.useMemo(() => {
     if (!category) return { rounds: [] as BracketRound[], allBracketMatches: [] as ResolvedMatch[] };
 
-    const teamIds = new Set(category.teams.map(t => t.id));
-    const rawBracketMatches = mockMatches.filter(
-      g => (teamIds.has(g.team1Id) || teamIds.has(g.team2Id)) && g.phase !== 'groups',
-    );
-
-    const bracketMatches = resolveMatches(propagateBracket(rawBracketMatches), mockTeamMap);
+    const teamMap = new Map(category.teams.map(t => [t.id, t]));
+    const propagated = propagateBracket(apiBracketMatches);
+    const bracketMatches = propagated.map(m => ({
+      ...m,
+      team1: teamMap.get(m.team1Id) ?? { id: m.team1Id, name: '?', players: [] as never[] },
+      team2: teamMap.get(m.team2Id) ?? { id: m.team2Id, name: '?', players: [] as never[] },
+    })) as ResolvedMatch[];
 
     const byPhase: Record<string, ResolvedMatch[]> = {};
     bracketMatches.forEach(g => {
@@ -75,7 +87,7 @@ export const KnockoutScreen = () => {
       }));
 
     return { rounds: built, allBracketMatches: bracketMatches };
-  }, [category]);
+  }, [category, apiBracketMatches]);
 
   if (!tournament || !category) {
     return (

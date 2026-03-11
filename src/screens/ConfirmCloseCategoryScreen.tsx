@@ -4,9 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatches } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { daysBetween } from '../utils/dateUtils';
 import { popTo } from '../utils/navigation';
 import { calcStats } from '../utils/scoring';
@@ -36,17 +37,20 @@ const initials = (name: string) =>
 export const ConfirmCloseCategoryScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-    const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+    const { tournamentId, categoryId } = route.params;
+    const { data: tournament } = useQuery({
+        queryKey: tournamentKeys.detail(tournamentId),
+        queryFn: () => api.getTournament(tournamentId),
+    });
+    const category = tournament?.categories.find(v => v.id === categoryId);
+    const { data: matches = [] } = useQuery({
+        queryKey: matchKeys.byCategory(categoryId),
+        queryFn: () => api.getMatchesByCategory(categoryId),
+        enabled: !!category,
+    });
 
     if (!tournament || !category) return null;
 
-    // Games for this category's teams
-    const categoryTeamIds = new Set(category.teams.map(t => t.id));
-    const rawMatches = mockMatches.filter(
-        g => categoryTeamIds.has(g.team1Id) && categoryTeamIds.has(g.team2Id),
-    );
-    const matches = resolveMatches(rawMatches, mockTeamMap);
     const totalMatches = matches.length;
     const totalTeams = category.teams.length;
 
@@ -92,7 +96,7 @@ export const ConfirmCloseCategoryScreen = () => {
     });
 
     // Final score summary
-    const finalScore = finalMatch?.sets
+    const finalScore = finalMatch?.sets.length
         ? finalMatch.sets.map(s => `${s.team1}–${s.team2}`).join(' / ')
         : '—';
 

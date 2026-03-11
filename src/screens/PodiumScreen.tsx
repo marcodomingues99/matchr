@@ -5,9 +5,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { popTo } from '../utils/navigation';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatches } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
@@ -34,8 +35,17 @@ const PODIUM_HEIGHTS = [110, 80, 65];
 export const PodiumScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [] } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
   // Derive ranking from actual team stats
@@ -44,7 +54,7 @@ export const PodiumScreen = () => {
     return category.teams
       .filter(t => !t.withdrawn)
       .map(team => {
-        const stats = calcStats(team.id, mockMatches, category.pointsPerWin);
+        const stats = calcStats(team.id, categoryMatches, category.pointsPerWin);
         return {
           pos: 0,
           name: team.name,
@@ -56,7 +66,7 @@ export const PodiumScreen = () => {
       })
       .sort((a, b) => b._sortKey - a._sortKey)
       .map(({ _sortKey, ...rest }, i) => ({ ...rest, pos: i + 1 }));
-  }, [category]);
+  }, [category, categoryMatches]);
 
   if (!tournament || !category) {
     return (
@@ -163,7 +173,7 @@ export const PodiumScreen = () => {
         visible={sheetTeam !== null}
         team={sheetTeam}
         category={category}
-        matches={resolveMatches(mockMatches, mockTeamMap)}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
     </View>

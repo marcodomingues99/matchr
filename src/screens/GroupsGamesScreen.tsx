@@ -5,9 +5,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Team, ResolvedMatch } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatches } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { MatchCard } from '../components/MatchCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -23,27 +24,27 @@ type Route = RouteProp<RootStackParamList, 'GroupsGames'>;
 export const GroupsGamesScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
-
-  // Extract groups from this category's teams
-  const categoryTeamIds = React.useMemo(() => new Set(category?.teams.map(t => t.id) ?? []), [category?.teams]);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [] } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
   const groups = [...new Set(
     (category?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? []
   )].sort();
   const [activeGroup, setActiveGroup] = React.useState<string>(groups[0] ?? '');
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
-  // Filter matches: scope to this category AND active group
+  // Filter matches by active group
   const filteredMatches = React.useMemo<ResolvedMatch[]>(
-    () => {
-      const categoryMatches = mockMatches.filter(g =>
-        categoryTeamIds.has(g.team1Id) && categoryTeamIds.has(g.team2Id),
-      );
-      const resolved = resolveMatches(categoryMatches, mockTeamMap);
-      return resolved.filter(g => g.team1.group === activeGroup || g.team2.group === activeGroup);
-    },
-    [activeGroup, categoryTeamIds],
+    () => categoryMatches.filter(g => g.team1.group === activeGroup || g.team2.group === activeGroup),
+    [activeGroup, categoryMatches],
   );
 
   if (!tournament || !category) return null;
@@ -110,7 +111,7 @@ export const GroupsGamesScreen = () => {
         visible={sheetTeam !== null}
         team={sheetTeam}
         category={category}
-        matches={resolveMatches(mockMatches, mockTeamMap)}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
       <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />

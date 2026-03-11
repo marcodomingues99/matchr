@@ -5,9 +5,10 @@ import { useNavigation, useRoute, RouteProp, StackActions } from '@react-navigat
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatches } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
@@ -24,15 +25,25 @@ type Route = RouteProp<RootStackParamList, 'TeamList'>;
 export const TeamListScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament, refetch: refetchTournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
 
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await Promise.all([refetchTournament(), refetchMatches()]);
+    setRefreshing(false);
+  }, [refetchTournament, refetchMatches]);
 
   const { sortedGroups, groupRankMap } = useMemo(() => {
     const teams = category?.teams ?? [];
@@ -42,11 +53,11 @@ export const TeamListScreen = () => {
     sg.forEach(g => {
       const members = teams
         .filter(t => t.group === g)
-        .sort((a, b) => calcStats(b.id, mockMatches, ppw).pts - calcStats(a.id, mockMatches, ppw).pts);
+        .sort((a, b) => calcStats(b.id, categoryMatches, ppw).pts - calcStats(a.id, categoryMatches, ppw).pts);
       members.forEach((t, i) => { map[t.id] = i + 1; });
     });
     return { sortedGroups: sg, groupRankMap: map };
-  }, [category?.teams, category?.pointsPerWin, mockMatches]);
+  }, [category?.teams, category?.pointsPerWin, categoryMatches]);
 
   if (!tournament || !category) return null;
 
@@ -182,7 +193,7 @@ export const TeamListScreen = () => {
                               { text: 'Cancelar', style: 'cancel' },
                               {
                                 text: 'Remover', style: 'destructive', onPress: () => {
-                                  category.teams = category.teams.filter(t => t.id !== team.id);
+                                  // TODO: call api.removeTeam() when backend is ready
                                   navigation.replace('TeamList', { tournamentId: tournament.id, categoryId: category.id });
                                 }
                               },
@@ -213,7 +224,7 @@ export const TeamListScreen = () => {
         visible={sheetTeam !== null}
         team={sheetTeam}
         category={category}
-        matches={resolveMatches(mockMatches, mockTeamMap)}
+        matches={categoryMatches}
         onClose={() => setSheetTeam(null)}
       />
       <HomeFAB onPress={() => navigation.dispatch(StackActions.pop(2))} />

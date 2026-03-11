@@ -33,7 +33,7 @@ export const calcStats = (teamId: string, matches: Match[], pointsPerWin: number
     else if (m.winnerId != null) losses++;
     // Walkover matches have no sets played — only count games-within-sets for finished matches
     if (m.status === 'finished') {
-      (m.sets ?? []).forEach(set => {
+      m.sets.forEach(set => {
         setsWon  += isT1 ? set.team1 : set.team2;
         setsLost += isT1 ? set.team2 : set.team1;
       });

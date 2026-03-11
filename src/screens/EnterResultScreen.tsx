@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -6,9 +6,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatch } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -26,25 +27,32 @@ interface SetState { team1: string; team2: string; saved: boolean; }
 export const EnterResultScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const category = tournament?.categories.find(v => v.id === route.params.categoryId);
-  const rawMatch = mockMatches.find(g => g.id === route.params.matchId);
 
-  const matchFormat = resolveMatchFormat(category!.matchFormat);
+  const { data: match } = useQuery({
+    queryKey: matchKeys.detail(route.params.matchId),
+    queryFn: () => api.getMatch(route.params.matchId),
+    enabled: !!tournament,
+  });
 
-  const isEditing = rawMatch?.status === 'finished' && !!rawMatch?.sets?.length;
+  const isEditing = match?.status === 'finished' && !!match?.sets?.length;
 
   const buildInitialSets = (): SetState[] => {
-    if (rawMatch?.status === 'finished' && rawMatch.sets && rawMatch.sets.length > 0) {
-      return rawMatch.sets.map(s => ({
+    if (match?.status === 'finished' && (match.sets?.length ?? 0) > 0) {
+      return match.sets!.map(s => ({
         team1: String(s.team1),
         team2: String(s.team2),
         saved: true,
       }));
     }
-    if ((rawMatch?.status === 'live' || rawMatch?.status === 'paused') && rawMatch?.sets && rawMatch.sets.length > 0) {
+    if ((match?.status === 'live' || match?.status === 'paused') && (match.sets?.length ?? 0) > 0) {
       return [
-        ...rawMatch.sets.map(s => ({ team1: String(s.team1), team2: String(s.team2), saved: true })),
+        ...match.sets!.map(s => ({ team1: String(s.team1), team2: String(s.team2), saved: true })),
         { team1: '', team2: '', saved: false },
       ];
     }
@@ -53,8 +61,13 @@ export const EnterResultScreen = () => {
 
   const [sets, setSets] = useState<SetState[]>(buildInitialSets);
 
-  if (!tournament || !category || !rawMatch) return null;
-  const match = resolveMatch(rawMatch, mockTeamMap);
+  useEffect(() => {
+    if (match) setSets(buildInitialSets());
+  }, [match]);
+
+  if (!tournament || !category || !match) return null;
+
+  const matchFormat = resolveMatchFormat(category.matchFormat);
   const currentSetIdx = sets.findIndex(s => !s.saved);
 
   const saveSet = () => {

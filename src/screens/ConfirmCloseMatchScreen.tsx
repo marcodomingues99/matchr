@@ -6,9 +6,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, ResolvedMatch } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatch } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -21,12 +22,19 @@ type Route = RouteProp<RootStackParamList, 'ConfirmCloseMatch'>;
 export const ConfirmCloseMatchScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
-  const rawMatch = mockMatches.find(g => g.id === route.params.matchId);
-  const match = rawMatch ? resolveMatch(rawMatch, mockTeamMap) : null;
 
-  if (!tournament || !category || !match) {
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+
+  const { data: match } = useQuery({
+    queryKey: matchKeys.detail(route.params.matchId),
+    queryFn: () => api.getMatch(route.params.matchId),
+  });
+
+  if (!tournament || !category || !match || !match.winnerId) {
     return (
       <View className="flex-1 bg-gbg">
         <LinearGradient colors={Gradients.green} className="px-lg pb-lg">
@@ -47,7 +55,7 @@ export const ConfirmCloseMatchScreen = () => {
   const winnerIsTeam1 = match.winnerId === match.team1.id;
   const winner = winnerIsTeam1 ? match.team1 : match.team2;
   const loser = winnerIsTeam1 ? match.team2 : match.team1;
-  const sets = match.sets ?? [];
+  const sets = match.sets;
   const winnerSets = sets.filter(s => winnerIsTeam1 ? s.team1 > s.team2 : s.team2 > s.team1).length;
   const loserSets = sets.length - winnerSets;
 

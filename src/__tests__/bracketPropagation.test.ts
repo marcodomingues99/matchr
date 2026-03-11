@@ -41,11 +41,11 @@ describe('propagateBracket', () => {
       },
       {
         id: 'f1', categoryId: 'test-cat', team1Id: placeholder1.id, team2Id: placeholder2.id, court: 'C1', scheduledAt: '2026-03-02T14:00:00',
-        phase: 'final', status: 'scheduled',
+        phase: 'final', sets: [], status: 'scheduled',
       },
       {
         id: '3rd1', categoryId: 'test-cat', team1Id: placeholder1.id, team2Id: placeholder2.id, court: 'C2', scheduledAt: '2026-03-02T14:00:00',
-        phase: '3rd', status: 'scheduled',
+        phase: '3rd', sets: [], status: 'scheduled',
       },
     ];
 
@@ -71,7 +71,7 @@ describe('propagateBracket', () => {
       },
       {
         id: 'f1', categoryId: 'test-cat', team1Id: placeholder1.id, team2Id: placeholder2.id, court: 'C1', scheduledAt: '2026-03-02T14:00:00',
-        phase: 'final', status: 'scheduled',
+        phase: 'final', sets: [], status: 'scheduled',
       },
     ];
 
@@ -89,7 +89,7 @@ describe('propagateBracket', () => {
       },
       {
         id: 'f1', categoryId: 'test-cat', team1Id: placeholder1.id, team2Id: placeholder2.id, court: 'C1', scheduledAt: '2026-03-02T14:00:00',
-        phase: 'final', status: 'scheduled',
+        phase: 'final', sets: [], status: 'scheduled',
       },
     ];
 
@@ -115,7 +115,7 @@ describe('propagateBracket', () => {
       },
       {
         id: 'sf1', categoryId: 'test-cat', team1Id: placeholder1.id, team2Id: placeholder2.id, court: 'C1', scheduledAt: '2026-03-02T10:00:00',
-        phase: 'sf', status: 'scheduled',
+        phase: 'sf', sets: [], status: 'scheduled',
       },
     ];
 

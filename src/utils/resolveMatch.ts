@@ -1,14 +1,13 @@
 import type { Match, ResolvedMatch, Team, Tournament } from '../types';
 
-const PLACEHOLDER_TEAM: Team = { id: '?', name: '?', players: [] };
+/** Placeholder returned when a bracket slot is not yet determined */
+const placeholderTeam = (id: string): Team => ({ id, name: '?', players: [] });
 
 /** Resolve a raw Match (with IDs) into a ResolvedMatch (with full Team objects) */
 export function resolveMatch(match: Match, teamMap: Map<string, Team>): ResolvedMatch {
-  return {
-    ...match,
-    team1: teamMap.get(match.team1Id) ?? { ...PLACEHOLDER_TEAM, id: match.team1Id },
-    team2: teamMap.get(match.team2Id) ?? { ...PLACEHOLDER_TEAM, id: match.team2Id },
-  };
+  const team1 = teamMap.get(match.team1Id) ?? placeholderTeam(match.team1Id);
+  const team2 = teamMap.get(match.team2Id) ?? placeholderTeam(match.team2Id);
+  return { ...match, team1, team2 };
 }
 
 /** Resolve an array of raw Matches */

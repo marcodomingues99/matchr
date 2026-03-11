@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, Platform, Alert } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,8 +8,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
 import { CATEGORY_CONFIG } from '../utils/categoryConfig';
@@ -25,11 +27,14 @@ type Route = RouteProp<RootStackParamList, 'EditTournament'>;
 export const EditTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
 
   const [name, setName] = useState(tournament?.name ?? '');
   const [location, setLocation] = useState(tournament?.location ?? '');
-  const [categories, setCategorys] = useState(tournament?.categories ?? []);
+  const [categories, setCategories] = useState(tournament?.categories ?? []);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -38,6 +43,20 @@ export const EditTournamentScreen = () => {
   const [rulesUrl, setRulesUrl] = useState<{ uri: string; name: string; size?: number } | null>(
     tournament?.rulesUrl ? { uri: tournament.rulesUrl, name: tournament.rulesUrl.split('/').pop() ?? 'regulamento.pdf' } : null
   );
+
+  useEffect(() => {
+    if (tournament) {
+      setName(tournament.name);
+      setLocation(tournament.location);
+      setCategories(tournament.categories);
+      setPhoto(tournament.photo ?? '');
+      setRulesUrl(
+        tournament.rulesUrl
+          ? { uri: tournament.rulesUrl, name: tournament.rulesUrl.split('/').pop() ?? 'regulamento.pdf' }
+          : null,
+      );
+    }
+  }, [tournament]);
 
   if (!tournament) return null;
 
@@ -50,7 +69,7 @@ export const EditTournamentScreen = () => {
         {
           text: 'Remover',
           style: 'destructive',
-          onPress: () => setCategorys(prev => prev.filter(v => v.id !== categoryId)),
+          onPress: () => setCategories(prev => prev.filter(v => v.id !== categoryId)),
         },
       ],
     );

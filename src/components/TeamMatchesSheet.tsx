@@ -35,7 +35,7 @@ const phaseLabel: Record<string, string> = {
 };
 
 function formatSets(sets: ResolvedMatch['sets'], isTeam1: boolean): string {
-    if (!sets?.length) return '';
+    if (!sets.length) return '';
     return sets
         .map(s => (isTeam1 ? `${s.team1}–${s.team2}` : `${s.team2}–${s.team1}`))
         .join(' / ');

@@ -6,8 +6,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
@@ -23,7 +25,10 @@ type Route = RouteProp<RootStackParamList, 'GroupsEmpty'>;
 export const GroupsEmptyScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+    const { data: tournament } = useQuery({
+        queryKey: tournamentKeys.detail(route.params.tournamentId),
+        queryFn: () => api.getTournament(route.params.tournamentId),
+    });
     const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
     // Map each sorted group letter to its index for chip color lookup

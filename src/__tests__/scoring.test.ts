@@ -27,6 +27,7 @@ const walkoverMatch = (t1Id: string, t2Id: string, winnerId: string): Match => (
   court: 'C1',
   scheduledAt: '2026-01-01T10:00:00',
   phase: 'groups',
+  sets: [],
   status: 'walkover',
   winnerId,
 });
@@ -149,6 +150,7 @@ describe('calcStats', () => {
       court: 'C1',
       scheduledAt: '2026-01-01T10:00:00',
       phase: 'groups',
+      sets: [],
       status: 'scheduled',
     };
     expect(calcStats('t1', [scheduled])).toEqual({
@@ -205,17 +207,6 @@ describe('calcStats', () => {
     expect(stats.setsLost).toBe(0);
   });
 
-  it('handles finished match with undefined sets', () => {
-    const match: Match = {
-      ...finishedMatch('t1', 't2', [], 't1'),
-      sets: undefined,
-    };
-    const stats = calcStats('t1', [match]);
-    expect(stats.wins).toBe(1);
-    expect(stats.setsWon).toBe(0);
-    expect(stats.setsLost).toBe(0);
-  });
-
   it('handles a set with zero scores', () => {
     const matches = [finishedMatch('t1', 't2', [{ team1: 6, team2: 0 }, { team1: 6, team2: 0 }], 't1')];
     const stats = calcStats('t1', matches);
@@ -239,7 +230,7 @@ describe('calcStats', () => {
       finishedMatch('t1', 't2', [{ team1: 6, team2: 4 }, { team1: 6, team2: 3 }], 't1'),
       walkoverMatch('t3', 't1', 't1'),
       liveMatch('t1', 't4'),
-      { id: 'sched', categoryId: 'test-cat', team1Id: 't1', team2Id: 't5', court: 'C1', scheduledAt: '2026-01-02T11:00:00', phase: 'groups', status: 'scheduled' },
+      { id: 'sched', categoryId: 'test-cat', team1Id: 't1', team2Id: 't5', court: 'C1', scheduledAt: '2026-01-02T11:00:00', phase: 'groups', sets: [], status: 'scheduled' },
       { id: 'paused', categoryId: 'test-cat', team1Id: 't6', team2Id: 't1', court: 'C1', scheduledAt: '2026-01-02T12:00:00', phase: 'groups', sets: [{ team1: 5, team2: 4 }], status: 'paused' },
       finishedMatch('t1', 't7', [{ team1: 2, team2: 6 }, { team1: 3, team2: 6 }], 't7'),
     ];

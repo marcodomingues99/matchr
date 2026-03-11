@@ -4,9 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, ResolvedMatch } from '../types';
-import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
-import { resolveMatch } from '../utils/resolveMatch';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
@@ -21,10 +22,17 @@ type Route = RouteProp<RootStackParamList, 'MatchPaused'>;
 export const MatchPausedScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
+
+  const { data: tournament } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const category = tournament?.categories.find(v => v.id === route.params.categoryId);
-  const rawMatch = mockMatches.find(g => g.id === route.params.matchId);
-  const match = rawMatch ? resolveMatch(rawMatch, mockTeamMap) : null;
+
+  const { data: match } = useQuery({
+    queryKey: matchKeys.detail(route.params.matchId),
+    queryFn: () => api.getMatch(route.params.matchId),
+  });
 
   // No hooks after this point — safe to guard
   if (!tournament || !category || !match) return null;
@@ -57,11 +65,11 @@ export const MatchPausedScreen = () => {
             <Text className="text-[48px] mb-md">⏸</Text>
             <Text className="text-[18px] font-nunito-black text-navy mb-sm">Jogo em pausa</Text>
             <Text className="text-base font-nunito-semibold text-muted text-center leading-[20px]">
-              {match.sets?.length ?? 0} set{(match.sets?.length ?? 0) !== 1 ? 's' : ''} guardados.{'\n'}Podes retomar quando quiseres.
+              {match.sets.length} set{match.sets.length !== 1 ? 's' : ''} guardados.{'\n'}Podes retomar quando quiseres.
             </Text>
           </View>
 
-          {match.sets && match.sets.length > 0 && (
+          {match.sets.length > 0 && (
             <View className="bg-white rounded-md p-md mb-md shadow-card">
               <Text className="text-xxs font-nunito-bold text-muted uppercase tracking-[1px] mb-sm">Resultados guardados</Text>
               {match.sets.map((set, i) => (

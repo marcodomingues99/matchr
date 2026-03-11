@@ -5,8 +5,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockMatches } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
@@ -39,30 +41,37 @@ const PROGRESS_GRAD: Record<string, readonly [string, string]> = {
 export const CategoryHubScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+  const { tournamentId, categoryId } = route.params;
+  const { data: tournament, refetch: refetchTournament } = useQuery({
+    queryKey: tournamentKeys.detail(tournamentId),
+    queryFn: () => api.getTournament(tournamentId),
+  });
+  const category = tournament?.categories.find(v => v.id === categoryId);
+  const { data: categoryMatches = [], refetch: refetchMatches } = useQuery({
+    queryKey: matchKeys.byCategory(categoryId),
+    queryFn: () => api.getMatchesByCategory(categoryId),
+    enabled: !!category,
+  });
 
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await Promise.all([refetchTournament(), refetchMatches()]);
+    setRefreshing(false);
+  }, [refetchTournament, refetchMatches]);
 
-  const { categoryMatches, finishedMatches, liveMatches, allMatchesFinished, bracketPct } = useMemo(() => {
-    const teamIds = new Set(category?.teams.map(t => t.id) ?? []);
-    const all = mockMatches.filter(g => teamIds.has(g.team1Id) && teamIds.has(g.team2Id));
-    const finished = all.filter(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER);
-    const live = all.filter(g => g.status === MATCH_STATUS.LIVE);
-    const bracket = all.filter(g => g.phase !== 'groups');
+  const { finishedMatches, liveMatches, allMatchesFinished, bracketPct } = useMemo(() => {
+    const finished = categoryMatches.filter(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER);
+    const live = categoryMatches.filter(g => g.status === MATCH_STATUS.LIVE);
+    const bracket = categoryMatches.filter(g => g.phase !== 'groups');
     const bracketDone = bracket.filter(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER);
     return {
-      categoryMatches: all,
       finishedMatches: finished,
       liveMatches: live,
-      allMatchesFinished: all.length > 0 && all.every(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER),
+      allMatchesFinished: categoryMatches.length > 0 && categoryMatches.every(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER),
       bracketPct: bracket.length > 0 ? Math.round(bracketDone.length / bracket.length * 100) : 0,
     };
-  }, [category?.teams]);
+  }, [categoryMatches]);
 
   if (!tournament || !category) return null;
 

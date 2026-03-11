@@ -4,8 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockMatches } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys, matchKeys } from '../api/queryKeys';
 import { Colors } from '../theme';
 import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { formatDatePt } from '../utils/dateUtils';
@@ -17,13 +19,19 @@ type Route = RouteProp<RootStackParamList, 'FinishedTournament'>;
 export const FinishedTournamentScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
-    const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+    const { tournamentId } = route.params;
+    const { data: t } = useQuery({
+        queryKey: tournamentKeys.detail(tournamentId),
+        queryFn: () => api.getTournament(tournamentId),
+    });
+    const { data: allMatches = [] } = useQuery({
+        queryKey: matchKeys.byTournament(tournamentId),
+        queryFn: () => api.getMatchesByTournament(tournamentId),
+        enabled: !!t,
+    });
 
     const totalTeams = t?.categories.reduce((sum, v) => sum + v.teams.length, 0) ?? 0;
-    const totalMatches = React.useMemo(() => {
-        const teamIds = new Set(t?.categories.flatMap(v => v.teams.map(team => team.id)) ?? []);
-        return mockMatches.filter(g => teamIds.has(g.team1Id) && teamIds.has(g.team2Id)).length;
-    }, [t]);
+    const totalMatches = allMatches.length;
 
     if (!t) return null;
 

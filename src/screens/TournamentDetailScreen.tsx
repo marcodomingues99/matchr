@@ -5,8 +5,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
+import { useQuery } from '@tanstack/react-query';
 import { RootStackParamList, Category } from '../types';
-import { mockTournaments } from '../mock/data';
+import { api } from '../api/client';
+import { tournamentKeys } from '../api/queryKeys';
 import { Colors, Gradients } from '../theme';
 import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { CATEGORY_STATUS } from '../utils/constants';
@@ -31,27 +33,34 @@ const phaseInfo = (v: Category): { label: string; pct: number; statusKey: Status
 };
 
 
-const getCountdown = computeCountdown;
-
 export const TournamentDetailScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const t = mockTournaments.find(x => x.id === route.params.tournamentId);
+  const { data: t, refetch } = useQuery({
+    queryKey: tournamentKeys.detail(route.params.tournamentId),
+    queryFn: () => api.getTournament(route.params.tournamentId),
+  });
   const isUpcoming = t?.status === 'upcoming';
 
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 600);
-  }, []);
+    await refetch();
+    setRefreshing(false);
+  }, [refetch]);
 
-  // Countdown for upcoming
-  const [countdown, setCountdown] = useState(getCountdown(t?.startDate ?? ''));
+  // Countdown for upcoming — tick every minute so display stays current
+  const [tick, setTick] = useState(0);
   useEffect(() => {
-    if (!isUpcoming || !t) return;
-    const timer = setInterval(() => setCountdown(getCountdown(t.startDate)), 60000);
+    if (!isUpcoming) return;
+    const timer = setInterval(() => setTick(n => n + 1), 60000);
     return () => clearInterval(timer);
-  }, [isUpcoming, t?.startDate]);
+  }, [isUpcoming]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const countdown = useMemo(
+    () => (t?.startDate ? computeCountdown(t.startDate) : { days: 0, hours: 0, minutes: 0 }),
+    [t?.startDate, tick],
+  );
 
   // Unique category types for chips
   const categoryTypes = useMemo(
