@@ -11,9 +11,8 @@ import { mockTournaments } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { AVATAR_GRADIENTS, getInitials } from '../utils/teamUtils';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { getMinTeamsToStart } from '../utils/constants';
+import { AVATAR_GRADIENTS, getInitials } from '../utils/avatarUtils';
+import { CATEGORY_CONFIG, getMinTeamsToStart } from '../utils/categoryConfig';
 import { GROUP_CHIP_POOL } from '../utils/groupColors';
 import { popTo } from '../utils/navigation';
 import { Container } from '../components/Layout';
@@ -25,27 +24,27 @@ export const GroupsEmptyScreen = () => {
     const navigation = useNavigation<Nav>();
     const route = useRoute<Route>();
     const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-    const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+    const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
     // Map each sorted group letter to its index for chip color lookup
     const groupIndex = useMemo(() => {
-        const sorted = [...new Set(vertente?.teams.map(t => t.group).filter(Boolean) as string[] ?? [])].sort();
+        const sorted = [...new Set(category?.teams.map(t => t.group).filter(Boolean) as string[] ?? [])].sort();
         const map: Record<string, number> = {};
         sorted.forEach((g, i) => { map[g] = i; });
         return map;
-    }, [vertente?.teams]);
+    }, [category?.teams]);
 
     const [pickedFile, setPickedFile] = useState<string | null>(null);
 
-    if (!tournament || !vertente) return null;
+    if (!tournament || !category) return null;
 
-    const { label: typeLabel } = VERTENTE_CONFIG[vertente.type];
-    const teamsConfirmed = vertente.teams.filter(t => !t.withdrawn).length;
-    const minTeamsToStart = getMinTeamsToStart(vertente);
-    const isFull = teamsConfirmed >= vertente.maxTeams;
+    const { label: typeLabel } = CATEGORY_CONFIG[category.type];
+    const teamsConfirmed = category.teams.filter(t => !t.withdrawn).length;
+    const minTeamsToStart = getMinTeamsToStart(category);
+    const isFull = teamsConfirmed >= category.maxTeams;
     const isPartial = teamsConfirmed >= minTeamsToStart && !isFull;
     const canImport = isFull || isPartial;
-    const remaining = vertente.maxTeams - teamsConfirmed;
+    const remaining = category.maxTeams - teamsConfirmed;
 
     const handlePickFile = async () => {
         try {
@@ -77,11 +76,11 @@ export const GroupsEmptyScreen = () => {
                 <View className="absolute w-[150px] h-[150px] rounded-full bg-white/5 -bottom-[48px] -right-[28px]" />
                 <SafeAreaView edges={['top']}>
                     <HeaderNav
-                        backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
+                        backLabel={`${CATEGORY_CONFIG[category.type].labelShort} ${category.level}`}
                         onBack={() => navigation.goBack()}
                     />
                     <View className="mb-[10px]">
-                        <SubBadge type={vertente.type} level={vertente.level} />
+                        <SubBadge type={category.type} level={category.level} />
                     </View>
                     <Text className="text-white text-[26px] md:text-[32px] font-nunito-black">Fase de Grupos 📊</Text>
                 </SafeAreaView>
@@ -113,10 +112,10 @@ export const GroupsEmptyScreen = () => {
                             <Text className={clsx('text-md font-nunito text-navy', !canImport && 'text-blue')}>Duplas inscritas</Text>
                             <Text className="text-xs font-nunito-semibold text-muted mt-[1px]">
                                 {isFull
-                                    ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas`
+                                    ? `${teamsConfirmed}/${category.maxTeams} confirmadas`
                                     : isPartial
-                                        ? `${teamsConfirmed}/${vertente.maxTeams} confirmadas — faltam ${remaining}`
-                                        : `${teamsConfirmed}/${vertente.maxTeams} confirmadas — mínimo ${minTeamsToStart}`
+                                        ? `${teamsConfirmed}/${category.maxTeams} confirmadas — faltam ${remaining}`
+                                        : `${teamsConfirmed}/${category.maxTeams} confirmadas — mínimo ${minTeamsToStart}`
                                 }
                             </Text>
                         </View>
@@ -217,11 +216,11 @@ export const GroupsEmptyScreen = () => {
                     {/* ── TEAM LIST ── */}
                     <View className="flex-row items-center justify-between mb-[10px]">
                         <Text className="text-base md:text-lg font-nunito text-navy">Duplas inscritas</Text>
-                        <Text className="text-sm font-nunito-bold text-muted">{teamsConfirmed}/{vertente.maxTeams}</Text>
+                        <Text className="text-sm font-nunito-bold text-muted">{teamsConfirmed}/{category.maxTeams}</Text>
                     </View>
 
                     <View className="bg-white rounded-lg p-md shadow-card mb-md">
-                        {vertente.teams.map((team, idx) => {
+                        {category.teams.map((team, idx) => {
                             const isWithdrawn = !!team.withdrawn;
                             const gradColors = isWithdrawn
                                 ? [Colors.gray, Colors.gray] as [string, string]
@@ -232,7 +231,7 @@ export const GroupsEmptyScreen = () => {
                                     className={clsx(
                                         'flex-row items-center gap-sm py-[8px] border-b-[1.5px] border-gl',
                                         isWithdrawn && 'opacity-60 bg-red-bg-light -mx-md px-md rounded-none',
-                                        idx === vertente.teams.length - 1 && 'border-b-0',
+                                        idx === category.teams.length - 1 && 'border-b-0',
                                     )}
                                 >
                                     <Text className="w-[16px] text-center text-sm font-nunito-black text-gray">{idx + 1}</Text>
@@ -271,7 +270,7 @@ export const GroupsEmptyScreen = () => {
                         <TouchableOpacity
                             className="bg-white rounded-lg p-md items-center border-2 border-gl"
                             activeOpacity={0.7}
-                            onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+                            onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, categoryId: category.id })}
                         >
                             <Text className="text-base font-nunito text-blue">+ Adicionar dupla</Text>
                         </TouchableOpacity>

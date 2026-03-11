@@ -8,24 +8,23 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import clsx from 'clsx';
-import { RootStackParamList, VertenteType } from '../types';
+import { RootStackParamList, CategoryType } from '../types';
 import { HeaderNav } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { PT_MONTHS } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { formatDateInputPt } from '../utils/dateUtils';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type VertType = VertenteType;
-type SelectedVert = { type: VertType; level: string };
+type SelectedCat = { type: CategoryType; level: string };
 
-const LEVELS: Record<VertType, string[]> = {
+const LEVELS: Record<CategoryType, string[]> = {
   M: ['M6', 'M5', 'M4', 'M3', 'M2', 'M1'],
   F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1'],
   MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1'],
 };
 
-const formatDate = (d: Date) => `${d.getDate()} ${PT_MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+const formatDate = formatDateInputPt;
 
 export const CreateTournamentScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -36,9 +35,9 @@ export const CreateTournamentScreen = () => {
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [photo, setPhoto] = useState<string | null>(null);
-  const [regulamento, setRegulamento] = useState<{ uri: string; name: string; size?: number } | null>(null);
-  const [selectedVerts, setSelectedVerts] = useState<SelectedVert[]>([]);
-  const [expanded, setExpanded] = useState<Record<VertType, boolean>>({ M: true, F: true, MX: false });
+  const [rulesUrl, setRulesUrl] = useState<{ uri: string; name: string; size?: number } | null>(null);
+  const [selectedCats, setSelectedCats] = useState<SelectedCat[]>([]);
+  const [expanded, setExpanded] = useState<Record<CategoryType, boolean>>({ M: true, F: true, MX: false });
 
   const pickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -54,7 +53,7 @@ export const CreateTournamentScreen = () => {
     const result = await DocumentPicker.getDocumentAsync({ type: 'application/pdf' });
     if (!result.canceled) {
       const asset = result.assets[0];
-      setRegulamento({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined });
+      setRulesUrl({ uri: asset.uri, name: asset.name, size: asset.size ?? undefined });
     }
   };
 
@@ -63,25 +62,25 @@ export const CreateTournamentScreen = () => {
     return ` · ${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const toggleVert = (type: VertType, level: string) => {
+  const toggleCategory = (type: CategoryType, level: string) => {
     if (level === 'Sem') {
-      const hasSem = selectedVerts.some(v => v.type === type && v.level === 'Sem');
-      const withoutType = selectedVerts.filter(v => v.type !== type);
-      setSelectedVerts(hasSem ? withoutType : [...withoutType, { type, level: 'Sem' }]);
+      const hasSem = selectedCats.some(v => v.type === type && v.level === 'Sem');
+      const withoutType = selectedCats.filter(v => v.type !== type);
+      setSelectedCats(hasSem ? withoutType : [...withoutType, { type, level: 'Sem' }]);
     } else {
-      const withoutSem = selectedVerts.filter(v => !(v.type === type && v.level === 'Sem'));
+      const withoutSem = selectedCats.filter(v => !(v.type === type && v.level === 'Sem'));
       const exists = withoutSem.findIndex(v => v.type === type && v.level === level);
-      setSelectedVerts(exists >= 0 ? withoutSem.filter((_, i) => i !== exists) : [...withoutSem, { type, level }]);
+      setSelectedCats(exists >= 0 ? withoutSem.filter((_, i) => i !== exists) : [...withoutSem, { type, level }]);
     }
   };
 
   const handleCreate = () => {
-    if (!name || selectedVerts.length === 0) return;
-    navigation.navigate('ConfigureVertente', {
+    if (!name || selectedCats.length === 0) return;
+    navigation.navigate('ConfigureCategory', {
       tournamentId: 'new',
-      vertenteIndex: 0,
-      isLast: selectedVerts.length === 1,
-      pendingVertentes: JSON.stringify(selectedVerts),
+      categoryIndex: 0,
+      isLast: selectedCats.length === 1,
+      pendingCategories: selectedCats,
     });
   };
 
@@ -185,16 +184,16 @@ export const CreateTournamentScreen = () => {
 
             {/* Regulamento */}
             <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[6px] mt-[8px]">Regulamento (opcional)</Text>
-            {regulamento ? (
+            {rulesUrl ? (
               <View className="bg-gbg rounded-md p-sm flex-row items-center gap-[11px]">
                 <View className="w-[40px] h-[40px] bg-white rounded-[10px] items-center justify-center shadow-card shrink-0">
                   <Text className="text-2xl">📄</Text>
                 </View>
                 <View className="flex-1">
-                  <Text className="text-md font-nunito text-navy" numberOfLines={1}>{regulamento.name}</Text>
-                  <Text className="text-xs font-nunito-semibold text-muted mt-[2px]">Carregado{formatSize(regulamento.size)}</Text>
+                  <Text className="text-md font-nunito text-navy" numberOfLines={1}>{rulesUrl.name}</Text>
+                  <Text className="text-xs font-nunito-semibold text-muted mt-[2px]">Carregado{formatSize(rulesUrl.size)}</Text>
                 </View>
-                <TouchableOpacity onPress={() => setRegulamento(null)}>
+                <TouchableOpacity onPress={() => setRulesUrl(null)}>
                   <Text className="text-lg font-nunito text-red p-[4px]">✕</Text>
                 </TouchableOpacity>
               </View>
@@ -215,8 +214,8 @@ export const CreateTournamentScreen = () => {
           {/* Categorias */}
           <Text className="text-muted text-md font-nunito uppercase tracking-[0.5px] mb-[10px]">Categorias</Text>
           <View className="bg-white rounded-lg p-md mb-lg shadow-card">
-            {(['M', 'F', 'MX'] as VertType[]).map((type, catIdx) => {
-              const sel = selectedVerts.filter(v => v.type === type);
+            {(['M', 'F', 'MX'] as CategoryType[]).map((type, catIdx) => {
+              const sel = selectedCats.filter(v => v.type === type);
               const countLabel = sel.length === 0
                 ? 'nenhum'
                 : `${sel.length} selecionado${sel.length > 1 ? 's' : ''}`;
@@ -228,9 +227,9 @@ export const CreateTournamentScreen = () => {
                     onPress={() => setExpanded({ ...expanded, [type]: !isExpanded })}
                     activeOpacity={0.7}
                   >
-                    <Text className="text-xl">{VERTENTE_CONFIG[type].emoji}</Text>
-                    <Text className="flex-1 text-base font-nunito text-navy">{VERTENTE_CONFIG[type].label}</Text>
-                    <Text className="text-xs font-nunito" style={sel.length > 0 ? { color: VERTENTE_CONFIG[type].color } : undefined}>
+                    <Text className="text-xl">{CATEGORY_CONFIG[type].emoji}</Text>
+                    <Text className="flex-1 text-base font-nunito text-navy">{CATEGORY_CONFIG[type].label}</Text>
+                    <Text className="text-xs font-nunito" style={sel.length > 0 ? { color: CATEGORY_CONFIG[type].color } : undefined}>
                       {sel.length > 0 ? countLabel : <Text className="text-muted">{countLabel}</Text>}
                     </Text>
                     <Text className="text-xs text-muted ml-[4px]">{isExpanded ? '▲' : '▼'}</Text>
@@ -239,34 +238,34 @@ export const CreateTournamentScreen = () => {
                     <View className="flex-row flex-wrap gap-[6px] pb-sm pt-[4px]">
                       {/* Sem — exclusive chip */}
                       {(() => {
-                        const semOn = selectedVerts.some(v => v.type === type && v.level === 'Sem');
+                        const semOn = selectedCats.some(v => v.type === type && v.level === 'Sem');
                         return (
                           <TouchableOpacity
                             className="px-[10px] py-[6px] rounded-[20px] border-2 border-dashed"
                             style={semOn
-                              ? { borderStyle: 'solid', borderColor: VERTENTE_CONFIG[type].color, backgroundColor: VERTENTE_CONFIG[type].chipBg }
+                              ? { borderStyle: 'solid', borderColor: CATEGORY_CONFIG[type].color, backgroundColor: CATEGORY_CONFIG[type].chipBg }
                               : { borderColor: Colors.gl, backgroundColor: Colors.white }
                             }
-                            onPress={() => toggleVert(type, 'Sem')}
+                            onPress={() => toggleCategory(type, 'Sem')}
                           >
-                            <Text className="text-sm font-nunito" style={semOn ? { color: VERTENTE_CONFIG[type].color } : { color: Colors.muted }}>Sem</Text>
+                            <Text className="text-sm font-nunito" style={semOn ? { color: CATEGORY_CONFIG[type].color } : { color: Colors.muted }}>Sem</Text>
                           </TouchableOpacity>
                         );
                       })()}
                       {/* Level chips */}
                       {LEVELS[type].map(level => {
-                        const isOn = selectedVerts.some(v => v.type === type && v.level === level);
+                        const isOn = selectedCats.some(v => v.type === type && v.level === level);
                         return (
                           <TouchableOpacity
                             key={level}
                             className="px-[10px] py-[6px] rounded-[20px] border-2"
                             style={isOn
-                              ? { borderColor: VERTENTE_CONFIG[type].color, backgroundColor: VERTENTE_CONFIG[type].chipBg }
+                              ? { borderColor: CATEGORY_CONFIG[type].color, backgroundColor: CATEGORY_CONFIG[type].chipBg }
                               : { borderColor: Colors.gl, backgroundColor: Colors.white }
                             }
-                            onPress={() => toggleVert(type, level)}
+                            onPress={() => toggleCategory(type, level)}
                           >
-                            <Text className="text-sm font-nunito" style={isOn ? { color: VERTENTE_CONFIG[type].color } : { color: Colors.muted }}>{level}</Text>
+                            <Text className="text-sm font-nunito" style={isOn ? { color: CATEGORY_CONFIG[type].color } : { color: Colors.muted }}>{level}</Text>
                           </TouchableOpacity>
                         );
                       })}
@@ -277,13 +276,13 @@ export const CreateTournamentScreen = () => {
             })}
 
             {/* Summary */}
-            {selectedVerts.length > 0 && (
+            {selectedCats.length > 0 && (
               <View className="bg-blue-bg rounded-md p-[10px] mt-[8px]">
                 <Text className="text-sm font-nunito text-blue">
-                  {selectedVerts.length} categoria{selectedVerts.length > 1 ? 's' : ''} criada{selectedVerts.length > 1 ? 's' : ''}:
+                  {selectedCats.length} categoria{selectedCats.length > 1 ? 's' : ''} criada{selectedCats.length > 1 ? 's' : ''}:
                 </Text>
                 <Text className="text-sm font-nunito-bold text-navy mt-[4px]">
-                  {selectedVerts.map(v => `${VERTENTE_CONFIG[v.type].emoji} ${v.level}`).join('  ·  ')}
+                  {selectedCats.map(v => `${CATEGORY_CONFIG[v.type].emoji} ${v.level}`).join('  ·  ')}
                 </Text>
               </View>
             )}
@@ -293,15 +292,15 @@ export const CreateTournamentScreen = () => {
 
           {/* Create Button */}
           <TouchableOpacity
-            className={clsx('rounded-lg overflow-hidden', (!name || selectedVerts.length === 0) && 'opacity-40')}
+            className={clsx('rounded-lg overflow-hidden', (!name || selectedCats.length === 0) && 'opacity-40')}
             onPress={handleCreate}
-            disabled={!name || selectedVerts.length === 0}
+            disabled={!name || selectedCats.length === 0}
           >
             <LinearGradient colors={Gradients.primary} className="p-[15px] items-center">
               <Text className="text-[15px] font-nunito-black text-white">🏆 Criar Torneio</Text>
             </LinearGradient>
           </TouchableOpacity>
-          {selectedVerts.length > 0 && (
+          {selectedCats.length > 0 && (
             <Text className="text-xs font-nunito-semibold text-muted text-center mt-[7px]">Configuras o nr de duplas por categoria no passo seguinte</Text>
           )}
           <View className="h-2xl" />

@@ -5,65 +5,62 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { RootStackParamList, ResolvedMatch } from '../types';
+import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
+import { resolveMatch } from '../utils/resolveMatch';
 import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { parseDatePt, GAME_STATUS_COLOR, GAME_STATUS_LABEL } from '../utils/constants';
+import { MATCH_STATUS_COLOR, MATCH_STATUS_LABEL } from '../utils/labels';
+import { formatDateShortPt, formatTimePt, getDateRange, toLocalISO } from '../utils/dateUtils';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'EditGame'>;
+type Route = RouteProp<RootStackParamList, 'EditMatch'>;
 
-export const EditGameScreen = () => {
+export const EditMatchScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
-  const game = mockGames.find(g => g.id === route.params.gameId);
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
+  const rawMatch = mockMatches.find(g => g.id === route.params.matchId);
 
-  const gameData = game ?? {
-    id: route.params.gameId,
-    team1: { id: 'tmp-t1', name: 'Equipa 1', players: [{ id: 'x1', name: '' }, { id: 'x2', name: '' }] },
-    team2: { id: 'tmp-t2', name: 'Equipa 2', players: [{ id: 'x3', name: '' }, { id: 'x4', name: '' }] },
-    court: 'C1', date: '', time: '', phase: 'groups' as const,
-    status: 'scheduled' as const,
-  };
+  const matchData: ResolvedMatch = rawMatch
+    ? resolveMatch(rawMatch, mockTeamMap)
+    : {
+        id: route.params.matchId, categoryId: route.params.categoryId,
+        team1Id: 'tmp-t1', team2Id: 'tmp-t2',
+        team1: { id: 'tmp-t1', name: 'Equipa 1', players: [{ id: 'x1', name: '' }, { id: 'x2', name: '' }] },
+        team2: { id: 'tmp-t2', name: 'Equipa 2', players: [{ id: 'x3', name: '' }, { id: 'x4', name: '' }] },
+        court: 'C1', scheduledAt: '', phase: 'groups' as const,
+        status: 'scheduled' as const,
+      };
 
-  const [court, setCourt] = useState(gameData.court);
-  const [time, setTime] = useState(gameData.time);
-  const [date, setDate] = useState(gameData.date);
+  const [court, setCourt] = useState(matchData.court);
+  const [time, setTime] = useState(
+    matchData.scheduledAt ? formatTimePt(matchData.scheduledAt) : '',
+  );
+  const [date, setDate] = useState(
+    matchData.scheduledAt ? matchData.scheduledAt.split('T')[0] + 'T00:00:00' : '',
+  );
 
   const tournamentDays = useMemo(() => {
-    const start = parseDatePt(tournament?.startDate ?? '');
-    const end = parseDatePt(tournament?.endDate ?? '');
-    if (!start || !end) return [];
-    const days: string[] = [];
-    const cur = new Date(start);
-    while (cur <= end) {
-      const d = cur.getDate();
-      const m = cur.toLocaleString('pt-PT', { month: 'short' });
-      const label = `${d} ${m.charAt(0).toUpperCase() + m.slice(1).replace('.', '')}`;
-      days.push(label);
-      cur.setDate(cur.getDate() + 1);
-    }
-    return days;
+    if (!tournament?.startDate || !tournament?.endDate) return [];
+    return getDateRange(tournament.startDate, tournament.endDate);
   }, [tournament?.startDate, tournament?.endDate]);
 
   const courts = useMemo(
-    () => Array.from({ length: vertente?.courts ?? 0 }, (_, i) => `C${i + 1}`),
-    [vertente?.courts],
+    () => Array.from({ length: category?.courts ?? 0 }, (_, i) => `C${i + 1}`),
+    [category?.courts],
   );
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
   const persistScheduling = () => {
-    if (!game) return;
-    game.court = court;
-    game.date = date;
-    game.time = time;
+    if (!rawMatch) return;
+    rawMatch.court = court;
+    rawMatch.scheduledAt = date && time ? date.split('T')[0] + 'T' + time + ':00' : '';
   };
 
   const handleSave = () => {
@@ -72,14 +69,14 @@ export const EditGameScreen = () => {
   };
 
   const markWalkover = (winnerId: string) => {
-    if (!game) {
+    if (!rawMatch) {
       navigation.goBack();
       return;
     }
     persistScheduling();
-    game.status = 'walkover';
-    game.winnerId = winnerId;
-    game.sets = [];
+    rawMatch.status = 'walkover';
+    rawMatch.winnerId = winnerId;
+    rawMatch.sets = [];
     navigation.goBack();
   };
 
@@ -91,7 +88,7 @@ export const EditGameScreen = () => {
             backLabel="Jogos"
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-sm">Editar Jogo</Text>
         </SafeAreaView>
       </LinearGradient>
@@ -102,11 +99,11 @@ export const EditGameScreen = () => {
           <View className="bg-white rounded-lg p-md mb-lg shadow-card">
             <View className="flex-row items-center gap-md py-[6px]">
               <View className="w-[36px] h-[36px] rounded-full bg-blue items-center justify-center">
-                <Text className="text-white text-lg font-nunito-black">{gameData.team1.name.charAt(0)}</Text>
+                <Text className="text-white text-lg font-nunito-black">{matchData.team1.name.charAt(0)}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-base font-nunito text-navy">{gameData.team1.name}</Text>
-                <Text className="text-sm font-nunito-semibold text-muted">{gameData.team1.players.map(p => p.name).join(' & ')}</Text>
+                <Text className="text-base font-nunito text-navy">{matchData.team1.name}</Text>
+                <Text className="text-sm font-nunito-semibold text-muted">{matchData.team1.players.map(p => p.name).join(' & ')}</Text>
               </View>
             </View>
             <View className="items-center py-xs">
@@ -114,11 +111,11 @@ export const EditGameScreen = () => {
             </View>
             <View className="flex-row items-center gap-md py-[6px]">
               <View className="w-[36px] h-[36px] rounded-full bg-teal items-center justify-center">
-                <Text className="text-white text-lg font-nunito-black">{gameData.team2.name.charAt(0)}</Text>
+                <Text className="text-white text-lg font-nunito-black">{matchData.team2.name.charAt(0)}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-base font-nunito text-navy">{gameData.team2.name}</Text>
-                <Text className="text-sm font-nunito-semibold text-muted">{gameData.team2.players.map(p => p.name).join(' & ')}</Text>
+                <Text className="text-base font-nunito text-navy">{matchData.team2.name}</Text>
+                <Text className="text-sm font-nunito-semibold text-muted">{matchData.team2.players.map(p => p.name).join(' & ')}</Text>
               </View>
             </View>
           </View>
@@ -154,7 +151,7 @@ export const EditGameScreen = () => {
                   )}
                   onPress={() => setDate(day)}
                 >
-                  <Text className={clsx('text-md font-nunito-black', date === day ? 'text-blue' : 'text-navy')}>{day}</Text>
+                  <Text className={clsx('text-md font-nunito-black', date === day ? 'text-blue' : 'text-navy')}>{formatDateShortPt(day)}</Text>
                   <Text className={clsx('text-xxs font-nunito-semibold mt-[2px]', date === day ? 'text-blue' : 'text-muted')}>Dia {i + 1}</Text>
                 </TouchableOpacity>
               ))}
@@ -176,10 +173,10 @@ export const EditGameScreen = () => {
           <View className="bg-white rounded-md p-md flex-row items-center gap-[10px] mb-lg shadow-card">
             <View
               className="w-[10px] h-[10px] rounded-full"
-              style={{ backgroundColor: GAME_STATUS_COLOR[gameData.status] ?? Colors.yellow }}
+              style={{ backgroundColor: MATCH_STATUS_COLOR[matchData.status] ?? Colors.yellow }}
             />
             <Text className="text-lg font-nunito text-navy">
-              {GAME_STATUS_LABEL[gameData.status] ?? gameData.status}
+              {MATCH_STATUS_LABEL[matchData.status] ?? matchData.status}
             </Text>
           </View>
 
@@ -200,8 +197,8 @@ export const EditGameScreen = () => {
                 'Escolhe a equipa vencedora por W.O.',
                 [
                   { text: 'Cancelar', style: 'cancel' },
-                  { text: gameData.team1.name, onPress: () => markWalkover(gameData.team1.id) },
-                  { text: gameData.team2.name, onPress: () => markWalkover(gameData.team2.id) },
+                  { text: matchData.team1.name, onPress: () => markWalkover(matchData.team1.id) },
+                  { text: matchData.team2.name, onPress: () => markWalkover(matchData.team2.id) },
                 ],
               );
             }}

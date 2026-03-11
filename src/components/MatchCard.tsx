@@ -1,13 +1,15 @@
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Game, SetScore, Team } from '../types';
+import { ResolvedMatch, SetScore, Team } from '../types';
 import { Gradients } from '../theme';
-import { GAME_STATUS, GAME_STATUS_COLOR } from '../utils/constants';
+import { MATCH_STATUS } from '../utils/constants';
+import { MATCH_STATUS_COLOR } from '../utils/labels';
+import { formatTimePt } from '../utils/dateUtils';
 import clsx from 'clsx';
 
-interface GameCardProps {
-  game: Game;
+interface MatchCardProps {
+  match: ResolvedMatch;
   onPress?: () => void;
   onEdit?: () => void;
   onEnterResult?: () => void;
@@ -54,28 +56,28 @@ const ScoreBox = ({
   );
 };
 
-export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, onEdit, onEnterResult, onTeamPress, showDoneBadge, advanceText }) => {
-  const isLive = game.status === GAME_STATUS.LIVE;
-  const isFinished = game.status === GAME_STATUS.FINISHED;
-  const isScheduled = game.status === GAME_STATUS.SCHEDULED;
-  const isPaused = game.status === GAME_STATUS.PAUSED;
+export const MatchCard: React.FC<MatchCardProps> = React.memo(({ match, onPress, onEdit, onEnterResult, onTeamPress, showDoneBadge, advanceText }) => {
+  const isLive = match.status === MATCH_STATUS.LIVE;
+  const isFinished = match.status === MATCH_STATUS.FINISHED;
+  const isScheduled = match.status === MATCH_STATUS.SCHEDULED;
+  const isPaused = match.status === MATCH_STATUS.PAUSED;
 
   // Determine winner / loser for finished games
-  const winner = isFinished && game.winnerId
-    ? (game.winnerId === game.team1.id ? game.team1 : game.team2)
+  const winner = isFinished && match.winnerId
+    ? (match.winnerId === match.team1.id ? match.team1 : match.team2)
     : null;
-  const loser = isFinished && game.winnerId
-    ? (game.winnerId === game.team1.id ? game.team2 : game.team1)
+  const loser = isFinished && match.winnerId
+    ? (match.winnerId === match.team1.id ? match.team2 : match.team1)
     : null;
-  const winnerIs1 = winner ? game.winnerId === game.team1.id : false;
+  const winnerIs1 = winner ? match.winnerId === match.team1.id : false;
 
   /** Interleaved scores for the finished condensed row:
    *  for each set → winner score (blue) then loser score (muted) */
   const renderFinishedScores = () => {
-    if (!game.sets?.length) return null;
+    if (!match.sets?.length) return null;
     return (
       <View className="flex-row gap-[3px]">
-        {game.sets.map((set: SetScore, i: number) => {
+        {match.sets.map((set: SetScore, i: number) => {
           const winScore = winnerIs1 ? set.team1 : set.team2;
           const loseScore = winnerIs1 ? set.team2 : set.team1;
           return (
@@ -91,12 +93,12 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
 
   /** Per-team score row for live / paused / scheduled */
   const renderScores = (forTeam: 1 | 2) => {
-    if (isScheduled || !game.sets?.length) {
+    if (isScheduled || !match.sets?.length) {
       return <ScoreBox value="–" variant="pending" />;
     }
     return (
       <View className="flex-row gap-[3px]">
-        {game.sets.map((set: SetScore, i: number) => {
+        {match.sets.map((set: SetScore, i: number) => {
           const myScore = forTeam === 1 ? set.team1 : set.team2;
           const oppScore = forTeam === 1 ? set.team2 : set.team1;
           const wonSet = myScore > oppScore;
@@ -117,7 +119,7 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`${game.team1.name} vs ${game.team2.name}, ${game.time}, ${game.court}${isLive ? ', ao vivo' : isFinished ? ', concluído' : isPaused ? ', pausado' : ', agendado'}`}
+      accessibilityLabel={`${match.team1.name} vs ${match.team2.name}, ${formatTimePt(match.scheduledAt)}, ${match.court}${isLive ? ', ao vivo' : isFinished ? ', concluído' : isPaused ? ', pausado' : ', agendado'}`}
     >
       {/* Meta header */}
       <View className="flex-row justify-between items-center mb-sm">
@@ -126,10 +128,10 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
             'text-xxs font-nunito uppercase',
             isLive ? 'text-red' : isPaused ? 'text-orange' : 'text-muted',
           )}
-          style={isLive ? { color: GAME_STATUS_COLOR.live } : isPaused ? { color: GAME_STATUS_COLOR.paused } : undefined}
+          style={isLive ? { color: MATCH_STATUS_COLOR.live } : isPaused ? { color: MATCH_STATUS_COLOR.paused } : undefined}
         >
           {isLive ? '●' : isFinished ? '✅' : isPaused ? '⏸' : '🕒'}{' '}
-          {game.time} · {game.court}
+          {formatTimePt(match.scheduledAt)} · {match.court}
           {isLive ? ' · Ao vivo' : isFinished && !showDoneBadge ? ' · Concluído' : isPaused ? ' · Pausado' : isScheduled ? ' · Agendado' : ''}
         </Text>
         {isScheduled && onEdit && (
@@ -190,22 +192,22 @@ export const GameCard: React.FC<GameCardProps> = React.memo(({ game, onPress, on
           {/* Team 1 */}
           <TouchableOpacity
             className="flex-row items-center py-[7px] gap-[6px] border-b border-gl"
-            onPress={() => onTeamPress?.(game.team1)}
+            onPress={() => onTeamPress?.(match.team1)}
             disabled={!onTeamPress}
             activeOpacity={onTeamPress ? 0.6 : 1}
           >
-            <Text className="flex-1 text-md font-nunito text-navy">{game.team1.name}</Text>
+            <Text className="flex-1 text-md font-nunito text-navy">{match.team1.name}</Text>
             {renderScores(1)}
           </TouchableOpacity>
 
           {/* Team 2 */}
           <TouchableOpacity
             className="flex-row items-center py-[7px] gap-[6px]"
-            onPress={() => onTeamPress?.(game.team2)}
+            onPress={() => onTeamPress?.(match.team2)}
             disabled={!onTeamPress}
             activeOpacity={onTeamPress ? 0.6 : 1}
           >
-            <Text className="flex-1 text-md font-nunito text-navy">{game.team2.name}</Text>
+            <Text className="flex-1 text-md font-nunito text-navy">{match.team2.name}</Text>
             {renderScores(2)}
           </TouchableOpacity>
 

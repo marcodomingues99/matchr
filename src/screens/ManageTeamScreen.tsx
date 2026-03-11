@@ -12,8 +12,8 @@ import { popTo } from '../utils/navigation';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { getInitials } from '../utils/teamUtils';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { getInitials } from '../utils/avatarUtils';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -23,10 +23,10 @@ export const ManageTeamScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
   const editTeamId = route.params.teamId;
-  const existingTeam = editTeamId ? vertente?.teams.find(t => t.id === editTeamId) : undefined;
+  const existingTeam = editTeamId ? category?.teams.find(t => t.id === editTeamId) : undefined;
   const isEditing = !!existingTeam;
 
   const [teamName, setTeamName] = useState(existingTeam?.name ?? '');
@@ -38,14 +38,14 @@ export const ManageTeamScreen = () => {
   const [p2Phone, setP2Phone] = useState(existingTeam?.players[1].phone ?? '');
   const [p2Email, setP2Email] = useState(existingTeam?.players[1].email ?? '');
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
-  const isDuplicateName = vertente.teams.some(
+  const isDuplicateName = category.teams.some(
     t => t.id !== editTeamId && t.name.trim().toLowerCase() === teamName.trim().toLowerCase(),
   );
   const canSave = teamName.trim() && p1Name.trim() && p2Name.trim() && !isDuplicateName;
 
-  const { label, emoji } = VERTENTE_CONFIG[vertente.type];
+  const { label, emoji } = CATEGORY_CONFIG[category.type];
 
   const pickPhoto = async () => {
     try {
@@ -77,7 +77,7 @@ export const ManageTeamScreen = () => {
             backLabel="Duplas"
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-xs">{isEditing ? 'Editar Dupla \u270F\uFE0F' : 'Nova Dupla \u{1F3BE}'}</Text>
           {!isEditing && (
             <Text className="text-white/65 text-md font-nunito-semibold mt-[3px]">Categoria já definida — só precisas dos jogadores</Text>
@@ -91,7 +91,7 @@ export const ManageTeamScreen = () => {
           <View className="bg-blue-bg rounded-md p-md mb-lg flex-row items-center gap-md">
             <Text className="text-2xl">{emoji}</Text>
             <View>
-              <Text className="text-md font-nunito-black text-navy">{label} {vertente.level}{isEditing && existingTeam?.group ? ` · Grupo ${existingTeam.group}` : ''}</Text>
+              <Text className="text-md font-nunito-black text-navy">{label} {category.level}{isEditing && existingTeam?.group ? ` · Grupo ${existingTeam.group}` : ''}</Text>
               <Text className="text-xs font-nunito-semibold text-muted">{tournament.name}</Text>
             </View>
           </View>
@@ -209,7 +209,7 @@ export const ManageTeamScreen = () => {
                   setTeamName(''); setPhoto(undefined); setP1Name(''); setP1Phone(''); setP1Email(''); setP2Name(''); setP2Phone(''); setP2Email('');
                 }}
               >
-                <Text className="text-base font-nunito text-navy">+ Adicionar outra dupla em {vertente.level}</Text>
+                <Text className="text-base font-nunito text-navy">+ Adicionar outra dupla em {category.level}</Text>
               </TouchableOpacity>
             )}
             {isEditing && (

@@ -10,18 +10,19 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Team, Vertente, Game } from '../types';
+import { Team, Category, ResolvedMatch } from '../types';
 import { Colors, Gradients } from '../theme';
-import { MONTHS, GAME_STATUS } from '../utils/constants';
-import { getInitials } from '../utils/teamUtils';
+import { MATCH_STATUS } from '../utils/constants';
+import { formatDateShortPt, formatTimePt } from '../utils/dateUtils';
+import { getInitials } from '../utils/avatarUtils';
 import clsx from 'clsx';
 
 interface Props {
     visible: boolean;
     onClose: () => void;
     team: Team | null;
-    vertente: Vertente | null;
-    games: Game[];
+    category: Category | null;
+    matches: ResolvedMatch[];
 }
 
 const phaseLabel: Record<string, string> = {
@@ -33,45 +34,41 @@ const phaseLabel: Record<string, string> = {
     '3rd': '3º Lugar',
 };
 
-function formatSets(sets: Game['sets'], isTeam1: boolean): string {
+function formatSets(sets: ResolvedMatch['sets'], isTeam1: boolean): string {
     if (!sets?.length) return '';
     return sets
         .map(s => (isTeam1 ? `${s.team1}–${s.team2}` : `${s.team2}–${s.team1}`))
         .join(' / ');
 }
 
-export const TeamGamesSheet: React.FC<Props> = React.memo(({
+export const TeamMatchesSheet: React.FC<Props> = React.memo(({
     visible,
     onClose,
     team,
-    vertente,
-    games,
+    category,
+    matches,
 }) => {
     const insets = useSafeAreaInsets();
     const { height: screenH } = useWindowDimensions();
 
-    if (!team || !vertente) return null;
+    if (!team || !category) return null;
 
-    const teamGames = games.filter(
+    const teamGames = matches.filter(
         g => g.team1.id === team.id || g.team2.id === team.id,
     );
 
-    const currentYear = new Date().getFullYear();
-    const parseDateTime = (g: Game): number => {
-        const [day, mon] = g.date.split(' ');
-        const [h, m] = g.time.split(':').map(Number);
-        return new Date(currentYear, MONTHS[mon] ?? 0, Number(day), h, m).getTime();
-    };
-    const sorted = [...teamGames].sort((a, b) => parseDateTime(a) - parseDateTime(b));
+    const sorted = [...teamGames].sort(
+        (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+    );
 
     const groupGames = teamGames.filter(g => g.phase === 'groups');
     const groupPlayed = groupGames.filter(
-        g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER,
+        g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER,
     ).length;
     const groupTotal = groupGames.length;
 
     const categoryLabel =
-        vertente.level !== 'Sem' ? vertente.level : vertente.type;
+        category.level !== 'Sem' ? category.level : category.type;
 
     return (
         <Modal
@@ -194,10 +191,10 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
                         sorted.map(game => {
                             const isTeam1 = game.team1.id === team.id;
                             const opponent = isTeam1 ? game.team2 : game.team1;
-                            const isFinished = game.status === GAME_STATUS.FINISHED;
-                            const isLive = game.status === GAME_STATUS.LIVE;
-                            const isPaused = game.status === GAME_STATUS.PAUSED;
-                            const isScheduled = game.status === GAME_STATUS.SCHEDULED;
+                            const isFinished = game.status === MATCH_STATUS.FINISHED;
+                            const isLive = game.status === MATCH_STATUS.LIVE;
+                            const isPaused = game.status === MATCH_STATUS.PAUSED;
+                            const isScheduled = game.status === MATCH_STATUS.SCHEDULED;
 
                             let headerColors: readonly [string, string, ...string[]];
                             let headerLabel: string;
@@ -247,7 +244,7 @@ export const TeamGamesSheet: React.FC<Props> = React.memo(({
                                         {isLive && <View className="w-[7px] h-[7px] rounded-[4px] bg-white shrink-0" />}
                                         <Text className="text-xs font-nunito text-white flex-1">{headerLabel}</Text>
                                         <Text className="text-xs font-nunito-bold text-[rgba(255,255,255,0.8)]">
-                                            {game.date} · {game.time} · {game.court}
+                                            {formatDateShortPt(game.scheduledAt)} · {formatTimePt(game.scheduledAt)} · {game.court}
                                         </Text>
                                     </LinearGradient>
 

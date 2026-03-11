@@ -5,18 +5,18 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList, VertenteType } from '../types';
+import { RootStackParamList, CategoryType } from '../types';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { NEW_TOURNAMENT_ID } from '../utils/constants';
 import { popTo } from '../utils/navigation';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'ConfigureVertente'>;
+type Route = RouteProp<RootStackParamList, 'ConfigureCategory'>;
 
-const LEVELS: Record<VertenteType, string[]> = {
+const LEVELS: Record<CategoryType, string[]> = {
   M: ['M6', 'M5', 'M4', 'M3', 'M2', 'M1', 'Sem'],
   F: ['F6', 'F5', 'F4', 'F3', 'F2', 'F1', 'Sem'],
   MX: ['MX6', 'MX5', 'MX4', 'MX3', 'MX2', 'MX1', 'Sem'],
@@ -31,32 +31,25 @@ const calcStructure = (n: number) => {
   return { groups: '8 grupos de 4', advance: 'Passam top 2', bracket: 'R16 → Final' };
 };
 
-export const ConfigureVertenteScreen = () => {
+export const ConfigureCategoryScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
-  const { tournamentId, vertenteIndex: idx, isLast, pendingVertentes } = route.params;
+  const { tournamentId, categoryIndex: idx, isLast, pendingCategories } = route.params;
   const isAddingToExisting = tournamentId !== NEW_TOURNAMENT_ID;
 
-  let pendingVerts: Array<{ type: VertenteType; level: string }> = [];
-  if (pendingVertentes) {
-    try {
-      pendingVerts = JSON.parse(pendingVertentes);
-    } catch {
-      // malformed JSON — fallback to empty array
-    }
-  }
+  const pendingCats = pendingCategories ?? [];
 
-  // Selection phase: when no vertentes were pre-selected, let the user pick type + level
-  const [pickedType, setPickedType] = useState<VertenteType>('M');
+  // Selection phase: when no categories were pre-selected, let the user pick type + level
+  const [pickedType, setPickedType] = useState<CategoryType>('M');
   const [pickedLevel, setPickedLevel] = useState<string | null>(null);
-  const needsSelection = pendingVerts.length === 0 && pickedLevel === null;
+  const needsSelection = pendingCats.length === 0 && pickedLevel === null;
 
-  const currentVert = pickedLevel
+  const currentCat = pickedLevel
     ? { type: pickedType, level: pickedLevel }
-    : pendingVerts[idx] ?? { type: 'M' as VertenteType, level: 'M5' };
-  const cfg = VERTENTE_CONFIG[currentVert.type];
-  const totalSteps = pendingVerts.length;
-  const stepsLabel = pendingVerts.map(v => v.level).join(' · ');
+    : pendingCats[idx] ?? { type: 'M' as CategoryType, level: 'M5' };
+  const cfg = CATEGORY_CONFIG[currentCat.type];
+  const totalSteps = pendingCats.length;
+  const stepsLabel = pendingCats.map(v => v.level).join(' · ');
 
   const [maxTeams, setMaxTeams] = useState(16);
   const [courts, setCourts] = useState(2);
@@ -70,11 +63,11 @@ export const ConfigureVertenteScreen = () => {
         navigation.dispatch(popTo('Home'));
       }
     } else {
-      navigation.navigate('ConfigureVertente', {
+      navigation.navigate('ConfigureCategory', {
         tournamentId: NEW_TOURNAMENT_ID,
-        vertenteIndex: idx + 1,
+        categoryIndex: idx + 1,
         isLast: idx + 2 >= totalSteps,
-        pendingVertentes,
+        pendingCategories,
       });
     }
   };
@@ -103,8 +96,8 @@ export const ConfigureVertenteScreen = () => {
             {/* Type selector */}
             <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[10px] mt-[4px]">Categoria</Text>
             <View className="flex-row gap-sm mb-lg">
-              {(['M', 'F', 'MX'] as VertenteType[]).map(type => {
-                const typeCfg = VERTENTE_CONFIG[type];
+              {(['M', 'F', 'MX'] as CategoryType[]).map(type => {
+                const typeCfg = CATEGORY_CONFIG[type];
                 const isOn = pickedType === type;
                 return (
                   <TouchableOpacity
@@ -127,7 +120,7 @@ export const ConfigureVertenteScreen = () => {
             <Text className="text-muted text-sm font-nunito uppercase tracking-[0.5px] mb-[10px] mt-[4px]">Nivel</Text>
             <View className="flex-row flex-wrap gap-sm">
               {LEVELS[pickedType].map(level => {
-                const typeCfg = VERTENTE_CONFIG[pickedType];
+                const typeCfg = CATEGORY_CONFIG[pickedType];
                 return (
                   <TouchableOpacity
                     key={level}
@@ -166,7 +159,7 @@ export const ConfigureVertenteScreen = () => {
           >
             <Text className="text-[16px]">{cfg.emoji}</Text>
             <Text className="text-base font-nunito-black" style={{ color: cfg.color }}>
-              {cfg.label} {currentVert.level === 'Sem' ? 'Sem Nivel' : currentVert.level}
+              {cfg.label} {currentCat.level === 'Sem' ? 'Sem Nivel' : currentCat.level}
             </Text>
           </View>
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[2px]">Configurar Categoria</Text>
@@ -176,7 +169,7 @@ export const ConfigureVertenteScreen = () => {
       {/* Progress dots */}
       {!isAddingToExisting && (
         <View className="flex-row justify-center gap-[6px] py-[14px] bg-white border-b border-b-gl">
-          {pendingVerts.map((_, i) => (
+          {pendingCats.map((_, i) => (
             <View key={i} className={clsx('w-[24px] h-[6px] rounded-[3px]', i === idx ? 'bg-blue' : 'bg-gl')} />
           ))}
         </View>
@@ -255,7 +248,7 @@ export const ConfigureVertenteScreen = () => {
               <Text className="text-white text-[15px] font-nunito">
                 {isLast || isAddingToExisting
                   ? '✓ Concluir Configuração'
-                  : `Próxima categoria → ${pendingVerts[idx + 1]?.level}`}
+                  : `Próxima categoria → ${pendingCats[idx + 1]?.level}`}
               </Text>
             </LinearGradient>
           </TouchableOpacity>

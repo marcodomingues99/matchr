@@ -6,17 +6,19 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
 import { RootStackParamList } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
+import { mockTournaments, mockMatches } from '../mock/data';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS, VERTENTE_STATUS, STATUS_COLOR, STATUS_LABEL, getMinTeamsToStart } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { MATCH_STATUS, CATEGORY_STATUS } from '../utils/constants';
+import { STATUS_COLOR, STATUS_LABEL } from '../utils/labels';
+import { getMinTeamsToStart } from '../utils/categoryConfig';
 import { LiveDot } from '../components/LiveDot';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
-type Route = RouteProp<RootStackParamList, 'VertenteHub'>;
+type Route = RouteProp<RootStackParamList, 'CategoryHub'>;
 
 const ICON_BG: Record<string, string> = {
   '👥': Colors.blueBg,
@@ -34,11 +36,11 @@ const PROGRESS_GRAD: Record<string, readonly [string, string]> = {
   '📥': [Colors.gray, Colors.gray],
 };
 
-export const VertenteHubScreen = () => {
+export const CategoryHubScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(() => {
@@ -46,31 +48,31 @@ export const VertenteHubScreen = () => {
     setTimeout(() => setRefreshing(false), 600);
   }, []);
 
-  const { vertenteGames, finishedGames, liveGames, allGamesFinished, bracketPct } = useMemo(() => {
-    const teamIds = new Set(vertente?.teams.map(t => t.id) ?? []);
-    const all = mockGames.filter(g => teamIds.has(g.team1.id) && teamIds.has(g.team2.id));
-    const finished = all.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
-    const live = all.filter(g => g.status === GAME_STATUS.LIVE);
+  const { categoryMatches, finishedMatches, liveMatches, allMatchesFinished, bracketPct } = useMemo(() => {
+    const teamIds = new Set(category?.teams.map(t => t.id) ?? []);
+    const all = mockMatches.filter(g => teamIds.has(g.team1Id) && teamIds.has(g.team2Id));
+    const finished = all.filter(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER);
+    const live = all.filter(g => g.status === MATCH_STATUS.LIVE);
     const bracket = all.filter(g => g.phase !== 'groups');
-    const bracketDone = bracket.filter(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER);
+    const bracketDone = bracket.filter(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER);
     return {
-      vertenteGames: all,
-      finishedGames: finished,
-      liveGames: live,
-      allGamesFinished: all.length > 0 && all.every(g => g.status === GAME_STATUS.FINISHED || g.status === GAME_STATUS.WALKOVER),
+      categoryMatches: all,
+      finishedMatches: finished,
+      liveMatches: live,
+      allMatchesFinished: all.length > 0 && all.every(g => g.status === MATCH_STATUS.FINISHED || g.status === MATCH_STATUS.WALKOVER),
       bracketPct: bracket.length > 0 ? Math.round(bracketDone.length / bracket.length * 100) : 0,
     };
-  }, [vertente?.teams]);
+  }, [category?.teams]);
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
-  const minTeamsToStart = getMinTeamsToStart(vertente);
+  const minTeamsToStart = getMinTeamsToStart(category);
 
-  const confirmedTeams = vertente.teams.filter(t => !t.withdrawn);
-  const teamFillPct = Math.round(confirmedTeams.length / vertente.maxTeams * 100);
-  const gamesPct = vertenteGames.length > 0 ? Math.round(finishedGames.length / vertenteGames.length * 100) : 0;
+  const confirmedTeams = category.teams.filter(t => !t.withdrawn);
+  const teamFillPct = Math.round(confirmedTeams.length / category.maxTeams * 100);
+  const matchesPct = categoryMatches.length > 0 ? Math.round(finishedMatches.length / categoryMatches.length * 100) : 0;
 
-  const isLive = vertente.status === VERTENTE_STATUS.GROUPS || vertente.status === VERTENTE_STATUS.BRACKET;
+  const isLive = category.status === CATEGORY_STATUS.GROUPS || category.status === CATEGORY_STATUS.BRACKET;
 
   interface MenuItem {
     icon: string;
@@ -85,43 +87,43 @@ export const VertenteHubScreen = () => {
   const menuItems: MenuItem[] = [
     {
       icon: '👥', title: 'Duplas',
-      sub: `${confirmedTeams.length}/${vertente.maxTeams} inscritas`,
+      sub: `${confirmedTeams.length}/${category.maxTeams} inscritas`,
       progress: teamFillPct,
-      onPress: () => navigation.navigate('TeamList', { tournamentId: tournament.id, vertenteId: vertente.id }),
+      onPress: () => navigation.navigate('TeamList', { tournamentId: tournament.id, categoryId: category.id }),
       enabled: true,
     },
     {
       icon: '📊', title: 'Fase de Grupos',
-      sub: vertenteGames.length > 0
-        ? `${finishedGames.length}/${vertenteGames.length} jogos concluidos`
+      sub: categoryMatches.length > 0
+        ? `${finishedMatches.length}/${categoryMatches.length} jogos concluidos`
         : 'Gerir fase de grupos',
-      progress: gamesPct,
-      live: liveGames.length,
+      progress: matchesPct,
+      live: liveMatches.length,
       onPress: () => navigation.navigate(
-        vertenteGames.length > 0 ? 'GroupsTable' : 'GroupsEmpty',
-        { tournamentId: tournament.id, vertenteId: vertente.id },
+        categoryMatches.length > 0 ? 'GroupsTable' : 'GroupsEmpty',
+        { tournamentId: tournament.id, categoryId: category.id },
       ),
-      enabled: vertente.status !== VERTENTE_STATUS.CONFIG && vertente.teams.filter(t => !t.withdrawn).length >= minTeamsToStart,
+      enabled: category.status !== CATEGORY_STATUS.CONFIG && category.teams.filter(t => !t.withdrawn).length >= minTeamsToStart,
     },
     {
       icon: '🏆', title: 'Eliminatórias',
       sub: 'Fases finais e quadro eliminatório',
-      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : vertente.status === VERTENTE_STATUS.BRACKET ? bracketPct : 0,
-      onPress: () => navigation.navigate('Knockout', { tournamentId: tournament.id, vertenteId: vertente.id }),
-      enabled: vertente.status === VERTENTE_STATUS.BRACKET || vertente.status === VERTENTE_STATUS.FINISHED,
+      progress: category.status === CATEGORY_STATUS.FINISHED ? 100 : category.status === CATEGORY_STATUS.BRACKET ? bracketPct : 0,
+      onPress: () => navigation.navigate('Knockout', { tournamentId: tournament.id, categoryId: category.id }),
+      enabled: category.status === CATEGORY_STATUS.BRACKET || category.status === CATEGORY_STATUS.FINISHED,
     },
     {
       icon: '🥇', title: 'Pódio',
       sub: 'Classificação final do torneio',
-      progress: vertente.status === VERTENTE_STATUS.FINISHED ? 100 : 0,
-      onPress: () => navigation.navigate('Podium', { tournamentId: tournament.id, vertenteId: vertente.id }),
-      enabled: vertente.status === VERTENTE_STATUS.FINISHED,
+      progress: category.status === CATEGORY_STATUS.FINISHED ? 100 : 0,
+      onPress: () => navigation.navigate('Podium', { tournamentId: tournament.id, categoryId: category.id }),
+      enabled: category.status === CATEGORY_STATUS.FINISHED,
     },
     {
       icon: '📥', title: 'Exportar',
       sub: 'Jogos, duplas, classificacoes',
       progress: -1, // no progress bar
-      onPress: () => navigation.navigate('Export', { tournamentId: tournament.id, vertenteId: vertente.id }),
+      onPress: () => navigation.navigate('Export', { tournamentId: tournament.id, categoryId: category.id }),
       enabled: true,
     },
   ];
@@ -131,7 +133,7 @@ export const VertenteHubScreen = () => {
     <View className="flex-1 bg-gbg">
       {/* HEADER */}
       <LinearGradient
-        colors={VERTENTE_CONFIG[vertente.type].gradient}
+        colors={CATEGORY_CONFIG[category.type].gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         className="px-lg pb-[22px] relative overflow-hidden"
@@ -143,16 +145,16 @@ export const VertenteHubScreen = () => {
             backLabel={tournament.name}
             onBack={() => navigation.goBack()}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-3xl md:text-[28px] font-nunito-black mt-[10px]">
-            {VERTENTE_CONFIG[vertente.type].label} {vertente.level}
+            {CATEGORY_CONFIG[category.type].label} {category.level}
           </Text>
           <View className="flex-row items-center gap-sm mt-[10px]">
             <View className="flex-row items-center gap-[6px] bg-white/20 rounded-[20px] px-[10px] py-[4px]">
-              <View className="w-[7px] h-[7px] rounded-[4px]" style={{ backgroundColor: STATUS_COLOR[vertente.status] }} />
-              <Text className="text-white/90 text-sm font-nunito">{STATUS_LABEL[vertente.status]}</Text>
+              <View className="w-[7px] h-[7px] rounded-[4px]" style={{ backgroundColor: STATUS_COLOR[category.status] }} />
+              <Text className="text-white/90 text-sm font-nunito">{STATUS_LABEL[category.status]}</Text>
             </View>
-            {isLive && liveGames.length > 0 && (
+            {isLive && liveMatches.length > 0 && (
               <View className="flex-row items-center gap-[5px]">
                 <LiveDot />
                 <Text className="text-white/80 text-sm font-nunito-bold">Ao vivo</Text>
@@ -173,7 +175,7 @@ export const VertenteHubScreen = () => {
           {/* CONFIGURAÇÃO */}
           <View className="flex-row justify-between items-center mb-[10px]">
             <Text className="text-base font-nunito text-navy">Configuração</Text>
-            {vertente.status === VERTENTE_STATUS.CONFIG && (
+            {category.status === CATEGORY_STATUS.CONFIG && (
               <TouchableOpacity onPress={() => navigation.navigate('EditTournament', { tournamentId: tournament.id })}>
                 <Text className="text-sm font-nunito-bold text-blue">✏️ Editar</Text>
               </TouchableOpacity>
@@ -186,7 +188,7 @@ export const VertenteHubScreen = () => {
               <Text className="text-xs font-nunito-bold text-muted mt-[2px]">duplas</Text>
             </View>
             <View className="flex-1 bg-white rounded-lg p-md items-center shadow-card">
-              <Text className="text-3xl font-nunito-black text-orange">{vertente.courts}</Text>
+              <Text className="text-3xl font-nunito-black text-orange">{category.courts}</Text>
               <Text className="text-xs font-nunito-bold text-muted mt-[2px]">courts</Text>
             </View>
           </View>
@@ -197,10 +199,10 @@ export const VertenteHubScreen = () => {
           </View>
 
           {/* Add team CTA */}
-          {vertente.status === VERTENTE_STATUS.CONFIG && (
+          {category.status === CATEGORY_STATUS.CONFIG && (
             <TouchableOpacity
               className="rounded-lg overflow-hidden mb-[10px]"
-              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              onPress={() => navigation.navigate('ManageTeam', { tournamentId: tournament.id, categoryId: category.id })}
               activeOpacity={0.85}
             >
               <LinearGradient colors={Gradients.primary} className="flex-row items-center justify-center p-md gap-xs" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
@@ -268,11 +270,11 @@ export const VertenteHubScreen = () => {
           ))}
 
           {/* PHASE ACTIONS */}
-          {vertente.status === VERTENTE_STATUS.CONFIG && confirmedTeams.length >= minTeamsToStart && (
+          {category.status === CATEGORY_STATUS.CONFIG && confirmedTeams.length >= minTeamsToStart && (
             <TouchableOpacity
               className="rounded-lg overflow-hidden mt-[10px] mb-[6px]"
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('GroupsEmpty', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              onPress={() => navigation.navigate('GroupsEmpty', { tournamentId: tournament.id, categoryId: category.id })}
             >
               <LinearGradient colors={Gradients.green} className="flex-row items-center justify-center p-[15px] gap-sm" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Text className="text-[16px]">🚀</Text>
@@ -280,11 +282,11 @@ export const VertenteHubScreen = () => {
               </LinearGradient>
             </TouchableOpacity>
           )}
-          {vertente.status === VERTENTE_STATUS.GROUPS && allGamesFinished && (
+          {category.status === CATEGORY_STATUS.GROUPS && allMatchesFinished && (
             <TouchableOpacity
               className="rounded-lg overflow-hidden mt-[10px] mb-[6px]"
               activeOpacity={0.85}
-              onPress={() => navigation.navigate('ConfirmCloseTournament', { tournamentId: tournament.id, vertenteId: vertente.id })}
+              onPress={() => navigation.navigate('ConfirmCloseCategory', { tournamentId: tournament.id, categoryId: category.id })}
             >
               <LinearGradient colors={Gradients.green} className="flex-row items-center justify-center p-[15px] gap-sm" start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                 <Text className="text-[16px]">🏁</Text>

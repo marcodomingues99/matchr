@@ -1,4 +1,4 @@
-import { parseDatePt, PT_MONTHS, MONTHS } from '../utils/constants';
+import { parseDatePt, PT_MONTHS, MONTHS } from '../utils/dateUtils';
 
 describe('parseDatePt', () => {
   it('parses a typical Portuguese date string', () => {

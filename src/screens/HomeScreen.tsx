@@ -13,19 +13,21 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList, Tournament, Vertente } from '../types';
+import { RootStackParamList, Tournament, Category, CategoryStatus } from '../types';
 import { mockTournaments } from '../mock/data';
 import { Colors, Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import { LiveDot } from '../components/LiveDot';
 import { Container, Grid, GridItem } from '../components/Layout';
-import { parseDatePt, STATUS_LABEL, PHASE_WEIGHT, PHASE_ORDER } from '../utils/constants';
+import { PHASE_WEIGHT, PHASE_ORDER } from '../utils/constants';
+import { STATUS_LABEL } from '../utils/labels';
+import { formatDatePt, daysBetween } from '../utils/dateUtils';
 
 type Nav = StackNavigationProp<RootStackParamList, 'Home'>;
 
 const logo = require('../../assets/logo.png');
 
-const chipLabel = (v: Vertente) =>
+const chipLabel = (v: Category) =>
   v.level === 'Sem' ? v.type : v.level;
 
 /* ── Shared header ── */
@@ -172,19 +174,18 @@ export const HomeScreen = () => {
    Active card
    ═════════════════════════════════════════════════════════════ */
 const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
-  const start = parseDatePt(t.startDate);
-  const end = parseDatePt(t.endDate);
   const now = new Date();
-  const totalDays = start && end ? Math.max(1, Math.round((end.getTime() - start.getTime()) / 86400000) + 1) : 1;
-  const currentDay = start ? Math.min(totalDays, Math.max(1, Math.round((now.getTime() - start.getTime()) / 86400000) + 1)) : 1;
+  const totalDays = daysBetween(t.startDate, t.endDate);
+  const start = new Date(t.startDate);
+  const currentDay = Math.min(totalDays, Math.max(1, Math.round((now.getTime() - start.getTime()) / 86400000) + 1));
 
-  const progress = t.vertentes.length > 0
-    ? t.vertentes.reduce((sum, v) => sum + (PHASE_WEIGHT[v.status] ?? 0), 0) / t.vertentes.length
+  const progress = t.categories.length > 0
+    ? t.categories.reduce((sum, v) => sum + (PHASE_WEIGHT[v.status] ?? 0), 0) / t.categories.length
     : 0;
 
-  const maxPhase = t.vertentes.reduce<string>((best, v) => {
+  const maxPhase = t.categories.reduce<CategoryStatus>((best, v) => {
     const idx = PHASE_ORDER.indexOf(v.status);
-    return idx > PHASE_ORDER.indexOf(best as typeof v.status) ? v.status : best;
+    return idx > PHASE_ORDER.indexOf(best) ? v.status : best;
   }, PHASE_ORDER[0]);
   const roundLabel = STATUS_LABEL[maxPhase] ?? 'Em preparação';
 
@@ -217,19 +218,19 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
 
         <View className="p-md">
           <Text className="text-muted text-sm font-nunito-semibold mb-[6px]">
-            📍 {t.location} · {t.startDate}–{t.endDate}
+            📍 {t.location} · {formatDatePt(t.startDate)}–{formatDatePt(t.endDate)}
           </Text>
 
           <View className="flex-row flex-wrap gap-xs mb-md">
-            {t.vertentes.map((v) => (
+            {t.categories.map((v) => (
               <TouchableOpacity
                 key={v.id}
                 className="rounded-full px-sm py-[3px]"
-                style={{ backgroundColor: VERTENTE_CONFIG[v.type].chipBg }}
+                style={{ backgroundColor: CATEGORY_CONFIG[v.type].chipBg }}
                 activeOpacity={0.7}
-                onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+                onPress={() => nav.navigate('CategoryHub', { tournamentId: t.id, categoryId: v.id })}
               >
-                <Text className="text-sm font-nunito" style={{ color: VERTENTE_CONFIG[v.type].chipText }}>
+                <Text className="text-sm font-nunito" style={{ color: CATEGORY_CONFIG[v.type].chipText }}>
                   {chipLabel(v)}
                 </Text>
               </TouchableOpacity>
@@ -252,7 +253,7 @@ const ActiveCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
           </View>
           <View className="flex-row justify-between items-center mt-[3px]">
             <Text className="text-muted text-xs font-nunito-semibold">
-              {t.vertentes.length} categorias · {roundLabel}
+              {t.categories.length} categorias · {roundLabel}
             </Text>
             <Text className="text-blue text-xs font-nunito">{Math.round(progress * 100)}%</Text>
           </View>
@@ -305,11 +306,11 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
           {t.name}
         </Text>
         <Text className={clsx('text-sm font-nunito-semibold text-gray-slate mt-[2px]', isFinished && 'text-gray')}>
-          📍 {t.location} · {t.startDate}
-          {t.endDate !== t.startDate ? `–${t.endDate}` : ''}
+          📍 {t.location} · {formatDatePt(t.startDate)}
+          {t.endDate !== t.startDate ? `–${formatDatePt(t.endDate)}` : ''}
         </Text>
         <View className="flex-row flex-wrap gap-[4px] mt-[6px]">
-          {t.vertentes.map((v) => isFinished ? (
+          {t.categories.map((v) => isFinished ? (
             <View
               key={v.id}
               className="rounded-full px-[8px] py-[2px]"
@@ -323,9 +324,9 @@ const CompactCard = React.memo(({ t, nav }: { t: Tournament; nav: Nav }) => {
             <TouchableOpacity
               key={v.id}
               className="rounded-full px-[8px] py-[2px]"
-              style={{ backgroundColor: VERTENTE_CONFIG[v.type].color }}
+              style={{ backgroundColor: CATEGORY_CONFIG[v.type].color }}
               activeOpacity={0.7}
-              onPress={() => nav.navigate('VertenteHub', { tournamentId: t.id, vertenteId: v.id })}
+              onPress={() => nav.navigate('CategoryHub', { tournamentId: t.id, categoryId: v.id })}
             >
               <Text className="text-white text-xs font-nunito">
                 {chipLabel(v)}

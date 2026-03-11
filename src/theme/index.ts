@@ -29,6 +29,10 @@ export const Colors = {
   brownDeep: '#4A2C00',
   scheduledDark: '#3A4060',
   scheduledLight: '#5566AA',
+  orangeDeep: '#CC4400',
+  tealDark: '#006B6B',
+  greenForest: '#1A5A1A',
+  greenMedium: '#44AA44',
 
   // neutrals
   muted: '#8A9BC0',

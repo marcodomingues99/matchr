@@ -5,15 +5,16 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import clsx from 'clsx';
-import { RootStackParamList, Team } from '../types';
-import { mockTournaments, mockGames } from '../mock/data';
-import { GameCard } from '../components/GameCard';
+import { RootStackParamList, Team, ResolvedMatch } from '../types';
+import { mockTournaments, mockMatches, mockTeamMap } from '../mock/data';
+import { resolveMatches } from '../utils/resolveMatch';
+import { MatchCard } from '../components/MatchCard';
 import { SubBadge } from '../components/SubBadge';
 import { HeaderNav, HomeFAB } from '../components/Breadcrumb';
-import { TeamGamesSheet } from '../components/TeamGamesSheet';
+import { TeamMatchesSheet } from '../components/TeamMatchesSheet';
 import { Gradients } from '../theme';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
-import { GAME_STATUS } from '../utils/constants';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
+import { MATCH_STATUS } from '../utils/constants';
 import { Container } from '../components/Layout';
 
 type Nav = StackNavigationProp<RootStackParamList>;
@@ -23,37 +24,39 @@ export const GroupsGamesScreen = () => {
   const navigation = useNavigation<Nav>();
   const route = useRoute<Route>();
   const tournament = mockTournaments.find(t => t.id === route.params.tournamentId);
-  const vertente = tournament?.vertentes.find(v => v.id === route.params.vertenteId);
+  const category = tournament?.categories.find(v => v.id === route.params.categoryId);
 
-  // Extract groups from this vertente's teams
-  const vertenteTeamIds = React.useMemo(() => new Set(vertente?.teams.map(t => t.id) ?? []), [vertente?.teams]);
+  // Extract groups from this category's teams
+  const categoryTeamIds = React.useMemo(() => new Set(category?.teams.map(t => t.id) ?? []), [category?.teams]);
   const groups = [...new Set(
-    (vertente?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? []
+    (category?.teams.map(t => t.group).filter(Boolean) as string[] | undefined) ?? []
   )].sort();
   const [activeGroup, setActiveGroup] = React.useState<string>(groups[0] ?? '');
   const [sheetTeam, setSheetTeam] = React.useState<Team | null>(null);
 
-  // Filter games: scope to this vertente AND active group
-  const filteredGames = React.useMemo(
-    () => mockGames.filter(g =>
-      vertenteTeamIds.has(g.team1.id) &&
-      vertenteTeamIds.has(g.team2.id) &&
-      (g.team1.group === activeGroup || g.team2.group === activeGroup),
-    ),
-    [activeGroup, vertenteTeamIds],
+  // Filter matches: scope to this category AND active group
+  const filteredMatches = React.useMemo<ResolvedMatch[]>(
+    () => {
+      const categoryMatches = mockMatches.filter(g =>
+        categoryTeamIds.has(g.team1Id) && categoryTeamIds.has(g.team2Id),
+      );
+      const resolved = resolveMatches(categoryMatches, mockTeamMap);
+      return resolved.filter(g => g.team1.group === activeGroup || g.team2.group === activeGroup);
+    },
+    [activeGroup, categoryTeamIds],
   );
 
-  if (!tournament || !vertente) return null;
+  if (!tournament || !category) return null;
 
   return (
     <View className="flex-1 bg-gbg">
       <LinearGradient colors={Gradients.header} className="px-lg pb-lg">
         <SafeAreaView edges={['top']}>
           <HeaderNav
-            backLabel={`${VERTENTE_CONFIG[vertente.type].labelShort} ${vertente.level}`}
-            onBack={() => navigation.navigate('VertenteHub', { tournamentId: tournament.id, vertenteId: vertente.id })}
+            backLabel={`${CATEGORY_CONFIG[category.type].labelShort} ${category.level}`}
+            onBack={() => navigation.navigate('CategoryHub', { tournamentId: tournament.id, categoryId: category.id })}
           />
-          <SubBadge type={vertente.type} level={vertente.level} />
+          <SubBadge type={category.type} level={category.level} />
           <Text className="text-white text-[26px] md:text-[32px] font-nunito-black mt-sm">Grupos – Jogos 🎾</Text>
         </SafeAreaView>
       </LinearGradient>
@@ -81,20 +84,20 @@ export const GroupsGamesScreen = () => {
 
       <ScrollView className="flex-1" contentContainerClassName="p-md">
         <Container>
-          {filteredGames.length === 0 ? (
+          {filteredMatches.length === 0 ? (
             <View className="items-center mt-[40px]">
               <Text className="text-base font-nunito-bold text-muted">Sem jogos para o Grupo {activeGroup}</Text>
             </View>
           ) : (
-            filteredGames.map((g) => (
-              <GameCard
+            filteredMatches.map((g) => (
+              <MatchCard
                 key={g.id}
-                game={g}
+                match={g}
                 onTeamPress={setSheetTeam}
-                onEdit={() => navigation.navigate('EditGame', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })}
-                onEnterResult={() => g.status === GAME_STATUS.PAUSED
-                  ? navigation.navigate('GamePaused', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
-                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, vertenteId: vertente.id, gameId: g.id })
+                onEdit={() => navigation.navigate('EditMatch', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })}
+                onEnterResult={() => g.status === MATCH_STATUS.PAUSED
+                  ? navigation.navigate('MatchPaused', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })
+                  : navigation.navigate('EnterResult', { tournamentId: tournament.id, categoryId: category.id, matchId: g.id })
                 }
               />
             ))
@@ -103,11 +106,11 @@ export const GroupsGamesScreen = () => {
         </Container>
       </ScrollView>
 
-      <TeamGamesSheet
+      <TeamMatchesSheet
         visible={sheetTeam !== null}
         team={sheetTeam}
-        vertente={vertente}
-        games={mockGames}
+        category={category}
+        matches={resolveMatches(mockMatches, mockTeamMap)}
         onClose={() => setSheetTeam(null)}
       />
       <HomeFAB onPress={() => navigation.navigate('TournamentDetail', { tournamentId: tournament.id })} />

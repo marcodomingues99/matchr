@@ -1,18 +1,18 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { VertenteType, VertenteLevel } from '../types';
-import { VERTENTE_CONFIG } from '../utils/vertenteConfig';
+import { CategoryType, CategoryLevel } from '../types';
+import { CATEGORY_CONFIG } from '../utils/categoryConfig';
 import clsx from 'clsx';
 
 interface SubBadgeProps {
-  type: VertenteType;
-  level: VertenteLevel;
+  type: CategoryType;
+  level: CategoryLevel;
   small?: boolean;
 }
 
 export const SubBadge: React.FC<SubBadgeProps> = React.memo(({ type, level, small = false }) => {
-  const config = VERTENTE_CONFIG[type];
+  const config = CATEGORY_CONFIG[type];
   return (
     <LinearGradient
       colors={config.gradient}
